@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       {
         reply:
           "Bonjour, je suis NASTY ! Mon accès aux réponses intelligentes n'est pas encore activé par l'équipe du site. " +
-          'En attendant, vous pouvez joindre le CRN au +241 70 10 10 10 ou contact@convention2026.events.',
+          'En attendant, vous pouvez joindre le CRN au +241 70 10 10 10 ou contact@crn-convention2026.events.',
       },
       { headers: corsHeaders(origin) },
     );

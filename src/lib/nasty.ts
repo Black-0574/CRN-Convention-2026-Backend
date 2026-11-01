@@ -72,7 +72,7 @@ Libreville identique à celui de Paris en décembre (UTC+1).
 8 jours · 8 orateurs · 3 classes de l'Académie · 10 artistes.
 
 ## Contact
-Hotline : +241 70 10 10 10. E-mail : contact@convention2026.events. Le site est accessible sans
+Hotline : +241 70 10 10 10. E-mail : contact@crn-convention2026.events. Le site est accessible sans
 VPN depuis le Gabon.
 
 ## Pages du site (pour orienter les visiteurs)
