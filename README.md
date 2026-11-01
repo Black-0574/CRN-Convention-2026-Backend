@@ -49,31 +49,62 @@ premier démarrage en production. Avec Docker, c'est fait automatiquement par le
 
 ## Déploiement sur hébergement mutualisé (Hostinger)
 
-Confirmé disponible dans hPanel (section *Avancé → Node.js App*), versions Node 18/20/22/24
-proposées — `backend/package.json` déclare `"engines": {"node": ">=20.9.0"}`, Hostinger doit donc
-détecter/proposer 20.x, 22.x ou 24.x automatiquement à partir de ce champ. Aucun Docker nécessaire :
-SQLite est un simple fichier.
+Confirmé disponible sur l'offre du Commanditaire (hPanel → *Websites → Add Website → Node.js web
+app*, versions Node 18/20/22/24 — `backend/package.json` déclare `"engines": {"node": ">=20.9.0"}`,
+donc 20.x/22.x/24.x conviennent). Aucun Docker nécessaire : SQLite est un simple fichier.
 
-1. En local : `npm run build` puis `npm run migrate` (une fois, avant le premier déploiement).
-2. Transférer le dossier `backend/` (avec `.next/`, `node_modules/`, `src/migrations/`, le fichier
-   SQLite déjà migré ou un chemin vide à migrer sur le serveur) vers votre espace Hostinger.
-3. Dans hPanel → *Avancé → Node.js App*, créer une application Node.js pointant vers ce dossier,
-   avec **`server.js`** comme fichier de démarrage (pas `npm start`) : ce fichier démarre Next.js
-   en écoutant sur le port fourni par Hostinger via la variable d'environnement `PORT` — c'est le
-   mécanisme standard attendu par ce type d'hébergement (Phusion Passenger), vérifié en local dans
-   cette session (`PORT=3055 node server.js` → admin accessible sur ce port).
-4. Si vous n'avez pas pu migrer en local avant le transfert, lancer une fois `npm run migrate`
-   depuis le terminal Node.js d'hPanel avant de démarrer l'application.
-5. Renseigner les variables d'environnement de `.env.example` dans l'interface Node.js d'hPanel
-   (`DATABASE_URI` en chemin absolu vers un fichier dans votre espace disque, `PAYLOAD_SECRET`,
-   `SITE_URL=https://www.crn-convention2026.events`, `ANTHROPIC_API_KEY`).
-6. Vérifier que le dossier contenant le fichier SQLite et `media/` est bien accessible en écriture
-   par l'application.
+**Sous-domaine dédié, pas un chemin sur le domaine principal.** L'admin sert aussi des routes
+`/api/...` (REST/GraphQL Payload, `/api/chat` pour NASTY) dont le site public, le widget de chat et
+l'admin lui-même ont besoin ; un montage par chemin (ex. `crn-convention2026.events/admin`) ne
+couvrirait pas ces routes. Adresse retenue : **`admin.crn-convention2026.events`**.
+
+**Dépôt Git dédié.** Hostinger clone le dépôt connecté tel quel (pas de réglage de sous-dossier
+documenté) ; `backend/` n'est qu'un sous-dossier du dépôt principal
+(`CRN-Convention-2026`), donc un dépôt séparé a été créé juste pour le déploiement :
+**`https://github.com/Black-0574/CRN-Convention-2026-Backend`** (privé, racine = contenu actuel de
+`backend/`, historique Git conservé). Le dépôt principal reste la source de vérité pour le
+développement ; resynchroniser ce second dépôt après un changement dans `backend/` avec :
+
+```bash
+# depuis la racine du dépôt principal
+git subtree split --prefix=backend -b backend-export
+git push https://github.com/Black-0574/CRN-Convention-2026-Backend.git backend-export:main --force
+git branch -D backend-export
+```
+
+**Étapes dans hPanel :**
+
+1. *Websites → Add Website → Node.js web app*.
+2. Source : **Git** → se connecter à GitHub (ou coller l'URL du dépôt s'il est rendu public) → choisir
+   `CRN-Convention-2026-Backend`, branche `main`.
+3. Domaine : `admin.crn-convention2026.events` (créé à cette étape ou en amont dans *Domaines →
+   Sous-domaines* — si déjà créé comme site séparé, le supprimer avant de relancer cette étape,
+   selon la documentation Hostinger).
+4. Réglages de déploiement :
+   - **Node.js version** : 20, 22 ou 24.
+   - **Build command** : `npm run build`.
+   - **Entry file** : **`server.js`** (pas `npm start`) — démarre Next.js en écoutant sur le port
+     fourni par Hostinger via `process.env.PORT`, testé en local dans cette session
+     (`PORT=3055 node server.js` → admin accessible sur ce port). Si Hostinger ne fournit pas
+     `PORT`, `server.js` retombe sur 3001 par défaut.
+   - **Environment variables** : `DATABASE_URI` (chemin absolu vers un fichier dans votre espace,
+     ex. `file:/home/<compte>/crn-convention.db`), `PAYLOAD_SECRET` (générer avec
+     `openssl rand -base64 32`, ne jamais réutiliser celui du `.env` local), `SITE_URL=https://www.crn-convention2026.events` (site public, pour les en-têtes CORS), `ANTHROPIC_API_KEY`.
+5. Déployer. Puis, dans le terminal Node.js d'hPanel (ou via le shell si disponible), lancer une
+   fois avant le premier accès : `npm run migrate` (crée le schéma — voir ci-dessus, requis en
+   production, contrairement au mode développement) puis, si besoin, `npm run migrate-from-content`
+   pour importer le contenu déjà présent dans le dépôt principal.
+6. Vérifier que le dossier contenant le fichier SQLite et `media/` est accessible en écriture par
+   l'application.
+7. Une fois `admin.crn-convention2026.events/admin` accessible, mettre à jour sur le site public
+   (dépôt principal) les variables `PAYLOAD_API_URL=https://admin.crn-convention2026.events/api` et
+   `PUBLIC_CHAT_API_URL=https://admin.crn-convention2026.events/api/chat`, puis reconstruire/republier
+   le site statique pour que le widget NASTY cible la bonne adresse.
 
 **Écart résiduel, non vérifiable depuis cet environnement** : le comportement exact du démarrage
-d'une appli Next.js via l'interface Node.js App d'hPanel (limites mémoire, build effectué en local
-ou sur le serveur, détails propres à votre compte) n'a pu être testé que via une simulation locale
-équivalente (port assigné par variable d'environnement). À confirmer sur votre panneau réel — voir
+d'une appli Next.js via *Node.js web app* d'hPanel (limites mémoire, build effectué sur le serveur,
+réglage exact du port) n'a pu être testé que via une simulation locale équivalente (port assigné
+par variable d'environnement). À confirmer sur le panneau réel du Commanditaire — voir
 `docs/conformite.md`. En cas d'incompatibilité malgré cette préparation, la solution de repli reste
 un VPS séparé.
 
