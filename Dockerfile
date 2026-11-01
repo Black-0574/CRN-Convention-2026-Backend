@@ -26,4 +26,5 @@ COPY --from=build /app/payload.config.ts ./payload.config.ts
 COPY --from=build /app/src ./src
 
 EXPOSE 3001
-CMD ["sh", "-c", "npm run migrate && npm run start"]
+# Les migrations de schéma s'appliquent automatiquement au démarrage (instrumentation.ts).
+CMD ["npm", "run", "start"]

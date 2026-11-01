@@ -17,9 +17,9 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Le conteneur applique les migrations de schéma automatiquement avant de démarrer (voir
-« Migrations de schéma » ci-dessous). L'admin est servi sur `http://localhost:3001/admin`. Au
-premier accès, Payload invite à créer le premier compte (rôle admin).
+Les migrations de schéma s'appliquent automatiquement au démarrage (voir « Migrations de schéma »
+ci-dessous). L'admin est servi sur `http://localhost:3001/admin`. Au premier accès, Payload invite
+à créer le premier compte (rôle admin).
 
 ## Démarrage en local sans Docker
 
@@ -34,18 +34,28 @@ de lancer les migrations à la main.
 
 ## Migrations de schéma (base de données)
 
-En production (`npm run build` + `npm run start`/`start:hostinger`), contrairement au mode
-développement, le schéma n'est **pas** synchronisé automatiquement : il faut appliquer les
-migrations une fois avant le premier démarrage, puis à chaque changement de collection/champ.
+En production, contrairement au mode développement, le schéma n'est pas synchronisé
+automatiquement par Payload — mais ce projet applique les migrations en attente **tout seul, au
+démarrage du serveur**, avant de servir la première requête :
+- `npm run start` (`next start`) : via `instrumentation.ts`, le hook de démarrage standard de
+  Next.js.
+- `npm run start:hostinger` (`server.js`, serveur personnalisé) : Next.js n'appelle pas
+  automatiquement `instrumentation.ts` derrière un serveur personnalisé, donc `server.js` lance
+  lui-même `payload migrate` (en sous-processus) avant d'ouvrir le port.
+
+Aucune étape manuelle n'est donc nécessaire avant le premier démarrage en production, y compris
+sur un hébergement sans accès shell (Hostinger). `adapter.migrate()` ne réapplique jamais une
+migration déjà enregistrée (table `payload_migrations`) — sûr à chaque redémarrage.
+
+Après avoir modifié une collection ou un champ, générer la nouvelle migration et la commiter
+(elle s'appliquera automatiquement au prochain démarrage) :
 
 ```bash
 npm run migrate:create -- --name description_du_changement   # génère un fichier dans src/migrations/
-npm run migrate                                                # applique les migrations en attente
 ```
 
 Le fichier `src/migrations/20261101_141150.ts` (migration initiale, créant les 8 collections + le
-global `Settings`) est déjà généré et commité — il suffit de lancer `npm run migrate` avant le
-premier démarrage en production. Avec Docker, c'est fait automatiquement par le conteneur.
+global `Settings`) est déjà généré et commité.
 
 ## Déploiement sur hébergement mutualisé (Hostinger)
 
@@ -90,12 +100,14 @@ git branch -D backend-export
    - **Environment variables** : `DATABASE_URI` (chemin absolu vers un fichier dans votre espace,
      ex. `file:/home/<compte>/crn-convention.db`), `PAYLOAD_SECRET` (générer avec
      `openssl rand -base64 32`, ne jamais réutiliser celui du `.env` local), `SITE_URL=https://www.crn-convention2026.events` (site public, pour les en-têtes CORS), `ANTHROPIC_API_KEY`.
-5. Déployer. Puis, dans le terminal Node.js d'hPanel (ou via le shell si disponible), lancer une
-   fois avant le premier accès : `npm run migrate` (crée le schéma — voir ci-dessus, requis en
-   production, contrairement au mode développement) puis, si besoin, `npm run migrate-from-content`
-   pour importer le contenu déjà présent dans le dépôt principal.
+5. Déployer. Le schéma de base de données se crée automatiquement au premier démarrage (voir
+   « Migrations de schéma » ci-dessus) — hPanel ne propose pas de terminal pour cette offre, ce
+   n'est donc pas une étape manuelle à faire. `/admin/create-first-user` doit s'afficher directement.
 6. Vérifier que le dossier contenant le fichier SQLite et `media/` est accessible en écriture par
-   l'application.
+   l'application. Si besoin d'importer le contenu déjà présent dans le dépôt principal
+   (`npm run migrate-from-content`), cette commande nécessite un accès shell — à faire en local
+   avec `DATABASE_URI` pointant vers une copie du fichier SQLite de production, puis réuploader le
+   fichier.
 7. Une fois `admin.crn-convention2026.events/admin` accessible, mettre à jour sur le site public
    (dépôt principal) les variables `PAYLOAD_API_URL=https://admin.crn-convention2026.events/api` et
    `PUBLIC_CHAT_API_URL=https://admin.crn-convention2026.events/api/chat`, puis reconstruire/republier
@@ -133,5 +145,5 @@ migre que du contenu réel déjà présent dans le dépôt, n'invente rien. Les 
 | `npm run generate:types` | Régénère `src/payload-types.ts` à partir des collections |
 | `npm run generate:importmap` | Régénère la carte d'import de l'admin (après ajout de composants personnalisés) |
 | `npm run migrate:create` | Génère un fichier de migration de schéma après modification d'une collection |
-| `npm run migrate` | Applique les migrations de schéma en attente (requis avant le 1er démarrage en production) |
+| `npm run migrate` | Applique les migrations de schéma en attente manuellement (fait automatiquement au démarrage en production, voir « Migrations de schéma ») |
 | `npm run migrate-from-content` | Import unique du contenu existant depuis `../src/content` |
