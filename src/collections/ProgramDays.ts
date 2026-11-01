@@ -5,6 +5,7 @@ import type { CollectionConfig } from 'payload';
 // Speakers (au lieu de slugs texte) : sélection par liste déroulante, intégrité garantie.
 export const ProgramDays: CollectionConfig = {
   slug: 'program-days',
+  labels: { singular: 'Jour du programme', plural: 'Programme' },
   admin: { useAsTitle: 'label', defaultColumns: ['label', 'date', 'ordre'] },
   access: { read: () => true },
   defaultSort: 'ordre',
@@ -17,12 +18,12 @@ export const ProgramDays: CollectionConfig = {
       type: 'array',
       labels: { singular: 'Séance', plural: 'Séances' },
       fields: [
-        { name: 'heureDebut', type: 'text', required: true, admin: { description: 'HH:mm' } },
-        { name: 'heureFin', type: 'text', required: true, admin: { description: 'HH:mm' } },
+        { name: 'heureDebut', type: 'text', label: 'Heure de début', required: true, admin: { description: 'HH:mm' } },
+        { name: 'heureFin', type: 'text', label: 'Heure de fin', required: true, admin: { description: 'HH:mm' } },
         { name: 'titre', type: 'text', required: true },
         { name: 'lieu', type: 'text', required: true },
-        { name: 'intervenants', type: 'relationship', relationTo: 'speakers', hasMany: true },
-        { name: 'noteIntervenant', type: 'text', admin: { description: 'Ex. "Orateur à annoncer" quand non arrêté.' } },
+        { name: 'intervenants', type: 'relationship', label: 'Intervenants', relationTo: 'speakers', hasMany: true },
+        { name: 'noteIntervenant', type: 'text', label: 'Note sur l’intervenant', admin: { description: 'Ex. "Orateur à annoncer" quand non arrêté.' } },
         {
           name: 'diffusion',
           type: 'select',

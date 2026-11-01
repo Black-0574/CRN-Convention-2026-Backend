@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload';
 
 export const Artists: CollectionConfig = {
   slug: 'artists',
+  labels: { singular: 'Artiste', plural: 'Artistes' },
   admin: { useAsTitle: 'nom' },
   access: { read: () => true },
   fields: [

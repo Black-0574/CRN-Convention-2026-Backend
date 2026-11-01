@@ -1,5 +1,6 @@
 import { sqliteAdapter } from '@payloadcms/db-sqlite';
 import { lexicalEditor } from '@payloadcms/richtext-lexical';
+import { fr } from '@payloadcms/translations/languages/fr';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildConfig } from 'payload';
@@ -27,6 +28,33 @@ export default buildConfig({
     user: Users.slug,
     importMap: {
       baseDir: path.resolve(dirname, 'src'),
+    },
+    meta: {
+      title: 'Back-office — Convention CRN 2026',
+      titleSuffix: ' — CRN Convention 2026',
+      icons: [{ url: '/brand/favicon.png', type: 'image/png' }],
+    },
+    components: {
+      graphics: {
+        Logo: '/components/admin/Logo#Logo',
+        Icon: '/components/admin/Icon#Icon',
+      },
+      header: ['/components/admin/Header#Header'],
+    },
+  },
+  // Back-office réservé à l'équipe francophone du Commanditaire : français seul, pas de
+  // sélecteur de langue.
+  i18n: {
+    fallbackLanguage: 'fr',
+    supportedLanguages: { fr },
+    // Corrige un intitulé resté non traduit dans le pack français officiel de Payload
+    // ("Globals(es)" — @payloadcms/translations/languages/fr, clé general.globals).
+    translations: {
+      fr: {
+        general: {
+          globals: 'Réglages généraux',
+        },
+      },
     },
   },
   collections: [Users, Media, Venues, Artists, Faq, Speakers, Products, Announcements, ProgramDays],

@@ -1,0 +1,77 @@
+/*
+  Thème du back-office — aligné sur GBIS v2.1 (voir docs/GBIS-v2.1.md et src/styles/tokens.css
+  côté site). Règles non surchargées par Payload : ces déclarations, hors de tout @layer,
+  l'emportent automatiquement sur les styles par défaut de Payload (@layer payload-default).
+
+  Les polices (Source Serif 4 / Source Sans 3) sont importées via @fontsource dans layout.tsx —
+  auto-hébergées, aucune requête vers un service externe (NF-CNV-001).
+*/
+
+:root {
+  --font-body: 'Source Sans 3', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-serif: 'Source Serif 4', Georgia, serif;
+
+  /*
+    Remplace l'échelle « success » de Payload (utilisée pour l'anneau de focus clavier, les
+    badges/bannières positifs et certains états actifs) par une rampe dérivée de l'or GBIS
+    (--crn-or #B8963E), ancrée exactement sur cette valeur au palier 500 — jamais d'autre teinte
+    substituée à l'or de la charte. Mêmes paires clair/foncé que l'original Payload (ex. fond 150
+    + texte 800), donc le contraste reste correct.
+  */
+  --color-success-50: #faf6ea;
+  --color-success-100: #f3ebd7;
+  --color-success-150: #ebe1c4;
+  --color-success-200: #e4d6b1;
+  --color-success-250: #ddcb9e;
+  --color-success-300: #d5c18a;
+  --color-success-350: #ceb677;
+  --color-success-400: #c7ab64;
+  --color-success-450: #bfa151;
+  --color-success-500: #b8963e;
+  --color-success-550: #907530;
+  --color-success-600: #7b6429;
+  --color-success-650: #695523;
+  --color-success-700: #5a491d;
+  --color-success-750: #4c3d18;
+  --color-success-800: #3f3214;
+  --color-success-850: #332810;
+  --color-success-900: #271f0c;
+  --color-success-950: #1c1608;
+}
+
+/* En-tête de marque, injecté via admin.components.header (toutes les pages de l'admin). */
+.crn-admin-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 32px;
+  background: #1a2c5b; /* --crn-bleu-nuit */
+  color: #ffffff;
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+.crn-admin-header img {
+  display: block;
+}
+
+/* Logo de la page de connexion / création du premier compte. */
+.crn-admin-logo {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 4px;
+}
+
+.crn-admin-logo img {
+  width: min(240px, 60vw);
+  height: auto;
+}
+
+/* Titres en Source Serif 4, cohérent avec la typographie du site public. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
+}

@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload';
 
 export const Products: CollectionConfig = {
   slug: 'products',
+  labels: { singular: 'Tarif / billet', plural: 'Billetterie' },
   admin: { useAsTitle: 'nom', defaultColumns: ['nom', 'categorie', 'prixFCFA', 'statut'] },
   access: { read: () => true },
   defaultSort: 'ordre',
@@ -10,6 +11,7 @@ export const Products: CollectionConfig = {
     {
       name: 'categorie',
       type: 'select',
+      label: 'Catégorie',
       required: true,
       options: [
         { label: 'Académie', value: 'academie' },
@@ -19,9 +21,9 @@ export const Products: CollectionConfig = {
         { label: 'Pass', value: 'pass' },
       ],
     },
-    { name: 'prixFCFA', type: 'number', admin: { description: 'Laisser vide = "À annoncer".' } },
+    { name: 'prixFCFA', type: 'number', label: 'Prix (FCFA)', admin: { description: 'Laisser vide = "À annoncer".' } },
     { name: 'description', type: 'textarea', required: true },
-    { name: 'lienAchat', type: 'text' },
+    { name: 'lienAchat', type: 'text', label: "Lien d'achat" },
     {
       name: 'statut',
       type: 'select',
@@ -33,6 +35,6 @@ export const Products: CollectionConfig = {
         { label: 'À annoncer', value: 'a_annoncer' },
       ],
     },
-    { name: 'ordre', type: 'number', required: true },
+    { name: 'ordre', type: 'number', required: true, label: 'Ordre' },
   ],
 };

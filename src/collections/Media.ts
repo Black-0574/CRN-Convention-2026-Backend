@@ -5,6 +5,7 @@ import type { CollectionConfig } from 'payload';
 // pour la prévisualisation dans l'admin.
 export const Media: CollectionConfig = {
   slug: 'media',
+  labels: { singular: 'Média', plural: 'Médias' },
   access: { read: () => true },
   upload: {
     staticDir: '../media',

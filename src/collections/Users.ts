@@ -4,6 +4,7 @@ import type { CollectionConfig } from 'payload';
 // back-office (lot L3).
 export const Users: CollectionConfig = {
   slug: 'users',
+  labels: { singular: 'Utilisateur', plural: 'Utilisateurs' },
   auth: {
     maxLoginAttempts: 5,
     lockTime: 10 * 60 * 1000,
