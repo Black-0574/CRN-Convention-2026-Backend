@@ -1,0 +1,23 @@
+name: crn-convention-2026-backend
+
+# Un seul service : SQLite (fichier local, voir payload.config.ts) ne nécessite pas de serveur de
+# base de données séparé — pratique pour un essai local via Docker, mais Docker n'est de toute
+# façon pas requis pour déployer sur un hébergement mutualisé (voir backend/README.md).
+services:
+  payload:
+    build: .
+    restart: unless-stopped
+    environment:
+      DATABASE_URI: ${DATABASE_URI:-file:/app/data/crn-convention.db}
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET:?Définir PAYLOAD_SECRET dans backend/.env}
+      SITE_URL: ${SITE_URL:-http://localhost:4321}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - payload-data:/app/data
+      - payload-media:/app/media
+    ports:
+      - '127.0.0.1:3001:3001'
+
+volumes:
+  payload-data:
+  payload-media:

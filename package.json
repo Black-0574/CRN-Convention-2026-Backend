@@ -1,0 +1,39 @@
+{
+  "name": "crn-convention-2026-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Back-office (Payload CMS + SQLite) de la Convention CRN 2026 — gestion du contenu publié par site/ (lot L3). SQLite choisi pour tourner sur un hébergement mutualisé (Hostinger), sans serveur de base de données dédié.",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --turbopack -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "start:hostinger": "node server.js",
+    "typecheck": "tsc --noEmit",
+    "generate:importmap": "payload generate:importmap",
+    "generate:types": "payload generate:types",
+    "migrate:create": "payload migrate:create",
+    "migrate": "payload migrate",
+    "migrate-from-content": "payload run scripts/migrate-from-content.ts"
+  },
+  "dependencies": {
+    "@payloadcms/db-sqlite": "3.45.0",
+    "@payloadcms/next": "3.45.0",
+    "@payloadcms/richtext-lexical": "3.45.0",
+    "graphql": "16.9.0",
+    "next": "15.5.28",
+    "payload": "3.45.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "19.1.0",
+    "@types/react-dom": "19.1.0",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  }
+}

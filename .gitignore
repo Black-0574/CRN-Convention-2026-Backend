@@ -1,0 +1,21 @@
+# deps
+node_modules/
+
+# next.js
+.next/
+next-env.d.ts
+
+# typescript
+*.tsbuildinfo
+
+# payload
+media/
+src/payload-types.ts
+
+# env
+.env
+.env.*
+!.env.example
+
+# misc
+.DS_Store
