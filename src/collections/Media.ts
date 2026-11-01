@@ -8,7 +8,9 @@ export const Media: CollectionConfig = {
   labels: { singular: 'Média', plural: 'Médias' },
   access: { read: () => true },
   upload: {
-    staticDir: '../media',
+    // Chemin absolu en production (MEDIA_DIR) : Hostinger reconstruit l'application dans un
+    // nouveau dossier à chaque déploiement, un dossier relatif perdrait les fichiers téléversés.
+    staticDir: process.env.MEDIA_DIR || 'media',
     imageSizes: [{ name: 'card', width: 480, height: 640, position: 'attention' }],
     mimeTypes: ['image/*'],
   },

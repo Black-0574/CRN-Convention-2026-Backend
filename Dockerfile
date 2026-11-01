@@ -26,5 +26,5 @@ COPY --from=build /app/payload.config.ts ./payload.config.ts
 COPY --from=build /app/src ./src
 
 EXPOSE 3001
-# Les migrations de schéma s'appliquent automatiquement au démarrage (instrumentation.ts).
+# Les migrations de schéma s'appliquent automatiquement à la connexion (prodMigrations).
 CMD ["npm", "run", "start"]

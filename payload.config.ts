@@ -16,6 +16,8 @@ import { Products } from './src/collections/Products';
 import { Announcements } from './src/collections/Announcements';
 import { ProgramDays } from './src/collections/ProgramDays';
 import { Settings } from './src/globals/Settings';
+import { migrations } from './src/migrations';
+import { allowedOrigins } from './src/lib/allowed-origins';
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -70,9 +72,12 @@ export default buildConfig({
     client: {
       url: process.env.DATABASE_URI || 'file:./crn-convention.db',
     },
+    // Applique les migrations en attente à la connexion en production : l'hébergement
+    // (Hostinger) n'offre ni terminal ni node_modules complet pour lancer `payload migrate`.
+    prodMigrations: migrations,
   }),
   sharp,
   // Autorise uniquement le site public (ou le serveur de build) à appeler l'API — l'API n'est de
   // toute façon jamais appelée depuis le navigateur du visiteur (voir flux de publication).
-  cors: [process.env.SITE_URL || 'http://localhost:4321'],
+  cors: allowedOrigins(),
 });

@@ -35,17 +35,21 @@ de lancer les migrations à la main.
 ## Migrations de schéma (base de données)
 
 En production, contrairement au mode développement, le schéma n'est pas synchronisé
-automatiquement par Payload — mais ce projet applique les migrations en attente **tout seul, au
-démarrage du serveur**, avant de servir la première requête :
-- `npm run start` (`next start`) : via `instrumentation.ts`, le hook de démarrage standard de
-  Next.js.
-- `npm run start:hostinger` (`server.js`, serveur personnalisé) : Next.js n'appelle pas
-  automatiquement `instrumentation.ts` derrière un serveur personnalisé, donc `server.js` lance
-  lui-même `payload migrate` (en sous-processus) avant d'ouvrir le port.
+automatiquement par Payload — mais ce projet applique les migrations en attente **tout seul**, via
+l'option officielle `prodMigrations` de l'adaptateur SQLite (`payload.config.ts`) : à la connexion
+à la base en production (`NODE_ENV=production`), Payload exécute les migrations de
+`src/migrations/index.ts` qui ne l'ont pas encore été (table `payload_migrations`) — sûr à chaque
+redémarrage. Fonctionne quel que soit le lanceur (`next start`, `server.js`, Docker, Hostinger).
 
-Aucune étape manuelle n'est donc nécessaire avant le premier démarrage en production, y compris
-sur un hébergement sans accès shell (Hostinger). `adapter.migrate()` ne réapplique jamais une
-migration déjà enregistrée (table `payload_migrations`) — sûr à chaque redémarrage.
+Aucune étape manuelle n'est donc nécessaire, y compris sur un hébergement sans accès shell.
+Les approches par sous-processus (`payload migrate`) ne conviennent pas à Hostinger : son dossier
+d'exécution ne contient que les dépendances réellement importées par l'application, pas le
+binaire `payload`.
+
+Dans les fichiers de migration générés, garder les types en `import type` (ex.
+`import type { MigrateUpArgs, MigrateDownArgs } from '@payloadcms/db-sqlite'`) : ils sont
+maintenant inclus dans le bundle serveur, où un import de type écrit comme une valeur échoue au
+chargement.
 
 Après avoir modifié une collection ou un champ, générer la nouvelle migration et la commiter
 (elle s'appliquera automatiquement au prochain démarrage) :
@@ -68,57 +72,44 @@ donc 20.x/22.x/24.x conviennent). Aucun Docker nécessaire : SQLite est un simpl
 l'admin lui-même ont besoin ; un montage par chemin (ex. `crn-convention2026.events/admin`) ne
 couvrirait pas ces routes. Adresse retenue : **`admin.crn-convention2026.events`**.
 
-**Dépôt Git dédié.** Hostinger clone le dépôt connecté tel quel (pas de réglage de sous-dossier
-documenté) ; `backend/` n'est qu'un sous-dossier du dépôt principal
-(`CRN-Convention-2026`), donc un dépôt séparé a été créé juste pour le déploiement :
-**`https://github.com/Black-0574/CRN-Convention-2026-Backend`** (privé, racine = contenu actuel de
-`backend/`, historique Git conservé). Le dépôt principal reste la source de vérité pour le
-développement ; resynchroniser ce second dépôt après un changement dans `backend/` avec :
+**Configuration en place (plan « Unlimited », qui inclut les applications Node.js ; le plan
+« Premium » ne les inclut pas) :**
+
+- **Dépôt connecté** : `Black-0574/CRN-Convention-2026-Backend-Hostinger` (privé). Hostinger l'a
+  créé lui-même à la mise en place, comme copie du dépôt public
+  `Black-0574/CRN-Convention-2026-Backend` (racine = contenu de `backend/`) — Hostinger clone un
+  dépôt tel quel, sans réglage de sous-dossier. **Déploiement automatique** à chaque push sur sa
+  branche `main`.
+- **Réglages détectés** : préréglage *Next.js*, Node 20.x, `npm run build`, sortie `.next`, racine
+  `./`, aucun fichier d'entrée (Hostinger lance Next.js lui-même, derrière son proxy ;
+  `server.js` ne sert qu'en dehors de Hostinger).
+- **Variables d'environnement** (hPanel → site → *Variables d'environnement*) :
+  - `DATABASE_URI=file:/home/u227552786/domains/admin.crn-convention2026.events/crn-convention.db`
+  - `MEDIA_DIR=/home/u227552786/domains/admin.crn-convention2026.events/media`
+  - `PAYLOAD_SECRET` (saisi par le Commanditaire, jamais commité)
+  - `SITE_URL=https://www.crn-convention2026.events`
+  - `ANTHROPIC_API_KEY` (optionnelle, à ajouter quand NASTY doit répondre)
+
+  **Chemins absolus obligatoires** pour la base et les médias : chaque déploiement reconstruit
+  l'application dans un nouveau dossier (`…/hbuilds/versions/<id>/nodejs/`) ; avec un chemin
+  relatif, chaque mise en ligne repartirait d'une base vide et perdrait les photos.
+
+**Mettre à jour le back-office en ligne** après un changement dans `backend/` (depuis la racine du
+dépôt principal, qui reste la seule source de vérité) :
 
 ```bash
-# depuis la racine du dépôt principal
 git subtree split --prefix=backend -b backend-export
 git push https://github.com/Black-0574/CRN-Convention-2026-Backend.git backend-export:main --force
+git push https://github.com/Black-0574/CRN-Convention-2026-Backend-Hostinger.git backend-export:main --force
 git branch -D backend-export
 ```
 
-**Étapes dans hPanel :**
+Le second push déclenche le redéploiement. Le schéma de base de données se met à jour tout seul
+au démarrage (voir « Migrations de schéma »), hPanel n'offrant pas de terminal sur cette offre.
 
-1. *Websites → Add Website → Node.js web app*.
-2. Source : **Git** → se connecter à GitHub (ou coller l'URL du dépôt s'il est rendu public) → choisir
-   `CRN-Convention-2026-Backend`, branche `main`.
-3. Domaine : `admin.crn-convention2026.events` (créé à cette étape ou en amont dans *Domaines →
-   Sous-domaines* — si déjà créé comme site séparé, le supprimer avant de relancer cette étape,
-   selon la documentation Hostinger).
-4. Réglages de déploiement :
-   - **Node.js version** : 20, 22 ou 24.
-   - **Build command** : `npm run build`.
-   - **Entry file** : **`server.js`** (pas `npm start`) — démarre Next.js en écoutant sur le port
-     fourni par Hostinger via `process.env.PORT`, testé en local dans cette session
-     (`PORT=3055 node server.js` → admin accessible sur ce port). Si Hostinger ne fournit pas
-     `PORT`, `server.js` retombe sur 3001 par défaut.
-   - **Environment variables** : `DATABASE_URI` (chemin absolu vers un fichier dans votre espace,
-     ex. `file:/home/<compte>/crn-convention.db`), `PAYLOAD_SECRET` (générer avec
-     `openssl rand -base64 32`, ne jamais réutiliser celui du `.env` local), `SITE_URL=https://www.crn-convention2026.events` (site public, pour les en-têtes CORS), `ANTHROPIC_API_KEY`.
-5. Déployer. Le schéma de base de données se crée automatiquement au premier démarrage (voir
-   « Migrations de schéma » ci-dessus) — hPanel ne propose pas de terminal pour cette offre, ce
-   n'est donc pas une étape manuelle à faire. `/admin/create-first-user` doit s'afficher directement.
-6. Vérifier que le dossier contenant le fichier SQLite et `media/` est accessible en écriture par
-   l'application. Si besoin d'importer le contenu déjà présent dans le dépôt principal
-   (`npm run migrate-from-content`), cette commande nécessite un accès shell — à faire en local
-   avec `DATABASE_URI` pointant vers une copie du fichier SQLite de production, puis réuploader le
-   fichier.
-7. Une fois `admin.crn-convention2026.events/admin` accessible, mettre à jour sur le site public
-   (dépôt principal) les variables `PAYLOAD_API_URL=https://admin.crn-convention2026.events/api` et
-   `PUBLIC_CHAT_API_URL=https://admin.crn-convention2026.events/api/chat`, puis reconstruire/republier
-   le site statique pour que le widget NASTY cible la bonne adresse.
-
-**Écart résiduel, non vérifiable depuis cet environnement** : le comportement exact du démarrage
-d'une appli Next.js via *Node.js web app* d'hPanel (limites mémoire, build effectué sur le serveur,
-réglage exact du port) n'a pu être testé que via une simulation locale équivalente (port assigné
-par variable d'environnement). À confirmer sur le panneau réel du Commanditaire — voir
-`docs/conformite.md`. En cas d'incompatibilité malgré cette préparation, la solution de repli reste
-un VPS séparé.
+`npm run migrate-from-content` (import du contenu du dépôt principal) nécessite un accès shell :
+à lancer en local avec `DATABASE_URI` pointant vers une copie du fichier SQLite de production,
+puis réenvoyer le fichier via le gestionnaire de fichiers d'hPanel.
 
 ## Import du contenu existant
 

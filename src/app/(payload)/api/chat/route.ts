@@ -1,20 +1,23 @@
 import { NextResponse } from 'next/server';
 
+import { allowedOrigins } from '../../../../lib/allowed-origins';
 import { NASTY_SYSTEM_PROMPT } from '../../../../lib/nasty';
 import { isRateLimited } from '../../../../lib/rate-limit';
 
-const ALLOWED_ORIGIN = process.env.SITE_URL || 'http://localhost:4321';
+const ALLOWED_ORIGINS = allowedOrigins();
 
-function corsHeaders() {
+function corsHeaders(requestOrigin: string | null) {
+  const origin = requestOrigin && ALLOWED_ORIGINS.includes(requestOrigin) ? requestOrigin : ALLOWED_ORIGINS[0];
   return {
-    'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
+    Vary: 'Origin',
   };
 }
 
-export function OPTIONS() {
-  return new NextResponse(null, { status: 204, headers: corsHeaders() });
+export function OPTIONS(req: Request) {
+  return new NextResponse(null, { status: 204, headers: corsHeaders(req.headers.get('origin')) });
 }
 
 interface ChatMessage {
@@ -23,11 +26,12 @@ interface ChatMessage {
 }
 
 export async function POST(req: Request) {
+  const origin = req.headers.get('origin');
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
   if (isRateLimited(ip, 15, 60_000)) {
     return NextResponse.json(
       { error: 'Trop de messages envoyés. Merci de patienter une minute avant de réessayer.' },
-      { status: 429, headers: corsHeaders() },
+      { status: 429, headers: corsHeaders(origin) },
     );
   }
 
@@ -39,7 +43,7 @@ export async function POST(req: Request) {
           "Bonjour, je suis NASTY ! Mon accès aux réponses intelligentes n'est pas encore activé par l'équipe du site. " +
           'En attendant, vous pouvez joindre le CRN au +241 70 10 10 10 ou contact@crn-convention.events.',
       },
-      { headers: corsHeaders() },
+      { headers: corsHeaders(origin) },
     );
   }
 
@@ -47,12 +51,12 @@ export async function POST(req: Request) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: 'Requête invalide.' }, { status: 400, headers: corsHeaders() });
+    return NextResponse.json({ error: 'Requête invalide.' }, { status: 400, headers: corsHeaders(origin) });
   }
 
   const messages = Array.isArray(body.messages) ? body.messages.slice(-12) : [];
   if (messages.length === 0) {
-    return NextResponse.json({ error: 'Message manquant.' }, { status: 400, headers: corsHeaders() });
+    return NextResponse.json({ error: 'Message manquant.' }, { status: 400, headers: corsHeaders(origin) });
   }
 
   try {
@@ -76,19 +80,19 @@ export async function POST(req: Request) {
       console.error('Anthropic API error', res.status, detail);
       return NextResponse.json(
         { reply: "Désolée, je rencontre une difficulté technique passagère. Réessayez dans un instant, ou contactez-nous au +241 70 10 10 10." },
-        { headers: corsHeaders() },
+        { headers: corsHeaders(origin) },
       );
     }
 
     const data = (await res.json()) as { content?: { type: string; text?: string }[] };
     const reply = data.content?.find((b) => b.type === 'text')?.text?.trim() || 'Je suis désolée, je n’ai pas de réponse pour le moment.';
 
-    return NextResponse.json({ reply }, { headers: corsHeaders() });
+    return NextResponse.json({ reply }, { headers: corsHeaders(origin) });
   } catch (err) {
     console.error('Chat route error', err);
     return NextResponse.json(
       { reply: "Désolée, je rencontre une difficulté technique passagère. Réessayez dans un instant." },
-      { headers: corsHeaders() },
+      { headers: corsHeaders(origin) },
     );
   }
 }
