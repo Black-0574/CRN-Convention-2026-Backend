@@ -1,0 +1,865 @@
+{
+  "announcements": [
+    {
+      "id": "billetterie-ouverte",
+      "data": {
+        "titre": "Ouverture de la billetterie",
+        "texte": "La billetterie de la Convention CRN 2026 est ouverte depuis le 25 octobre.",
+        "date": "2026-10-25",
+        "ordre": 1
+      }
+    },
+    {
+      "id": "collecte-action-sociale",
+      "data": {
+        "titre": "Collecte de l'action sociale",
+        "texte": "La collecte de vivres et de vêtements se tient du 9 au 27 novembre, avant distribution le 5 décembre.",
+        "date": "2026-11-09",
+        "ordre": 3
+      }
+    },
+    {
+      "id": "revelation-orateurs",
+      "data": {
+        "titre": "Révélation progressive des orateurs",
+        "texte": "Les fiches des orateurs et des artistes sont dévoilées progressivement à partir du 2 novembre.",
+        "date": "2026-11-02",
+        "ordre": 2
+      }
+    }
+  ],
+  "artists": [
+    {
+      "id": "annick-nzie",
+      "data": {
+        "nom": "Annick Nzie"
+      }
+    },
+    {
+      "id": "betty-onanga",
+      "data": {
+        "nom": "Betty Onanga"
+      }
+    },
+    {
+      "id": "bienvenu-moussounda",
+      "data": {
+        "nom": "Bienvenu Moussounda"
+      }
+    },
+    {
+      "id": "charlene-nzamba",
+      "data": {
+        "nom": "Charlène Nzamba"
+      }
+    },
+    {
+      "id": "diane-omega",
+      "data": {
+        "nom": "Diane Omega"
+      }
+    },
+    {
+      "id": "grace-jocktane",
+      "data": {
+        "nom": "Grâce Jocktane"
+      }
+    },
+    {
+      "id": "lisa-kate",
+      "data": {
+        "nom": "Lisa Kate"
+      }
+    },
+    {
+      "id": "orphelia-njoya",
+      "data": {
+        "nom": "Orphelia Njoya"
+      }
+    },
+    {
+      "id": "priscille-ngouwa",
+      "data": {
+        "nom": "Priscille Ngouwa"
+      }
+    },
+    {
+      "id": "valentin-mouyama",
+      "data": {
+        "nom": "Valentin Mouyama"
+      }
+    }
+  ],
+  "faq": [
+    {
+      "id": "comment-acheter-un-pass",
+      "data": {
+        "question": "Comment acheter un pass ou un billet ?",
+        "reponse": "Rendez-vous sur la page Billetterie et choisissez le produit souhaité. Vous serez redirigé vers la billetterie officielle de la Convention pour finaliser votre achat.",
+        "etats": [
+          "campagne",
+          "evenement"
+        ],
+        "ordre": 1
+      }
+    },
+    {
+      "id": "diaspora-comment-suivre",
+      "data": {
+        "question": "Je suis dans la diaspora : comment suivre la Convention ?",
+        "reponse": "Consultez la page Diaspora pour suivre la Convention à distance, donner en ligne et participer à la session dédiée du 19 décembre.",
+        "etats": [
+          "campagne",
+          "evenement"
+        ],
+        "ordre": 6
+      }
+    },
+    {
+      "id": "horaires-et-lieux",
+      "data": {
+        "question": "Où se déroule la Convention et selon quels horaires ?",
+        "reponse": "L’essentiel du programme se tient à l’Église Centrale, à Libreville, du 5 au 12 décembre. Le 13 décembre, la Convention se conclut au Nomad : culte unique de toutes les églises, ordination et Concert pour la vie. Consultez la page Programme pour le détail jour par jour.",
+        "etats": [
+          "campagne",
+          "evenement"
+        ],
+        "ordre": 5
+      }
+    },
+    {
+      "id": "pass-perdu-ou-probleme",
+      "data": {
+        "question": "J’ai un problème avec mon pass ou mon paiement, qui contacter ?",
+        "reponse": "Utilisez les coordonnées indiquées sur la page Contact. Conservez votre référence de transaction : elle facilite le traitement de votre demande.",
+        "etats": [
+          "campagne",
+          "evenement"
+        ],
+        "ordre": 7
+      }
+    },
+    {
+      "id": "qr-code",
+      "data": {
+        "question": "Comment fonctionne le contrôle d’accès par QR code ?",
+        "reponse": "Chaque ticket ou pass est nominatif et intransférable. Il porte un QR code unique, scanné à chaque entrée. Aucun accès verbal n’est accepté : présentez votre QR code, sur votre téléphone ou imprimé, à chaque séance.",
+        "etats": [
+          "campagne",
+          "evenement"
+        ],
+        "ordre": 2
+      }
+    },
+    {
+      "id": "quels-moyens-de-paiement",
+      "data": {
+        "question": "Quels moyens de paiement sont acceptés ?",
+        "reponse": "Airtel Money, Moov Money et carte bancaire. La Page de la Convention ne conserve aucune donnée de paiement : les transactions sont traitées par un prestataire de paiement agréé.",
+        "etats": [
+          "campagne",
+          "evenement"
+        ],
+        "ordre": 3
+      }
+    },
+    {
+      "id": "site-accessible-sans-vpn",
+      "data": {
+        "question": "Ai-je besoin d’un VPN pour accéder à ce site ou suivre le direct ?",
+        "reponse": "Non. Cette page est hébergée sur un domaine propre du CRN, sans dépendance à Facebook, YouTube, Instagram, TikTok ou WhatsApp. Elle s’affiche intégralement, et le direct se lit sans VPN, depuis le Gabon.",
+        "etats": [
+          "campagne",
+          "evenement",
+          "prolongement"
+        ],
+        "ordre": 4
+      }
+    }
+  ],
+  "products": [
+    {
+      "id": "academie-une-classe",
+      "data": {
+        "nom": "Une classe de l’Académie",
+        "categorie": "academie",
+        "prixFCFA": 20000,
+        "description": "Classe complète sur trois jours (8, 9, 10 décembre), au choix parmi les trois classes de l’Académie des Sciences Divines.",
+        "lienAchat": "#billetterie-a-configurer",
+        "statut": "disponible",
+        "ordre": 1
+      }
+    },
+    {
+      "id": "concert-standard",
+      "data": {
+        "nom": "Concert pour la vie — Standard",
+        "categorie": "concert",
+        "prixFCFA": 5000,
+        "description": "Dimanche 13 décembre, 17h, Nomad.",
+        "lienAchat": "#billetterie-a-configurer",
+        "statut": "disponible",
+        "ordre": 6
+      }
+    },
+    {
+      "id": "concert-vip",
+      "data": {
+        "nom": "Concert pour la vie — VIP",
+        "categorie": "concert",
+        "prixFCFA": 25000,
+        "description": "Dimanche 13 décembre, 17h, Nomad.",
+        "lienAchat": "#billetterie-a-configurer",
+        "statut": "disponible",
+        "ordre": 7
+      }
+    },
+    {
+      "id": "diner-des-elites",
+      "data": {
+        "nom": "Dîner des Élites",
+        "categorie": "plateforme",
+        "prixFCFA": 100000,
+        "description": "Samedi 12 décembre, 19h–22h. Lieu à annoncer.",
+        "lienAchat": "#billetterie-a-configurer",
+        "statut": "disponible",
+        "ordre": 5
+      }
+    },
+    {
+      "id": "femme-de-foi-live",
+      "data": {
+        "nom": "Femme de Foi — Live",
+        "categorie": "plateforme",
+        "prixFCFA": 10000,
+        "description": "Samedi 12 décembre, 8h–11h, Église Centrale.",
+        "lienAchat": "#billetterie-a-configurer",
+        "statut": "disponible",
+        "ordre": 3
+      }
+    },
+    {
+      "id": "jai-soif",
+      "data": {
+        "nom": "J’ai soif",
+        "categorie": "plateforme",
+        "prixFCFA": 5000,
+        "description": "Samedi 12 décembre, 13h–16h30, Église Centrale.",
+        "lienAchat": "#billetterie-a-configurer",
+        "statut": "disponible",
+        "ordre": 4
+      }
+    },
+    {
+      "id": "pagne-officiel",
+      "data": {
+        "nom": "Pagne officiel mixte",
+        "categorie": "boutique",
+        "prixFCFA": 10000,
+        "description": "Pagne officiel de la Convention CRN 2026, modèle mixte.",
+        "lienAchat": "#billetterie-a-configurer",
+        "statut": "disponible",
+        "ordre": 8
+      }
+    },
+    {
+      "id": "pass-academie-integral",
+      "data": {
+        "nom": "Pass Académie Intégral",
+        "categorie": "pass",
+        "prixFCFA": 50000,
+        "description": "Les trois classes de l’Académie des Sciences Divines, du 8 au 10 décembre.",
+        "lienAchat": "#billetterie-a-configurer",
+        "statut": "disponible",
+        "ordre": 2
+      }
+    },
+    {
+      "id": "pass-diamant",
+      "data": {
+        "nom": "Pass DIAMANT",
+        "categorie": "pass",
+        "prixFCFA": null,
+        "description": "Contenu et tarif à annoncer.",
+        "statut": "a_annoncer",
+        "ordre": 11
+      }
+    },
+    {
+      "id": "pass-or",
+      "data": {
+        "nom": "Pass OR",
+        "categorie": "pass",
+        "prixFCFA": null,
+        "description": "Contenu et tarif à annoncer.",
+        "statut": "a_annoncer",
+        "ordre": 10
+      }
+    },
+    {
+      "id": "tee-shirt-officiel",
+      "data": {
+        "nom": "Tee-shirt officiel",
+        "categorie": "boutique",
+        "prixFCFA": 10000,
+        "description": "Tee-shirt officiel de la Convention CRN 2026.",
+        "lienAchat": "#billetterie-a-configurer",
+        "statut": "disponible",
+        "ordre": 9
+      }
+    }
+  ],
+  "program": [
+    {
+      "id": "2026-12-05",
+      "data": {
+        "date": "2026-12-05",
+        "label": "Samedi 5 décembre — Pré-convention",
+        "ordre": 1,
+        "sessions": [
+          {
+            "heureDebut": "09:00",
+            "heureFin": "12:00",
+            "titre": "Action sociale",
+            "lieu": "Église Centrale",
+            "intervenants": [],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "2026-12-06",
+      "data": {
+        "date": "2026-12-06",
+        "label": "Dimanche 6 décembre",
+        "ordre": 2,
+        "sessions": [
+          {
+            "heureDebut": "09:00",
+            "heureFin": "12:00",
+            "titre": "Culte unique",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "robert-ondoa"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "2026-12-07",
+      "data": {
+        "date": "2026-12-07",
+        "label": "Lundi 7 décembre",
+        "ordre": 3,
+        "sessions": [
+          {
+            "heureDebut": "09:00",
+            "heureFin": "15:00",
+            "titre": "Pastorale CRN",
+            "lieu": "Église Centrale",
+            "intervenants": [],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "17:00",
+            "heureFin": "21:00",
+            "titre": "Cérémonie d’ouverture",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "mike-jocktane"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "2026-12-08",
+      "data": {
+        "date": "2026-12-08",
+        "label": "Mardi 8 décembre",
+        "ordre": 4,
+        "sessions": [
+          {
+            "heureDebut": "06:00",
+            "heureFin": "07:30",
+            "titre": "Matin de gloire",
+            "lieu": "Église Centrale",
+            "intervenants": [],
+            "noteIntervenant": "Équipe pastorale CRN",
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "09:00",
+            "heureFin": "10:00",
+            "titre": "Académie — Bâtisseurs d’Autels",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "robert-ondoa",
+              "nadia-jocktane"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "10:15",
+            "heureFin": "11:15",
+            "titre": "Académie — Le Mystère des Trônes",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "mike-jocktane",
+              "francois-rabenkogo"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "11:30",
+            "heureFin": "12:30",
+            "titre": "Académie — Architectes de la Cité",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "silas-makangu",
+              "michel-ambouroue"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "14:00",
+            "heureFin": "16:00",
+            "titre": "Atmosphère prophétique",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "jek-kalombo"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "17:00",
+            "heureFin": "21:00",
+            "titre": "Plénière",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "robert-ondoa",
+              "michel-ambouroue"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "2026-12-09",
+      "data": {
+        "date": "2026-12-09",
+        "label": "Mercredi 9 décembre",
+        "ordre": 5,
+        "sessions": [
+          {
+            "heureDebut": "06:00",
+            "heureFin": "07:30",
+            "titre": "Matin de gloire",
+            "lieu": "Église Centrale",
+            "intervenants": [],
+            "noteIntervenant": "Équipe pastorale CRN",
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "09:00",
+            "heureFin": "10:00",
+            "titre": "Académie — Bâtisseurs d’Autels",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "robert-ondoa",
+              "nadia-jocktane"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "10:15",
+            "heureFin": "11:15",
+            "titre": "Académie — Le Mystère des Trônes",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "mike-jocktane",
+              "francois-rabenkogo"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "11:30",
+            "heureFin": "12:30",
+            "titre": "Académie — Architectes de la Cité",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "silas-makangu",
+              "michel-ambouroue"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "14:00",
+            "heureFin": "16:00",
+            "titre": "Atmosphère prophétique",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "wilson-ndi"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "17:00",
+            "heureFin": "21:00",
+            "titre": "Plénière",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "silas-makangu",
+              "francois-rabenkogo"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "2026-12-10",
+      "data": {
+        "date": "2026-12-10",
+        "label": "Jeudi 10 décembre",
+        "ordre": 6,
+        "sessions": [
+          {
+            "heureDebut": "06:00",
+            "heureFin": "07:30",
+            "titre": "Matin de gloire",
+            "lieu": "Église Centrale",
+            "intervenants": [],
+            "noteIntervenant": "Équipe pastorale CRN",
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "09:00",
+            "heureFin": "10:00",
+            "titre": "Académie — Bâtisseurs d’Autels",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "robert-ondoa",
+              "nadia-jocktane"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "10:15",
+            "heureFin": "11:15",
+            "titre": "Académie — Le Mystère des Trônes",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "mike-jocktane",
+              "francois-rabenkogo"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "11:30",
+            "heureFin": "12:30",
+            "titre": "Académie — Architectes de la Cité",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "silas-makangu",
+              "michel-ambouroue"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "14:00",
+            "heureFin": "16:00",
+            "titre": "Atmosphère prophétique",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "nadia-jocktane"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "17:00",
+            "heureFin": "21:00",
+            "titre": "Plénière",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "wilson-ndi",
+              "silas-makangu"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "2026-12-11",
+      "data": {
+        "date": "2026-12-11",
+        "label": "Vendredi 11 décembre",
+        "ordre": 7,
+        "sessions": [
+          {
+            "heureDebut": "06:00",
+            "heureFin": "07:30",
+            "titre": "Matin de gloire spécial — Sainte Cène et prière pour les familles",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "mike-jocktane"
+            ],
+            "noteIntervenant": "Avec la participation de tous les orateurs",
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "17:00",
+            "heureFin": "21:00",
+            "titre": "Soirée africaine et prophétique",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "nadia-jocktane",
+              "wilson-ndi",
+              "jek-kalombo"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "2026-12-12",
+      "data": {
+        "date": "2026-12-12",
+        "label": "Samedi 12 décembre",
+        "ordre": 8,
+        "sessions": [
+          {
+            "heureDebut": "08:00",
+            "heureFin": "11:00",
+            "titre": "Femme de Foi — Live",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "patricia-piebi"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "13:00",
+            "heureFin": "16:30",
+            "titre": "J’ai soif",
+            "lieu": "Église Centrale",
+            "intervenants": [
+              "jek-kalombo",
+              "carelle-ambouroue"
+            ],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "19:00",
+            "heureFin": "22:00",
+            "titre": "Dîner des Élites",
+            "lieu": "Lieu à annoncer",
+            "intervenants": [],
+            "diffusion": "non_diffuse",
+            "visible": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "2026-12-13",
+      "data": {
+        "date": "2026-12-13",
+        "label": "Dimanche 13 décembre — Nomad",
+        "ordre": 9,
+        "sessions": [
+          {
+            "heureDebut": "09:00",
+            "heureFin": "12:00",
+            "titre": "Culte unique de toutes les églises",
+            "lieu": "Nomad",
+            "intervenants": [],
+            "noteIntervenant": "Orateur à annoncer",
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "13:00",
+            "heureFin": "14:30",
+            "titre": "Cérémonie d’ordination",
+            "lieu": "Nomad",
+            "intervenants": [],
+            "noteIntervenant": "Responsables : Alphonsine Ambouroué, Marie-Paule Asseh",
+            "diffusion": "a_arbitrer",
+            "visible": true
+          },
+          {
+            "heureDebut": "17:00",
+            "heureFin": "20:00",
+            "titre": "Concert pour la vie",
+            "lieu": "Nomad",
+            "intervenants": [],
+            "diffusion": "a_arbitrer",
+            "visible": true
+          }
+        ]
+      }
+    }
+  ],
+  "settings": [
+    {
+      "id": "etat-convention",
+      "data": {
+        "etatActuel": "campagne",
+        "forcageManuel": false,
+        "bascules": {
+          "campagneDebut": "2026-10-31T00:00:00+01:00",
+          "evenementDebut": "2026-12-06T00:00:00+01:00",
+          "prolongementDebut": "2026-12-14T00:00:00+01:00",
+          "ecosystemeVisibleDes": "2026-12-13T12:00:00+01:00"
+        },
+        "bandeau": {
+          "actif": false,
+          "texte": "Billetterie ouverte — prenez votre pass pour la Convention CRN 2026, du 6 au 13 décembre à Libreville.",
+          "lien": "/billetterie"
+        }
+      }
+    }
+  ],
+  "speakers": [
+    {
+      "id": "carelle-ambouroue",
+      "data": {
+        "nom": "Carelle Ambouroué",
+        "categorie": "plateforme",
+        "datePublication": "2026-10-31",
+        "photo": "/images/orateurs/carelle-ambouroue.webp"
+      }
+    },
+    {
+      "id": "francois-rabenkogo",
+      "data": {
+        "nom": "François Rabenkogo",
+        "categorie": "national",
+        "datePublication": "2026-10-31",
+        "photo": "/images/orateurs/francois-rabenkogo.webp"
+      }
+    },
+    {
+      "id": "jek-kalombo",
+      "data": {
+        "nom": "Jek Kalombo",
+        "categorie": "prophetique",
+        "datePublication": "2026-10-31",
+        "photo": "/images/orateurs/jek-kalombo.webp"
+      }
+    },
+    {
+      "id": "michel-ambouroue",
+      "data": {
+        "nom": "Michel Ambouroué",
+        "categorie": "national",
+        "datePublication": "2026-10-31",
+        "photo": "/images/orateurs/michel-ambouroue.webp"
+      }
+    },
+    {
+      "id": "mike-jocktane",
+      "data": {
+        "nom": "Dr. Mike Jocktane",
+        "categorie": "hote",
+        "datePublication": "2026-10-31",
+        "photo": "/images/orateurs/mike-jocktane.webp"
+      }
+    },
+    {
+      "id": "nadia-jocktane",
+      "data": {
+        "nom": "Nadia Jocktane",
+        "categorie": "national",
+        "datePublication": "2026-10-31",
+        "photo": "/images/orateurs/nadia-jocktane.webp"
+      }
+    },
+    {
+      "id": "patricia-piebi",
+      "data": {
+        "nom": "Patricia Piebi",
+        "categorie": "plateforme",
+        "datePublication": "2026-10-31",
+        "photo": "/images/orateurs/patricia-piebi.webp"
+      }
+    },
+    {
+      "id": "robert-ondoa",
+      "data": {
+        "nom": "Robert Ondoa",
+        "categorie": "international",
+        "datePublication": "2026-10-31",
+        "photo": "/images/orateurs/robert-ondoa.webp"
+      }
+    },
+    {
+      "id": "silas-makangu",
+      "data": {
+        "nom": "Silas Makangu",
+        "categorie": "international",
+        "datePublication": "2026-10-31",
+        "photo": "/images/orateurs/silas-makangu.webp"
+      }
+    },
+    {
+      "id": "wilson-ndi",
+      "data": {
+        "nom": "Wilson Ndi",
+        "categorie": "international",
+        "photo": "/images/orateurs/wilson-ndi.webp",
+        "datePublication": "2026-10-31"
+      }
+    }
+  ],
+  "venues": [
+    {
+      "id": "eglise-centrale",
+      "data": {
+        "nom": "Église Centrale CRN",
+        "adresse": "Libreville, Gabon"
+      }
+    },
+    {
+      "id": "nomad",
+      "data": {
+        "nom": "Nomad",
+        "adresse": "Libreville, Gabon"
+      }
+    }
+  ]
+}

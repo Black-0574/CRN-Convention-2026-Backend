@@ -41,5 +41,13 @@ export const Settings: GlobalConfig = {
         { name: 'lien', type: 'text', label: 'Lien' },
       ],
     },
+    {
+      // Posé une fois l'import initial du contenu du site terminé (src/seed) : l'import ne se
+      // relance jamais, même si une collection est ensuite vidée volontairement depuis l'admin.
+      name: 'contenuInitialImporte',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: { hidden: true },
+    },
   ],
 };

@@ -1,5 +1,7 @@
 import type { CollectionConfig } from 'payload';
 
+import { slugify } from '../lib/slugify';
+
 export const Speakers: CollectionConfig = {
   slug: 'speakers',
   labels: { singular: 'Orateur', plural: 'Orateurs' },
@@ -7,6 +9,20 @@ export const Speakers: CollectionConfig = {
   access: { read: () => true },
   fields: [
     { name: 'nom', type: 'text', required: true },
+    {
+      name: 'slug',
+      type: 'text',
+      label: 'Identifiant d’adresse',
+      unique: true,
+      index: true,
+      admin: {
+        position: 'sidebar',
+        description: 'Adresse de la fiche : /orateurs/<identifiant>. Laisser vide pour le déduire du nom.',
+      },
+      hooks: {
+        beforeValidate: [({ value, data }) => (value ? slugify(String(value)) : slugify(String(data?.nom ?? '')))],
+      },
+    },
     {
       name: 'categorie',
       type: 'select',

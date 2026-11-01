@@ -89,6 +89,9 @@ couvrirait pas ces routes. Adresse retenue : **`admin.crn-convention2026.events`
   - `PAYLOAD_SECRET` (saisi par le Commanditaire, jamais commité)
   - `SITE_URL=https://www.crn-convention2026.events`
   - `ANTHROPIC_API_KEY` (optionnelle, à ajouter quand NASTY doit répondre)
+  - `SITE_REBUILD_GITHUB_REPO=Black-0574/CRN-Convention-2026-Site-Hostinger` et
+    `SITE_REBUILD_GITHUB_TOKEN` (jeton GitHub saisi par le Commanditaire) : republication
+    automatique du site après une modification dans l'admin (voir « Republication du site »).
 
   **Chemins absolus obligatoires** pour la base et les médias : chaque déploiement reconstruit
   l'application dans un nouveau dossier (`…/hbuilds/versions/<id>/nodejs/`) ; avec un chemin
@@ -107,22 +110,37 @@ git branch -D backend-export
 Le second push déclenche le redéploiement. Le schéma de base de données se met à jour tout seul
 au démarrage (voir « Migrations de schéma »), hPanel n'offrant pas de terminal sur cette offre.
 
-`npm run migrate-from-content` (import du contenu du dépôt principal) nécessite un accès shell :
-à lancer en local avec `DATABASE_URI` pointant vers une copie du fichier SQLite de production,
-puis réenvoyer le fichier via le gestionnaire de fichiers d'hPanel.
+## Import initial du contenu du site
 
-## Import du contenu existant
+Au premier démarrage sur une base sans contenu, le back-office importe tout seul le contenu
+actuel du site (`src/seed/seed-from-content.ts`, lancé par `onInit` dans `payload.config.ts`) :
+lieux, artistes, FAQ, billetterie, annonces, orateurs (avec leur identifiant d'adresse), programme
+et réglages. Rien n'est inventé : la source est `src/seed/content.json`, regroupement exact de
+`../src/content/**` produit par `node scripts/export-seed-content.mjs` (racine du dépôt). Les photos
+sont téléchargées depuis le site public (`SEED_ASSETS_BASE_URL`, par défaut
+`https://www.crn-convention2026.events`), le dossier d'exécution de Hostinger ne contenant pas
+`public/`.
 
-Une fois l'application démarrée (migrations appliquées, Docker ou non) et un compte créé :
+- **Une seule fois** : marqueur caché `contenuInitialImporte` du global Réglages. Une collection
+  vidée ensuite volontairement dans l'admin n'est jamais réimportée.
+- **Reprise sans doublon** : chaque collection n'est importée que si elle est vide ; le marqueur
+  n'est posé qu'à la fin.
+- `npm run migrate-from-content` fait la même chose à la main (inutile en temps normal).
 
-```bash
-npm run migrate-from-content
-# ou, avec Docker : docker compose exec payload npm run migrate-from-content
-```
+## Republication du site
 
-Lit `../src/content/**/*.json` (site Astro) et crée les documents correspondants en base — ne
-migre que du contenu réel déjà présent dans le dépôt, n'invente rien. Les photos référencées dans
-`../public/images/...` sont téléversées dans la collection `media`.
+Le site public est statique et reconstruit par Hostinger à chaque commit sur le dépôt qu'il suit
+(Hostinger ne propose pas d'URL de déclenchement). Après toute modification d'un contenu affiché
+sur le site (`src/lib/site-rebuild.ts`), le back-office attend 20 s sans nouvelle modification puis
+crée un commit vide sur `SITE_REBUILD_GITHUB_REPO` via l'API GitHub ; le site est à jour environ
+2 minutes après.
+
+Jeton à créer par le Commanditaire (une fois) : GitHub → *Settings → Developer settings →
+Personal access tokens → Fine-grained tokens* → *Generate new token* ; *Repository access* : **seul**
+`CRN-Convention-2026-Site-Hostinger` ; *Permissions → Repository → Contents* : **Read and write** ;
+puis coller la valeur dans `SITE_REBUILD_GITHUB_TOKEN` (hPanel → admin.crn-convention2026.events →
+*Variables d'environnement*). Sans jeton, les modifications sont enregistrées mais le site n'est
+republié qu'au prochain déploiement (journal : « Site non republié »).
 
 ## Commandes
 
@@ -137,4 +155,4 @@ migre que du contenu réel déjà présent dans le dépôt, n'invente rien. Les 
 | `npm run generate:importmap` | Régénère la carte d'import de l'admin (après ajout de composants personnalisés) |
 | `npm run migrate:create` | Génère un fichier de migration de schéma après modification d'une collection |
 | `npm run migrate` | Applique les migrations de schéma en attente manuellement (fait automatiquement au démarrage en production, voir « Migrations de schéma ») |
-| `npm run migrate-from-content` | Import unique du contenu existant depuis `../src/content` |
+| `npm run migrate-from-content` | Import initial du contenu du site (fait automatiquement au premier démarrage) |

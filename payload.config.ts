@@ -3,7 +3,7 @@ import { lexicalEditor } from '@payloadcms/richtext-lexical';
 import { fr } from '@payloadcms/translations/languages/fr';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildConfig } from 'payload';
+import { buildConfig, type CollectionConfig, type GlobalConfig } from 'payload';
 import sharp from 'sharp';
 
 import { Users } from './src/collections/Users';
@@ -18,9 +18,25 @@ import { ProgramDays } from './src/collections/ProgramDays';
 import { Settings } from './src/globals/Settings';
 import { migrations } from './src/migrations';
 import { allowedOrigins } from './src/lib/allowed-origins';
+import { rebuildAfterChange, rebuildAfterDelete, rebuildAfterGlobalChange } from './src/lib/site-rebuild';
+import { seedFromContent } from './src/seed/seed-from-content';
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
+
+// Toute modification d'un contenu affiché sur le site déclenche sa republication (site statique).
+const withSiteRebuild = (c: CollectionConfig): CollectionConfig => ({
+  ...c,
+  hooks: {
+    ...c.hooks,
+    afterChange: [...(c.hooks?.afterChange ?? []), rebuildAfterChange],
+    afterDelete: [...(c.hooks?.afterDelete ?? []), rebuildAfterDelete],
+  },
+});
+const withGlobalSiteRebuild = (g: GlobalConfig): GlobalConfig => ({
+  ...g,
+  hooks: { ...g.hooks, afterChange: [...(g.hooks?.afterChange ?? []), rebuildAfterGlobalChange] },
+});
 
 // Back-office de la Convention CRN 2026 (lot L3). Collections/globals alignés 1:1 sur
 // site/src/content.config.ts — voir C:\Users\Mael\.claude\plans\jaunty-cuddling-kahn.md
@@ -59,8 +75,20 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Media, Venues, Artists, Faq, Speakers, Products, Announcements, ProgramDays],
-  globals: [Settings],
+  collections: [
+    Users,
+    ...[Media, Venues, Artists, Faq, Speakers, Products, Announcements, ProgramDays].map(withSiteRebuild),
+  ],
+  globals: [withGlobalSiteRebuild(Settings)],
+  // Import initial du contenu du site, une seule fois (src/seed). Un échec ne doit pas empêcher
+  // le back-office de démarrer : il est journalisé et retenté au démarrage suivant.
+  onInit: async (payload) => {
+    try {
+      await seedFromContent(payload);
+    } catch (err) {
+      payload.logger.error(`Import initial du contenu échoué : ${(err as Error).message}`);
+    }
+  },
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
