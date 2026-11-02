@@ -2,13 +2,35 @@ import type { CollectionConfig } from 'payload';
 
 import { slugify } from '../lib/slugify';
 
+// Réseaux proposés pour les liens d'un orateur — mêmes pictogrammes au trait que le site
+// (src/components/shared/Icon.astro). Simples liens de sortie : aucun widget ni script de ces
+// plateformes n'est chargé (NF-CNV-001).
+export const RESEAUX_ORATEUR = [
+  { label: 'Facebook', value: 'facebook' },
+  { label: 'Instagram', value: 'instagram' },
+  { label: 'YouTube', value: 'youtube' },
+  { label: 'TikTok', value: 'tiktok' },
+  { label: 'LinkedIn', value: 'linkedin' },
+  { label: 'X (Twitter)', value: 'x' },
+  { label: 'Site web', value: 'site' },
+];
+
 export const Speakers: CollectionConfig = {
   slug: 'speakers',
   labels: { singular: 'Orateur', plural: 'Orateurs' },
-  admin: { useAsTitle: 'nom', defaultColumns: ['nom', 'categorie', 'datePublication', 'actif'] },
+  admin: { useAsTitle: 'nom', defaultColumns: ['nom', 'fonction', 'categorie', 'datePublication', 'actif'] },
   access: { read: () => true },
   fields: [
-    { name: 'nom', type: 'text', required: true },
+    { name: 'nom', type: 'text', label: 'Nom', required: true },
+    {
+      name: 'fonction',
+      type: 'text',
+      label: 'Fonction',
+      admin: {
+        placeholder: 'ex. Pasteur principal, CRN Libreville',
+        description: 'Titre ou ministère affiché sous le nom sur la fiche de l’orateur.',
+      },
+    },
     {
       name: 'slug',
       type: 'text',
@@ -36,6 +58,7 @@ export const Speakers: CollectionConfig = {
         { label: 'Intervenante de plateforme', value: 'plateforme' },
       ],
     },
+    { name: 'photo', type: 'upload', relationTo: 'media', admin: { description: 'Photo réelle uniquement — jamais de visage généré par IA.' } },
     {
       name: 'bio',
       type: 'textarea',
@@ -47,7 +70,35 @@ export const Speakers: CollectionConfig = {
           'Publiée sur la fiche de l’orateur (/orateurs/<identifiant>). Séparez les paragraphes par une ligne vide. Pour la retirer, effacez tout le texte : la fiche affiche alors « Biographie à paraître ».',
       },
     },
-    { name: 'photo', type: 'upload', relationTo: 'media', admin: { description: 'Photo réelle uniquement — jamais de visage généré par IA.' } },
+    {
+      name: 'reseauxSociaux',
+      type: 'array',
+      label: 'Réseaux sociaux',
+      labels: { singular: 'Lien', plural: 'Liens' },
+      admin: {
+        description: 'Liens vers les comptes de l’orateur, affichés sous forme d’icônes sur sa fiche. « Ajouter un lien » pour en ajouter, menu ⋮ d’une ligne pour la supprimer.',
+        initCollapsed: false,
+      },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            { name: 'reseau', type: 'select', label: 'Réseau', required: true, options: RESEAUX_ORATEUR, admin: { width: '35%' } },
+            {
+              name: 'url',
+              type: 'text',
+              label: 'Adresse du lien',
+              required: true,
+              admin: { width: '65%', placeholder: 'https://…' },
+              validate: (value: unknown) =>
+                typeof value === 'string' && /^https:\/\/\S+$/.test(value.trim())
+                  ? true
+                  : 'Adresse complète commençant par https:// attendue.',
+            },
+          ],
+        },
+      ],
+    },
     { name: 'videoInvitation', type: 'text', label: "Vidéo d'invitation" },
     {
       name: 'datePublication',

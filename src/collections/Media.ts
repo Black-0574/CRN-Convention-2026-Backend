@@ -20,5 +20,26 @@ export const Media: CollectionConfig = {
       type: 'text',
       admin: { description: 'Texte alternatif (laisser vide pour une photo décorative).' },
     },
+    // Liens inverses (champs « join », sans donnée stockée ici) : depuis la page d'une photo, on
+    // voit l'orateur ou l'artiste qui l'utilise et on ouvre sa fiche en un clic. Nom, fonction,
+    // biographie et réseaux sociaux restent saisis sur la fiche Orateur — une seule source.
+    {
+      name: 'orateurs',
+      type: 'join',
+      collection: 'speakers',
+      on: 'photo',
+      label: 'Orateur lié à cette photo',
+      admin: {
+        defaultColumns: ['nom', 'fonction', 'categorie'],
+        description: 'Cliquez sur le nom pour ouvrir la fiche et modifier nom, fonction, biographie et réseaux sociaux.',
+      },
+    },
+    {
+      name: 'artistes',
+      type: 'join',
+      collection: 'artists',
+      on: 'photo',
+      label: 'Artiste lié à cette photo',
+    },
   ],
 };
