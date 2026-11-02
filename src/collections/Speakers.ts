@@ -36,7 +36,17 @@ export const Speakers: CollectionConfig = {
         { label: 'Intervenante de plateforme', value: 'plateforme' },
       ],
     },
-    { name: 'bio', type: 'textarea', label: 'Biographie' },
+    {
+      name: 'bio',
+      type: 'textarea',
+      label: 'Biographie',
+      admin: {
+        rows: 12,
+        placeholder: 'Rédigez ici la biographie de l’orateur…',
+        description:
+          'Publiée sur la fiche de l’orateur (/orateurs/<identifiant>). Séparez les paragraphes par une ligne vide. Pour la retirer, effacez tout le texte : la fiche affiche alors « Biographie à paraître ».',
+      },
+    },
     { name: 'photo', type: 'upload', relationTo: 'media', admin: { description: 'Photo réelle uniquement — jamais de visage généré par IA.' } },
     { name: 'videoInvitation', type: 'text', label: "Vidéo d'invitation" },
     {
