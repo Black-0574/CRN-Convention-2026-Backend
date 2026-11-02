@@ -49,7 +49,7 @@
   color: #ffffff;
   font-family: var(--font-serif);
   font-weight: 700;
-  font-size: 15px;
+  font-size: 17px;
   letter-spacing: 0.02em;
 }
 
@@ -67,6 +67,83 @@
 .crn-admin-logo img {
   width: min(240px, 60vw);
   height: auto;
+}
+
+/*
+  Lisibilité (demande du Commanditaire : caractères et champs trop petits). Payload fixe la base
+  de l'admin à 13 px (12 px sur petit écran) et exprime ses espacements et hauteurs de champs en
+  rem : relever la taille de base agrandit d'un même facteur (16/13 ≈ ×1,23) le texte, les champs
+  de saisie, les listes déroulantes et les boutons, sans casser les proportions. La GBIS demande
+  au moins 16 px pour le texte courant.
+*/
+html {
+  font-size: 16px;
+  line-height: 24px;
+}
+
+@media (max-width: 1024px) {
+  html {
+    font-size: 15px;
+    line-height: 22px;
+  }
+}
+
+/* Quelques tailles fixées en pixels par Payload, qui ne suivraient pas la base. */
+label.field-label:not(.unstyled),
+.localized,
+.collapsible__toggle,
+.card__title,
+.react-select .rs__option,
+.loading-overlay__text {
+  font-size: 16px;
+}
+
+.multi-value-label,
+.relationship--multi-value-label__content,
+.pill--rounded,
+.section-title:after,
+.section-title__input,
+.error-pill {
+  font-size: 15px;
+}
+
+.date-time-picker .react-datepicker__day,
+.date-time-picker .react-datepicker__month-text,
+.react-datepicker__time-container .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item {
+  font-size: 14px;
+}
+
+/* Champs de saisie : Payload fixe leur marge interne et leur interligne en pixels (8 px / 20 px,
+   soit 40 px de haut), indépendamment de la base — on les agrandit explicitement. */
+.field-type input:not([type='checkbox']):not([type='radio']),
+.date-time-picker .react-datepicker__input-container input,
+.block-search__input {
+  height: 50px;
+  padding: 12px 16px;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.field-type textarea {
+  min-height: 140px;
+  padding: 12px 16px;
+  font-size: 16px;
+  line-height: 26px;
+}
+
+.react-select .rs__control {
+  min-height: 50px;
+  font-size: 16px;
+}
+
+.react-select .rs__value-container {
+  padding: 6px 12px;
+}
+
+/* Libellés des champs un peu plus marqués, pour repérer chaque zone de saisie d'un coup d'œil. */
+label.field-label:not(.unstyled) {
+  font-weight: 700;
+  margin-bottom: 6px;
 }
 
 /* Titres en Source Serif 4, cohérent avec la typographie du site public. */
