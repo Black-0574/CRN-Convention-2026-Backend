@@ -103,7 +103,7 @@ async function run(payload: Payload): Promise<boolean> {
   if (await isEmpty(payload, 'artists')) {
     for (const a of c.artists) {
       const photo = await uploadPhoto(payload, a.data.photo, a.data.nom);
-      await payload.create({ collection: 'artists', data: { nom: a.data.nom, photo, actif: true } });
+      await payload.create({ collection: 'artists', data: { nom: a.data.nom, slug: a.id, photo, actif: true } });
     }
   }
 

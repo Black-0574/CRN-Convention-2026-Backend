@@ -40,6 +40,10 @@ export const Media: CollectionConfig = {
       collection: 'artists',
       on: 'photo',
       label: 'Artiste lié à cette photo',
+      admin: {
+        defaultColumns: ['nom', 'fonction'],
+        description: 'Cliquez sur le nom pour ouvrir la fiche et modifier nom, fonction, biographie et réseaux sociaux.',
+      },
     },
   ],
 };
