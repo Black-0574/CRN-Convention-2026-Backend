@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       {
         reply:
           "Bonjour, je suis NASTY ! Mon accès aux réponses intelligentes n'est pas encore activé par l'équipe du site. " +
-          'En attendant, vous pouvez joindre le CRN au +241 70 10 10 10 ou contact@crn-convention2026.events.',
+          'En attendant, vous pouvez joindre le CRN au +241 62 70 51 83 (appel ou WhatsApp) ou contact@crn-convention2026.events.',
       },
       { headers: corsHeaders(origin) },
     );
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
       const detail = await res.text();
       console.error('Anthropic API error', res.status, detail);
       return NextResponse.json(
-        { reply: "Désolée, je rencontre une difficulté technique passagère. Réessayez dans un instant, ou contactez-nous au +241 70 10 10 10." },
+        { reply: "Désolée, je rencontre une difficulté technique passagère. Réessayez dans un instant, ou contactez-nous au +241 62 70 51 83 (appel ou WhatsApp)." },
         { headers: corsHeaders(origin) },
       );
     }
