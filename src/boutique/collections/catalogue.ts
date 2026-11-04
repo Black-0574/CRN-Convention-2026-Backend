@@ -4,7 +4,7 @@
  * affiche ; écriture réservée au rôle « catalogue » (et à l'administrateur).
  */
 import { palierDepuisJours, verifierPaliers } from '../domaine/src/index.ts';
-import type { CollectionConfig } from 'payload';
+import { APIError, type CollectionConfig } from 'payload';
 
 import { reserveA, tout } from '../lib/acces';
 import { slugify } from '../../lib/slugify';
@@ -130,6 +130,22 @@ export const Produits: CollectionConfig = {
     beforeValidate: [
       ({ data }) => {
         if (data && !data.slug && data.nom) data.slug = slugify(String(data.nom));
+        return data;
+      },
+    ],
+    // Pass et tickets : toujours nominatifs (un titulaire et un QR code par exemplaire, émis à
+    // l'achat). Un pass en vente doit ouvrir au moins un site : c'est ce que le QR donne comme accès.
+    beforeChange: [
+      async ({ data, originalDoc, req }) => {
+        const doc = { ...originalDoc, ...data } as { id?: number; type?: string; actif?: boolean; plateformes?: unknown[] };
+        if (!doc.actif || (doc.type !== 'pass' && doc.type !== 'ticket')) return data;
+        if ((doc.plateformes ?? []).length > 0) return data;
+        const variantes = doc.id
+          ? (await req.payload.find({ collection: 'variantes', where: { produit: { equals: doc.id } }, depth: 0, limit: 100, pagination: false, req })).docs
+          : [];
+        if (!variantes.some((v) => (v.plateformes ?? []).length > 0)) {
+          throw new APIError('Un pass ou un ticket en vente doit ouvrir au moins une plateforme (séance et lieu) : c’est l’accès que donnera le QR code du titulaire.', 400, undefined, true);
+        }
         return data;
       },
     ],

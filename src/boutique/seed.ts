@@ -36,6 +36,18 @@ export async function seedBoutique(payload: Payload): Promise<void> {
   await creerUtilisateur(process.env.BOUTIQUE_ADMIN_EMAIL, process.env.BOUTIQUE_ADMIN_MOT_DE_PASSE, 'Administrateur (démonstration locale)', 'admin');
   await creerUtilisateur(process.env.BOUTIQUE_AGENT_EMAIL, process.env.BOUTIQUE_AGENT_MOT_DE_PASSE, 'Agent COM Boutique (démonstration locale)', 'com_boutique');
 
+  // Livraison : en démonstration locale seulement, un point et des frais fictifs, signalés comme
+  // tels (la liste réelle des églises du réseau et les frais sont saisis par le CRN).
+  if (DEMO && (await payload.count({ collection: 'points-livraison' })).totalDocs === 0) {
+    for (const [i, [nom, ville, pays, fraisXAF]] of ([
+      ['Église de démonstration — Libreville', 'Libreville', 'Gabon', 0],
+      ['Église de démonstration — Paris', 'Paris', 'France', 15_000],
+    ] as const).entries()) {
+      await payload.create({ collection: 'points-livraison', data: { nom, ville, pays, fraisXAF, delai: 'démonstration', ordre: i } });
+    }
+    await payload.updateGlobal({ slug: 'reglages-boutique', data: { livraison: { retraitConvention: true, domicile: { actif: true, zone: 'Libreville', fraisXAF: 2_000, delai: 'démonstration' } } } });
+  }
+
   if ((await payload.count({ collection: 'produits' })).totalDocs > 0) return;
 
   // ——— Catégories ———
@@ -79,14 +91,17 @@ export async function seedBoutique(payload: Payload): Promise<void> {
 
   // ——— Produits ———
   type Variante = { libelle: string; stock?: number; plateformes?: number[]; ordre?: number };
+  // Créé inactif, puis activé une fois ses variantes en place : un pass dont les séances sont
+  // portées par les variantes (ex. choix de la classe) n'est valide qu'avec elles.
   async function produit(d: Record<string, unknown>, variantes: Variante[] = [{ libelle: 'Unique' }]) {
-    const p = await payload.create({ collection: 'produits', data: d as never });
+    const p = await payload.create({ collection: 'produits', data: { ...d, actif: false } as never });
     for (const [i, v] of variantes.entries()) {
       await payload.create({
         collection: 'variantes',
         data: { produit: p.id, libelle: v.libelle, sku: `${p.slug}-${v.libelle}`.toLowerCase().replace(/[^a-z0-9]+/g, '-'), ordre: v.ordre ?? i, ...(v.stock !== undefined ? { stock: v.stock } : {}), ...(v.plateformes ? { plateformes: v.plateformes } : {}) },
       });
     }
+    if (d.actif) await payload.update({ collection: 'produits', id: p.id, data: { actif: true } });
     return p.id;
   }
   const prix = (prixXAF: number, du = '2026-10-25') => [{ prixXAF, du }];

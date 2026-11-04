@@ -47,7 +47,7 @@ export async function reconcilier(payload: Payload): Promise<{ verifiees: number
       if (!commande) continue;
       const decision = deciderTransition(commande, evt);
       if (decision.action !== 'ignorer') {
-        await d.appliquer(c.numero, decision);
+        await d.appliquer(c.numero, decision, evt);
         corrigees++;
       }
     }

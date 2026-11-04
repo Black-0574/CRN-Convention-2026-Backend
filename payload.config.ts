@@ -23,6 +23,7 @@ import { seedFromContent } from './src/seed/seed-from-content';
 // CRN Boutique, intégrée au back-office : catalogue, ventes, billets, contrôle d'accès (le site
 // l'affiche sous /boutique). Plan : C:UsersMael.claudeplansjaunty-cuddling-kahn.md.
 import { Categories, Plateformes, Produits, Quotas, Variantes } from './src/boutique/collections/catalogue';
+import { PointsLivraison } from './src/boutique/collections/logistique';
 import { ReglagesBoutique } from './src/boutique/collections/reglages';
 import {
   Commandes,
@@ -112,6 +113,7 @@ export default buildConfig({
     DroitsAcces,
     Scans,
     Retraits,
+    PointsLivraison,
     Consentements,
     JournalActions,
   ],

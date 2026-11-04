@@ -1,13 +1,16 @@
 /**
- * Paiements : interface commune à tous les prestataires (Mobile Money via l'agrégateur local,
- * carte au Palier 2, bac à sable pour les tests) — aucun prestataire codé en dur (correction
- * obligatoire n° 8). Webhooks signés et vérifiés, traités une seule fois (idempotence), sûrs en cas
+ * Paiements : interface commune à tous les prestataires — un agrégateur couvrant plusieurs pays
+ * (Mobile Money des différents opérateurs et carte bancaire, choisis par le client sur la page de
+ * paiement sécurisée de l'agrégateur), bac à sable pour les tests — aucun prestataire ni opérateur
+ * codé en dur (correction obligatoire n° 8). Webhooks signés et vérifiés, traités une seule fois (idempotence), sûrs en cas
  * de rejeu ou d'arrivée dans le désordre.
  */
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 export type StatutCommande = 'en_attente' | 'payee' | 'echouee' | 'expiree' | 'remboursee' | 'a_verifier';
 export type StatutPrestataire = 'payee' | 'echouee' | 'remboursee';
+/** Moyen choisi par le client chez l'agrégateur. */
+export type MoyenPaiement = 'mobile_money' | 'carte';
 
 /** Événement normalisé, quel que soit le prestataire. */
 export interface EvenementPaiement {
@@ -16,6 +19,10 @@ export interface EvenementPaiement {
   referenceExterne: string;
   statut: StatutPrestataire;
   montantXAF: number;
+  /** Moyen utilisé, si l'agrégateur le communique. */
+  moyen?: MoyenPaiement;
+  /** Détail lisible transmis par l'agrégateur (opérateur et pays, type de carte…). */
+  detail?: string;
 }
 
 export interface DemandePaiement {
@@ -23,13 +30,18 @@ export interface DemandePaiement {
   montantXAF: number;
   telephone?: string;
   email: string;
+  nom?: string;
   description: string;
+  /** Page où l'agrégateur renvoie le client après le paiement (suivi de commande). */
   urlRetour: string;
 }
 
 export interface PaymentProvider {
   readonly nom: string;
-  /** Lance le paiement (ex. demande de validation sur le téléphone Mobile Money). */
+  /**
+   * Ouvre une session de paiement ; `redirection` est la page sécurisée de l'agrégateur où le
+   * client choisit son moyen (Mobile Money de son pays ou carte bancaire).
+   */
   creerPaiement(demande: DemandePaiement): Promise<{ referenceExterne: string; redirection?: string }>;
   /** Vérifie la signature et normalise le corps reçu ; `null` si la signature est invalide. */
   verifierWebhook(corpsBrut: string, entetes: Readonly<Record<string, string | undefined>>): EvenementPaiement | null;
@@ -76,7 +88,7 @@ export interface DepotPaiements {
   /** Enregistre l'événement ; `false` s'il l'était déjà (contrainte d'unicité fournisseur + id). */
   enregistrerEvenement(fournisseur: string, evt: EvenementPaiement): Promise<boolean>;
   commande(reference: string): Promise<{ statut: StatutCommande; montantXAF: number } | null>;
-  appliquer(reference: string, decision: Exclude<Decision, { action: 'ignorer' }>): Promise<void>;
+  appliquer(reference: string, decision: Exclude<Decision, { action: 'ignorer' }>, evt: EvenementPaiement): Promise<void>;
 }
 
 export type ResultatWebhook =
@@ -100,7 +112,7 @@ export async function traiterWebhook(
   if (!commande) return { code: 200, resultat: 'commande_inconnue' };
   const decision = deciderTransition(commande, evt);
   if (decision.action === 'ignorer') return { code: 200, resultat: 'ignore' };
-  await depot.appliquer(evt.referenceCommande, decision);
+  await depot.appliquer(evt.referenceCommande, decision, evt);
   return { code: 200, resultat: decision.action === 'appliquer' ? 'applique' : 'anomalie' };
 }
 
@@ -114,12 +126,19 @@ export class BacASable implements PaymentProvider {
   private readonly statuts = new Map<string, StatutPrestataire | 'en_attente'>();
   private compteur = 0;
 
-  constructor(private readonly secretWebhook: string) {}
+  /**
+   * @param pageDePaiement adresse de la page de paiement simulée (équivalent de la page hébergée
+   * de l'agrégateur) ; sans elle, aucune redirection n'est proposée (tests unitaires).
+   */
+  constructor(
+    private readonly secretWebhook: string,
+    private readonly pageDePaiement?: (referenceExterne: string, demande: DemandePaiement) => string,
+  ) {}
 
   async creerPaiement(demande: DemandePaiement) {
     const referenceExterne = `BAS-${demande.referenceCommande}-${++this.compteur}`;
     this.statuts.set(referenceExterne, 'en_attente');
-    return { referenceExterne };
+    return { referenceExterne, ...(this.pageDePaiement ? { redirection: this.pageDePaiement(referenceExterne, demande) } : {}) };
   }
 
   /** Corps et en-têtes d'un webhook tel que l'enverrait le prestataire (pour les tests). */

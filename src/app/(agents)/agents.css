@@ -175,3 +175,57 @@ body {
   font-weight: 700;
   margin: 8px 0;
 }
+
+/* Page de paiement simulée (agrégateur) */
+.bandeau-simulation {
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--or-lumiere);
+  color: var(--noir);
+  font-weight: 700;
+}
+
+.montant {
+  margin: 0;
+  font-size: 20px;
+}
+
+.moyens {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.moyens legend {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.moyen {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border: 1.5px solid var(--gris-clair);
+  border-radius: 8px;
+  padding: 12px;
+  font-weight: 400 !important;
+  cursor: pointer;
+}
+
+.moyen:has(input:checked) {
+  border-color: var(--bleu-nuit);
+  background: var(--ivoire);
+}
+
+.moyen input {
+  min-height: auto !important;
+  margin-top: 4px;
+}
+
+.bouton:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}

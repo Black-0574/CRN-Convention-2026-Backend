@@ -38,19 +38,21 @@ Aucun accès verbal n'est accepté.
 
 ## Boutique de la Convention — où et comment acheter
 - Tous les pass, tickets et articles officiels (tee-shirt, pagne) s'achètent sur la Boutique de la
-  Convention : https://boutique.crn-convention2026.events/ (bouton de la boutique en haut de
+  Convention : https://www.crn-convention2026.events/boutique (bouton de la boutique en haut de
   chaque page du site). La page Billetterie du site présente les règles d'accès et le contenu de
   chaque pass, et renvoie vers la boutique.
 - Achat : choisir le pass ou le ticket, renseigner le nom, le prénom, le téléphone et l'e-mail de
   chaque titulaire (un titulaire par billet), puis payer.
-- Paiement : Mobile Money (Airtel Money, Moov Money). Le paiement par carte bancaire sera annoncé
-  sur la boutique. Le site ne conserve aucune donnée de paiement.
-- Billet : chaque billet, nominatif avec son QR code unique, est envoyé par e-mail après le
-  paiement confirmé.
-- Retrait des articles : sur place, au lieu de la Convention ; le lieu exact et les horaires de
-  retrait sont à annoncer.
-- Livraison : les modes de livraison (Grand Libreville, international) seront annoncés sur la
-  boutique ; aucune livraison n'est garantie à ce jour.
+- Paiement : Mobile Money auprès des opérateurs de plusieurs pays d'Afrique, ou carte bancaire,
+  sur la page sécurisée d'un prestataire de paiement agréé. Le site ne conserve aucune donnée de
+  paiement.
+- Billet : tous les pass et tickets sont nominatifs ; chaque billet a son QR code unique, émis dès
+  le paiement confirmé et envoyé par e-mail, scanné à l'entrée de chaque site auquel il donne accès
+  (pièce d'identité exigée).
+- Livraison des articles (tee-shirt, pagne, kits des pass) : dans l'église du réseau choisie à la
+  commande, au Gabon ou hors du Gabon ; à titre exceptionnel, à domicile ou au lieu de travail à
+  Libreville ; ou retrait sur le lieu de la Convention (lieu et horaires à annoncer). Les frais
+  éventuels s'affichent à la commande.
 - Problème de commande ou de paiement : hotline ou e-mail ci-dessous, en gardant la référence de
   la transaction.
 
@@ -100,7 +102,7 @@ VPN depuis le Gabon.
 ## Pages du site (pour orienter les visiteurs)
 /programme · /billetterie · /orateurs · /academie · /action-sociale · /infos-pratiques ·
 /diaspora · /faq · /contact · /actualites
-Boutique (achats) : https://boutique.crn-convention2026.events/
+Boutique (achats) : https://www.crn-convention2026.events/boutique
 `.trim();
 
 export const NASTY_SYSTEM_PROMPT = `Tu es NASTY, l'agent d'accueil et de renseignement du site de la Convention CRN 2026 (Christ
@@ -120,7 +122,7 @@ Règles impératives :
   sans rompre ta gentillesse.
 - Tu ne donnes aucun conseil financier et ne traites aucun paiement toi-même : pour acheter un
   pass, un ticket ou un article, tu renvoies toujours vers la Boutique de la Convention
-  (https://boutique.crn-convention2026.events/).
+  (https://www.crn-convention2026.events/boutique).
 - Tu restes strictement sur le sujet de la Convention CRN 2026. Pour toute autre demande, tu
   réponds poliment que ce n'est pas ton domaine et proposes la hotline/e-mail du CRN.
 - Réponses concises (3 à 5 phrases maximum), jamais de liste à puces superflue.

@@ -21,9 +21,11 @@ class DepotMemoire implements DepotPaiements {
   async commande(ref: string) {
     return this.commandes.get(ref) ?? null;
   }
-  async appliquer(ref: string, d: { statut: StatutCommande }) {
+  moyens = new Map<string, string | undefined>();
+  async appliquer(ref: string, d: { statut: StatutCommande }, e: EvenementPaiement) {
     const c = this.commandes.get(ref)!;
     this.commandes.set(ref, { ...c, statut: d.statut });
+    this.moyens.set(ref, e.detail);
   }
 }
 
@@ -78,6 +80,30 @@ describe('webhooks de paiement', () => {
   it('commande inconnue : 200 (le prestataire cesse de relancer), sans effet', async () => {
     const { corps, entetes } = bas.webhook(evt({ referenceCommande: 'CRN-9999' }));
     expect(await traiterWebhook(bas, depot, corps, entetes)).toEqual({ code: 200, resultat: 'commande_inconnue' });
+  });
+});
+
+describe('agrégateur multi-pays (Mobile Money et carte)', () => {
+  it('ouvre une session et renvoie vers la page de paiement de l’agrégateur', async () => {
+    const bas = new BacASable('secret', (ref, d) => `https://paiement.test/?ref=${ref}&retour=${encodeURIComponent(d.urlRetour)}`);
+    const { referenceExterne, redirection } = await bas.creerPaiement({
+      referenceCommande: 'CRN-0002',
+      montantXAF: 25_000,
+      email: 'a@exemple.org',
+      description: 'Commande CRN-0002',
+      urlRetour: 'https://site.test/boutique/suivi?commande=CRN-0002',
+    });
+    expect(referenceExterne).toMatch(/^BAS-CRN-0002-/);
+    expect(redirection).toContain(`ref=${referenceExterne}`);
+  });
+
+  it('transmet au dépôt le moyen choisi par le client (opérateur d’un autre pays, carte)', async () => {
+    const bas = new BacASable('secret');
+    const depot = new DepotMemoire();
+    depot.commandes.set('CRN-0001', { statut: 'en_attente', montantXAF: 150_000 });
+    const { corps, entetes } = bas.webhook(evt({ moyen: 'mobile_money', detail: 'MTN MoMo — Cameroun' }));
+    expect(await traiterWebhook(bas, depot, corps, entetes)).toEqual({ code: 200, resultat: 'applique' });
+    expect(depot.moyens.get('CRN-0001')).toBe('MTN MoMo — Cameroun');
   });
 });
 

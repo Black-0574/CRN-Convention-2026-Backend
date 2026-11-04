@@ -11,10 +11,55 @@ export const ReglagesBoutique: GlobalConfig = {
   fields: [
     { name: 'ventesOuvertes', type: 'checkbox', label: 'Ventes ouvertes', defaultValue: true },
     {
-      type: 'row',
+      name: 'livraison',
+      type: 'group',
+      label: 'Livraison des articles et kits',
+      admin: {
+        description:
+          'Modes proposés au client pour les articles achetés en ligne : église du réseau (liste « Églises du réseau »), domicile ou lieu de travail à Libreville (exceptionnel), retrait sur le lieu de la Convention.',
+      },
       fields: [
-        { name: 'lieuRetrait', type: 'text', label: 'Lieu de retrait des articles et kits', admin: { description: 'Vide = « À annoncer ».' } },
-        { name: 'horairesRetrait', type: 'text', label: 'Horaires de retrait', admin: { description: 'Vide = « À annoncer ».' } },
+        {
+          name: 'retraitConvention',
+          type: 'checkbox',
+          label: 'Proposer le retrait sur le lieu de la Convention',
+          defaultValue: true,
+        },
+        {
+          type: 'row',
+          fields: [
+            { name: 'lieuRetrait', type: 'text', label: 'Lieu de retrait à la Convention', admin: { width: '50%', description: 'Vide = « À annoncer ».' } },
+            { name: 'horairesRetrait', type: 'text', label: 'Horaires de retrait', admin: { width: '50%', description: 'Vide = « À annoncer ».' } },
+          ],
+        },
+        {
+          name: 'domicile',
+          type: 'group',
+          label: 'Livraison à domicile ou au lieu de travail (exceptionnelle)',
+          fields: [
+            { name: 'actif', type: 'checkbox', label: 'Proposer la livraison à domicile', defaultValue: false },
+            {
+              type: 'row',
+              fields: [
+                { name: 'zone', type: 'text', label: 'Zone desservie', defaultValue: 'Libreville', admin: { width: '33%' } },
+                {
+                  name: 'fraisXAF',
+                  type: 'number',
+                  label: 'Frais (F CFA)',
+                  min: 0,
+                  admin: { width: '33%', description: 'Obligatoire pour proposer ce mode ; 0 = offerts.' },
+                },
+                { name: 'delai', type: 'text', label: 'Délai annoncé', admin: { width: '34%' } },
+              ],
+            },
+            {
+              name: 'conditions',
+              type: 'textarea',
+              label: 'Conditions affichées au client',
+              defaultValue: 'Service exceptionnel, réservé à Libreville : un agent de la COM Boutique vous appelle pour convenir du créneau.',
+            },
+          ],
+        },
       ],
     },
     {

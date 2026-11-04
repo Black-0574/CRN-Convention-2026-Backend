@@ -2675,14 +2675,6 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
-        },
-        "mode_logistique": {
-          "name": "mode_logistique",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "'retrait_site'"
         }
       },
       "indexes": {
@@ -2813,6 +2805,56 @@
           "notNull": true,
           "autoincrement": false
         },
+        "livraison_mode": {
+          "name": "livraison_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "livraison_point_livraison_id": {
+          "name": "livraison_point_livraison_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "livraison_frais_x_a_f": {
+          "name": "livraison_frais_x_a_f",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": 0
+        },
+        "livraison_destination": {
+          "name": "livraison_destination",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "livraison_adresse": {
+          "name": "livraison_adresse",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "livraison_telephone": {
+          "name": "livraison_telephone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "livraison_instructions": {
+          "name": "livraison_instructions",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "total_x_a_f": {
           "name": "total_x_a_f",
           "type": "numeric",
@@ -2841,15 +2883,15 @@
           "notNull": false,
           "autoincrement": false
         },
-        "paiement_operateur": {
-          "name": "paiement_operateur",
+        "paiement_moyen": {
+          "name": "paiement_moyen",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "paiement_telephone": {
-          "name": "paiement_telephone",
+        "paiement_detail": {
+          "name": "paiement_detail",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -2943,6 +2985,13 @@
           ],
           "isUnique": false
         },
+        "commandes_livraison_livraison_point_livraison_idx": {
+          "name": "commandes_livraison_livraison_point_livraison_idx",
+          "columns": [
+            "livraison_point_livraison_id"
+          ],
+          "isUnique": false
+        },
         "commandes_paiement_paiement_reference_externe_idx": {
           "name": "commandes_paiement_paiement_reference_externe_idx",
           "columns": [
@@ -2965,7 +3014,21 @@
           "isUnique": false
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "commandes_livraison_point_livraison_id_points_livraison_id_fk": {
+          "name": "commandes_livraison_point_livraison_id_points_livraison_id_fk",
+          "tableFrom": "commandes",
+          "tableTo": "points_livraison",
+          "columnsFrom": [
+            "livraison_point_livraison_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -3748,9 +3811,15 @@
           "name": "mode",
           "type": "text",
           "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "destination": {
+          "name": "destination",
+          "type": "text",
+          "primaryKey": false,
           "notNull": false,
-          "autoincrement": false,
-          "default": "'retrait_site'"
+          "autoincrement": false
         },
         "statut": {
           "name": "statut",
@@ -3758,7 +3827,7 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false,
-          "default": "'a_retirer'"
+          "default": "'a_preparer'"
         },
         "remis_a": {
           "name": "remis_a",
@@ -3862,6 +3931,126 @@
           "onUpdate": "no action"
         }
       },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "points_livraison": {
+      "name": "points_livraison",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nom": {
+          "name": "nom",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ville": {
+          "name": "ville",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "pays": {
+          "name": "pays",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "adresse": {
+          "name": "adresse",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "horaires": {
+          "name": "horaires",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "contact": {
+          "name": "contact",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "frais_x_a_f": {
+          "name": "frais_x_a_f",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "delai": {
+          "name": "delai",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ordre": {
+          "name": "ordre",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": 100
+        },
+        "actif": {
+          "name": "actif",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+        }
+      },
+      "indexes": {
+        "points_livraison_updated_at_idx": {
+          "name": "points_livraison_updated_at_idx",
+          "columns": [
+            "updated_at"
+          ],
+          "isUnique": false
+        },
+        "points_livraison_created_at_idx": {
+          "name": "points_livraison_created_at_idx",
+          "columns": [
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -4330,6 +4519,13 @@
           "notNull": false,
           "autoincrement": false
         },
+        "points_livraison_id": {
+          "name": "points_livraison_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "consentements_id": {
           "name": "consentements_id",
           "type": "integer",
@@ -4511,6 +4707,13 @@
           "name": "payload_locked_documents_rels_retraits_id_idx",
           "columns": [
             "retraits_id"
+          ],
+          "isUnique": false
+        },
+        "payload_locked_documents_rels_points_livraison_id_idx": {
+          "name": "payload_locked_documents_rels_points_livraison_id_idx",
+          "columns": [
+            "points_livraison_id"
           ],
           "isUnique": false
         },
@@ -4809,6 +5012,19 @@
           "tableTo": "retraits",
           "columnsFrom": [
             "retraits_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "payload_locked_documents_rels_points_livraison_fk": {
+          "name": "payload_locked_documents_rels_points_livraison_fk",
+          "tableFrom": "payload_locked_documents_rels",
+          "tableTo": "points_livraison",
+          "columnsFrom": [
+            "points_livraison_id"
           ],
           "columnsTo": [
             "id"
@@ -5202,19 +5418,65 @@
           "autoincrement": false,
           "default": true
         },
-        "lieu_retrait": {
-          "name": "lieu_retrait",
+        "livraison_retrait_convention": {
+          "name": "livraison_retrait_convention",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": true
+        },
+        "livraison_lieu_retrait": {
+          "name": "livraison_lieu_retrait",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "horaires_retrait": {
-          "name": "horaires_retrait",
+        "livraison_horaires_retrait": {
+          "name": "livraison_horaires_retrait",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "livraison_domicile_actif": {
+          "name": "livraison_domicile_actif",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "livraison_domicile_zone": {
+          "name": "livraison_domicile_zone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'Libreville'"
+        },
+        "livraison_domicile_frais_x_a_f": {
+          "name": "livraison_domicile_frais_x_a_f",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "livraison_domicile_delai": {
+          "name": "livraison_domicile_delai",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "livraison_domicile_conditions": {
+          "name": "livraison_domicile_conditions",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'Service exceptionnel, réservé à Libreville : un agent de la COM Boutique vous appelle pour convenir du créneau.'"
         },
         "consentement_texte": {
           "name": "consentement_texte",
@@ -5285,6 +5547,6 @@
   "internal": {
     "indexes": {}
   },
-  "id": "baeafac4-9040-4bc6-a16e-7d04e6a2c7fd",
+  "id": "fbde931f-9de0-47f4-b343-38eebd83e043",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }

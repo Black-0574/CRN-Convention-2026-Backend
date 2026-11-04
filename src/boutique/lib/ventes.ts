@@ -2,7 +2,8 @@
  * Tunnel de vente côté serveur (F01, F02, F03).
  *
  * Création de commande : contrôle des titulaires (un par exemplaire, âge déclaratif), prix du
- * palier en vigueur, kits à 0 F CFA, puis réservation de chaque stock et quota par une instruction
+ * palier en vigueur, kits à 0 F CFA, mode de livraison des articles (église du réseau, domicile à
+ * Libreville, retrait à la Convention) et ses frais, puis réservation de chaque stock et quota par une instruction
  * SQL conditionnelle unique — aucune survente possible, même sous forte concurrence. Si une
  * réservation échoue, les précédentes sont libérées aussitôt (et la tâche d'expiration reste un
  * filet de sécurité).
@@ -18,6 +19,7 @@ import type { Payload } from 'payload';
 import type { Produit, Quota, Variante } from '../../payload-types';
 import { DEMO, estVisible, paliersDe } from './catalogue';
 import { lignes, maintenant, modifie, sql } from './db';
+import { optionsLivraison, preparerLivraison, type SaisieLivraison } from './livraison';
 
 export class ErreurVente extends Error {
   constructor(
@@ -43,6 +45,8 @@ export interface EntreeCommande {
   client: { prenom: string; nom: string; email: string; telephone: string };
   lignes: { varianteId: number; quantite: number }[];
   titulaires: SaisieTitulaire[];
+  /** Obligatoire dès que la commande contient un article physique (article ou kit d'un pass). */
+  livraison?: SaisieLivraison;
   consentement?: boolean;
   cgvAcceptees: boolean;
   provenance?: { source?: string; emplacement?: string; campagne?: string };
@@ -164,7 +168,16 @@ export async function creerCommande(payload: Payload, entree: EntreeCommande, ma
     }
   }
 
-  const totalXAF = preparees.reduce((s, l) => s + l.quantite * l.prixUnitaireXAF, 0);
+  // Articles physiques (articles officiels, kits des pass) : un mode de livraison et ses frais.
+  const aLivrer = preparees.some((l) => l.kitDe || l.produit.type === 'physique');
+  let livraison: Exclude<ReturnType<typeof preparerLivraison>, { erreur: string }> | null = null;
+  if (aLivrer) {
+    const resultat = preparerLivraison(await optionsLivraison(payload), entree.livraison);
+    if ('erreur' in resultat) throw new ErreurVente(resultat.erreur);
+    livraison = resultat;
+  }
+
+  const totalXAF = preparees.reduce((s, l) => s + l.quantite * l.prixUnitaireXAF, 0) + (livraison?.fraisXAF ?? 0);
   const expireA = finReservation(maintenant);
   const commande = await payload.create({
     collection: 'commandes',
@@ -182,8 +195,8 @@ export async function creerCommande(payload: Payload, entree: EntreeCommande, ma
         quantite: l.quantite,
         prixUnitaireXAF: l.prixUnitaireXAF,
         ...(l.kitDe ? { kitDe: l.kitDe } : {}),
-        modeLogistique: 'retrait_site',
       })),
+      ...(livraison ? { livraison } : {}),
       totalXAF,
       reservationExpireA: expireA.toISOString(),
       provenance: entree.provenance ?? {},

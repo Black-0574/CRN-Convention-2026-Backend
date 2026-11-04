@@ -157,7 +157,6 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	\`quantite\` numeric NOT NULL,
   	\`prix_unitaire_x_a_f\` numeric NOT NULL,
   	\`kit_de\` text,
-  	\`mode_logistique\` text DEFAULT 'retrait_site',
   	FOREIGN KEY (\`produit_id\`) REFERENCES \`produits\`(\`id\`) ON UPDATE no action ON DELETE set null,
   	FOREIGN KEY (\`variante_id\`) REFERENCES \`variantes\`(\`id\`) ON UPDATE no action ON DELETE set null,
   	FOREIGN KEY (\`_parent_id\`) REFERENCES \`commandes\`(\`id\`) ON UPDATE no action ON DELETE cascade
@@ -175,12 +174,19 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	\`nom\` text NOT NULL,
   	\`email\` text NOT NULL,
   	\`telephone\` text NOT NULL,
+  	\`livraison_mode\` text,
+  	\`livraison_point_livraison_id\` integer,
+  	\`livraison_frais_x_a_f\` numeric DEFAULT 0,
+  	\`livraison_destination\` text,
+  	\`livraison_adresse\` text,
+  	\`livraison_telephone\` text,
+  	\`livraison_instructions\` text,
   	\`total_x_a_f\` numeric NOT NULL,
   	\`reservation_expire_a\` text,
   	\`paiement_prestataire\` text,
   	\`paiement_reference_externe\` text,
-  	\`paiement_operateur\` text,
-  	\`paiement_telephone\` text,
+  	\`paiement_moyen\` text,
+  	\`paiement_detail\` text,
   	\`paiement_payee_a\` text,
   	\`provenance_source\` text,
   	\`provenance_emplacement\` text,
@@ -190,11 +196,13 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	\`titulaires_saisis\` text,
   	\`anomalie\` text,
   	\`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
-  	\`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL
+  	\`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
+  	FOREIGN KEY (\`livraison_point_livraison_id\`) REFERENCES \`points_livraison\`(\`id\`) ON UPDATE no action ON DELETE set null
   );
   `)
   await db.run(sql`CREATE UNIQUE INDEX \`commandes_numero_idx\` ON \`commandes\` (\`numero\`);`)
   await db.run(sql`CREATE INDEX \`commandes_statut_idx\` ON \`commandes\` (\`statut\`);`)
+  await db.run(sql`CREATE INDEX \`commandes_livraison_livraison_point_livraison_idx\` ON \`commandes\` (\`livraison_point_livraison_id\`);`)
   await db.run(sql`CREATE INDEX \`commandes_paiement_paiement_reference_externe_idx\` ON \`commandes\` (\`paiement_reference_externe\`);`)
   await db.run(sql`CREATE INDEX \`commandes_updated_at_idx\` ON \`commandes\` (\`updated_at\`);`)
   await db.run(sql`CREATE INDEX \`commandes_created_at_idx\` ON \`commandes\` (\`created_at\`);`)
@@ -306,8 +314,9 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	\`variante_id\` integer NOT NULL,
   	\`libelle\` text NOT NULL,
   	\`quantite\` numeric NOT NULL,
-  	\`mode\` text DEFAULT 'retrait_site',
-  	\`statut\` text DEFAULT 'a_retirer',
+  	\`mode\` text NOT NULL,
+  	\`destination\` text,
+  	\`statut\` text DEFAULT 'a_preparer',
   	\`remis_a\` text,
   	\`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
   	\`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
@@ -321,6 +330,24 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.run(sql`CREATE INDEX \`retraits_variante_idx\` ON \`retraits\` (\`variante_id\`);`)
   await db.run(sql`CREATE INDEX \`retraits_updated_at_idx\` ON \`retraits\` (\`updated_at\`);`)
   await db.run(sql`CREATE INDEX \`retraits_created_at_idx\` ON \`retraits\` (\`created_at\`);`)
+  await db.run(sql`CREATE TABLE \`points_livraison\` (
+  	\`id\` integer PRIMARY KEY NOT NULL,
+  	\`nom\` text NOT NULL,
+  	\`ville\` text NOT NULL,
+  	\`pays\` text NOT NULL,
+  	\`adresse\` text,
+  	\`horaires\` text,
+  	\`contact\` text,
+  	\`frais_x_a_f\` numeric NOT NULL,
+  	\`delai\` text,
+  	\`ordre\` numeric DEFAULT 100,
+  	\`actif\` integer DEFAULT true,
+  	\`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
+  	\`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL
+  );
+  `)
+  await db.run(sql`CREATE INDEX \`points_livraison_updated_at_idx\` ON \`points_livraison\` (\`updated_at\`);`)
+  await db.run(sql`CREATE INDEX \`points_livraison_created_at_idx\` ON \`points_livraison\` (\`created_at\`);`)
   await db.run(sql`CREATE TABLE \`consentements\` (
   	\`id\` integer PRIMARY KEY NOT NULL,
   	\`commande_id\` integer,
@@ -356,8 +383,14 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.run(sql`CREATE TABLE \`reglages_boutique\` (
   	\`id\` integer PRIMARY KEY NOT NULL,
   	\`ventes_ouvertes\` integer DEFAULT true,
-  	\`lieu_retrait\` text,
-  	\`horaires_retrait\` text,
+  	\`livraison_retrait_convention\` integer DEFAULT true,
+  	\`livraison_lieu_retrait\` text,
+  	\`livraison_horaires_retrait\` text,
+  	\`livraison_domicile_actif\` integer DEFAULT false,
+  	\`livraison_domicile_zone\` text DEFAULT 'Libreville',
+  	\`livraison_domicile_frais_x_a_f\` numeric,
+  	\`livraison_domicile_delai\` text,
+  	\`livraison_domicile_conditions\` text DEFAULT 'Service exceptionnel, réservé à Libreville : un agent de la COM Boutique vous appelle pour convenir du créneau.',
   	\`consentement_texte\` text DEFAULT 'J’accepte d’être recontacté par le CRN au sujet de ses activités (case facultative, indépendante de l’achat).',
   	\`consentement_version\` text DEFAULT '2026-11-04',
   	\`legal_cgv_version\` text,
@@ -393,6 +426,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`droits_acces_id\` integer REFERENCES droits_acces(id);`)
   await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`scans_id\` integer REFERENCES scans(id);`)
   await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`retraits_id\` integer REFERENCES retraits(id);`)
+  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`points_livraison_id\` integer REFERENCES points_livraison(id);`)
   await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`consentements_id\` integer REFERENCES consentements(id);`)
   await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`journal_actions_id\` integer REFERENCES journal_actions(id);`)
   await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_categories_id_idx\` ON \`payload_locked_documents_rels\` (\`categories_id\`);`)
@@ -407,6 +441,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_droits_acces_id_idx\` ON \`payload_locked_documents_rels\` (\`droits_acces_id\`);`)
   await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_scans_id_idx\` ON \`payload_locked_documents_rels\` (\`scans_id\`);`)
   await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_retraits_id_idx\` ON \`payload_locked_documents_rels\` (\`retraits_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_points_livraison_id_idx\` ON \`payload_locked_documents_rels\` (\`points_livraison_id\`);`)
   await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_consentements_id_idx\` ON \`payload_locked_documents_rels\` (\`consentements_id\`);`)
   await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_journal_actions_id_idx\` ON \`payload_locked_documents_rels\` (\`journal_actions_id\`);`)
 }
@@ -429,6 +464,7 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   await db.run(sql`DROP TABLE \`droits_acces\`;`)
   await db.run(sql`DROP TABLE \`scans\`;`)
   await db.run(sql`DROP TABLE \`retraits\`;`)
+  await db.run(sql`DROP TABLE \`points_livraison\`;`)
   await db.run(sql`DROP TABLE \`consentements\`;`)
   await db.run(sql`DROP TABLE \`journal_actions\`;`)
   await db.run(sql`DROP TABLE \`reglages_boutique\`;`)

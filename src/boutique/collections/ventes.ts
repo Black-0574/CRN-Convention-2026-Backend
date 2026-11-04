@@ -7,6 +7,7 @@
 import type { CollectionConfig } from 'payload';
 
 import { personne, reserveA } from '../lib/acces';
+import { MODES_LIVRAISON } from '../lib/livraison';
 
 const lectureVentes = reserveA('comptabilite', 'com_boutique');
 const serveurSeulement = { create: personne, update: personne, delete: personne };
@@ -52,10 +53,34 @@ export const Commandes: CollectionConfig = {
         { name: 'quantite', type: 'number', required: true },
         { name: 'prixUnitaireXAF', type: 'number', required: true },
         { name: 'kitDe', type: 'text', label: 'Kit inclus dans', admin: { description: 'Ligne à 0 F CFA générée par un pass.' } },
-        { name: 'modeLogistique', type: 'text', defaultValue: 'retrait_site' },
       ],
     },
-    { name: 'totalXAF', type: 'number', label: 'Total (F CFA)', required: true, admin: { readOnly: true } },
+    {
+      name: 'livraison',
+      type: 'group',
+      label: 'Livraison des articles et kits',
+      admin: { description: 'Vide si la commande ne contient que des billets (pass, tickets).' },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            { name: 'mode', type: 'select', options: MODES_LIVRAISON, admin: { width: '33%' } },
+            { name: 'pointLivraison', type: 'relationship', relationTo: 'points-livraison', label: 'Église du réseau', admin: { width: '33%' } },
+            { name: 'fraisXAF', type: 'number', label: 'Frais (F CFA)', defaultValue: 0, admin: { width: '34%', readOnly: true } },
+          ],
+        },
+        { name: 'destination', type: 'text', admin: { readOnly: true } },
+        {
+          type: 'row',
+          fields: [
+            { name: 'adresse', type: 'textarea', label: 'Adresse (domicile ou travail)', admin: { width: '50%', rows: 2 } },
+            { name: 'telephone', type: 'text', label: 'Téléphone de livraison', admin: { width: '25%' } },
+            { name: 'instructions', type: 'text', admin: { width: '25%' } },
+          ],
+        },
+      ],
+    },
+    { name: 'totalXAF', type: 'number', label: 'Total (F CFA, livraison comprise)', required: true, admin: { readOnly: true } },
     { name: 'reservationExpireA', type: 'date', label: 'Réservation jusqu’à', admin: { readOnly: true, date: { pickerAppearance: 'dayAndTime' } } },
     {
       name: 'paiement',
@@ -64,8 +89,16 @@ export const Commandes: CollectionConfig = {
       fields: [
         { name: 'prestataire', type: 'text' },
         { name: 'referenceExterne', type: 'text', index: true },
-        { name: 'operateur', type: 'text', label: 'Opérateur' },
-        { name: 'telephone', type: 'text', label: 'Téléphone de paiement' },
+        {
+          name: 'moyen',
+          type: 'select',
+          label: 'Moyen utilisé',
+          options: [
+            { label: 'Mobile Money', value: 'mobile_money' },
+            { label: 'Carte bancaire', value: 'carte' },
+          ],
+        },
+        { name: 'detail', type: 'text', label: 'Détail (opérateur, pays, carte)', admin: { description: 'Tel que transmis par l’agrégateur de paiement.' } },
         { name: 'payeeA', type: 'date', label: 'Payée le', admin: { date: { pickerAppearance: 'dayAndTime' } } },
       ],
     },
@@ -191,10 +224,11 @@ export const Scans: CollectionConfig = {
   ],
 };
 
+/** Articles et kits à remettre : livraison en église du réseau, à domicile, ou retrait à la Convention. */
 export const Retraits: CollectionConfig = {
   slug: 'retraits',
-  labels: { singular: 'Retrait', plural: 'Retraits' },
-  admin: { defaultColumns: ['commande', 'libelle', 'quantite', 'statut', 'remisA'], group: 'Boutique · Ventes' },
+  labels: { singular: 'Article à remettre', plural: 'Livraisons et retraits' },
+  admin: { defaultColumns: ['commande', 'libelle', 'quantite', 'mode', 'destination', 'statut'], group: 'Boutique · Logistique' },
   access: { read: reserveA('com_boutique'), ...serveurSeulement, update: reserveA('com_boutique') },
   fields: [
     { name: 'commande', type: 'relationship', relationTo: 'commandes', required: true, index: true },
@@ -202,8 +236,19 @@ export const Retraits: CollectionConfig = {
     { name: 'variante', type: 'relationship', relationTo: 'variantes', required: true },
     { name: 'libelle', type: 'text', required: true },
     { name: 'quantite', type: 'number', required: true },
-    { name: 'mode', type: 'select', options: [{ label: 'Retrait sur site', value: 'retrait_site' }], defaultValue: 'retrait_site' },
-    { name: 'statut', type: 'select', options: [{ label: 'À retirer', value: 'a_retirer' }, { label: 'Remis', value: 'remis' }], defaultValue: 'a_retirer' },
+    { name: 'mode', type: 'select', options: MODES_LIVRAISON, required: true },
+    { name: 'destination', type: 'text' },
+    {
+      name: 'statut',
+      type: 'select',
+      options: [
+        { label: 'À préparer', value: 'a_preparer' },
+        { label: 'Expédié', value: 'expedie' },
+        { label: 'Disponible au retrait', value: 'disponible' },
+        { label: 'Remis au client', value: 'remis' },
+      ],
+      defaultValue: 'a_preparer',
+    },
     { name: 'remisA', type: 'date', admin: { date: { pickerAppearance: 'dayAndTime' } } },
   ],
 };

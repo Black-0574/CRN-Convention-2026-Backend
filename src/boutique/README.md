@@ -7,11 +7,12 @@ Plan validé : `C:\Users\Mael\.claude\plans\jaunty-cuddling-kahn.md`. Règles : 
 
 | Où | Rôle |
 | --- | --- |
-| `backend/src/boutique/domaine/` | Cœur métier pur : paliers tarifaires, montants, quotas, jetons de billet, droits d’accès, paiements (Vitest, 42 tests) |
-| `backend/src/boutique/collections/` | Catalogue, ventes, contrôle d’accès, réglages de la boutique |
+| `backend/src/boutique/domaine/` | Cœur métier pur : paliers tarifaires, montants, quotas, jetons de billet, droits d’accès, paiements (Vitest, 44 tests) |
+| `backend/src/boutique/collections/` | Catalogue, ventes, contrôle d’accès, logistique (églises du réseau), réglages de la boutique |
 | `backend/src/boutique/lib/` | Réservations atomiques (SQL), émission des billets (PDF, QR signé), e-mails, paiement, scan, tableau de bord |
 | `backend/src/boutique/endpoints.ts` | API `/api/boutique/…` et `/api/mis-en-avant` |
-| `backend/src/app/(agents)/scan/` | Contrôle d’accès des agents COM Boutique : `admin…/scan` |
+| `backend/src/app/(agents)/scan/` | Contrôle d’accès des agents COM Boutique : `admin…/scan` (séance, site et heure) |
+| `backend/src/app/(agents)/paiement-simule/` | Page de paiement simulée de l’agrégateur (local uniquement) |
 | `src/pages/boutique/` (site) | Catalogue, fiches produits, commande en 3 étapes, suivi, CGV |
 
 Les pages catalogue et produits du site sont **statiques**, générées au build depuis l’API ; toute
@@ -33,16 +34,20 @@ Le schéma est créé au démarrage du back-office, puis le catalogue initial es
 
 `BOUTIQUE_DEMO=1` (local uniquement, refusé en production) affiche aussi les pass au tarif non
 validé, marqués « Aperçu », avec des capacités et stocks de démonstration. Les paiements passent
-par le prestataire « bac à sable » (« Valider » / « Refuser » à la place du téléphone). Les e-mails
+par le prestataire « bac à sable » : le client est redirigé vers une page de paiement simulée
+(`/paiement-simule` du back-office) où il choisit Mobile Money (pays, opérateur) ou carte, puis
+valide ou refuse ; il revient ensuite au suivi de sa commande. En démonstration, deux églises
+fictives (Libreville, Paris) et la livraison à domicile à Libreville sont créées, signalées comme
+telles. Les e-mails
 ne partent pas : ils sont écrits dans `backend/.courriels/` et listés sur la page de suivi.
 
 ## Tests
 
 ```bash
-npm --prefix backend run test:boutique     # cœur métier (42 tests)
+npm --prefix backend run test:boutique     # cœur métier (44 tests)
 npm --prefix backend run test:concurrence  # 200 commandes simultanées sur 50 places : 50 acceptées
 npm --prefix backend run test:scan         # double passage refusé, QR falsifié refusé, scans simultanés
-E2E_BOUTIQUE=1 npx playwright test tests/e2e/boutique-achat.spec.ts   # achat complet à 360 × 740
+E2E_BOUTIQUE=1 npx playwright test tests/e2e/boutique-achat.spec.ts   # achats complets à 360 × 740
 ```
 
 ## Ce qui est vendu
@@ -61,14 +66,24 @@ E2E_BOUTIQUE=1 npx playwright test tests/e2e/boutique-achat.spec.ts   # achat co
   unique (SQLite sérialise les écritures), pendant 15 minutes, puis vendu ou libéré.
 - **Paliers tarifaires** basculant à 00h00, heure de Libreville ; prix garanti pendant la
   réservation.
-- **Billets** : un par titulaire, QR = jeton aléatoire signé (HMAC), aucune donnée personnelle ;
-  droits d’accès par séance ; second scan refusé et journalisé.
-- **Paiements** derrière l’interface `PaymentProvider` ; webhooks signés, idempotents ; argent
-  reçu après expiration → commande « à vérifier ».
+- **Pass et tickets toujours nominatifs** : un titulaire et un QR code par exemplaire, émis dès le
+  paiement (jeton aléatoire signé HMAC, aucune donnée personnelle) ; un droit par séance et par
+  site, consommé au scan ; second scan refusé et journalisé. Un pass ne peut être mis en vente
+  sans ouvrir au moins une séance.
+- **Livraison des articles et kits** : église du réseau (au Gabon ou hors du Gabon, liste et frais
+  saisis par le CRN), domicile ou lieu de travail à Libreville (exceptionnel, activé et tarifé par
+  le CRN), ou retrait sur le lieu de la Convention ; frais ajoutés au total ; suivi des remises dans
+  « Boutique · Logistique ».
+- **Paiements** derrière l’interface `PaymentProvider`, prévue pour un agrégateur multi-pays :
+  Mobile Money des différents opérateurs et carte bancaire, choisis par le client sur la page
+  sécurisée de l’agrégateur (aucun opérateur codé en dur) ; moyen et détail enregistrés sur la
+  commande ; webhooks signés, idempotents ; argent reçu après expiration → commande « à vérifier ».
 - **Back-office** : rôles nominatifs (administrateur, éditeur, catalogue, COM Boutique,
   comptabilité), journal des actions, tableau des ventes, exports CSV.
 
 ## Reste à raccorder avant la mise en production (questions au CRN)
 
-Agrégateur Mobile Money (identifiants), prestataire d’e-mail, grille tarifaire validée,
-capacités et stocks, lieu de retrait, CGV, double authentification devant `/admin`.
+Agrégateur de paiement multi-pays (Mobile Money et carte : choix du prestataire, pays couverts,
+identifiants), liste des églises du réseau et frais de livraison, frais de livraison à domicile,
+prestataire d’e-mail, grille tarifaire validée, capacités et stocks, lieu de retrait à la
+Convention, CGV, double authentification devant `/admin`.

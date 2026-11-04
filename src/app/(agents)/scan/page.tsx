@@ -9,7 +9,7 @@
 */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-type Plateforme = { code: string; nom: string };
+type Plateforme = { code: string; nom: string; lieu: string | null; debut: string | null };
 type Resultat = { resultat?: string; erreur?: string; message?: string; titulaire?: { prenom: string; nom: string; produit: string } };
 type Detecteur = { detect: (s: HTMLVideoElement) => Promise<{ rawValue: string }[]> };
 
@@ -20,6 +20,12 @@ const TITRES: Record<string, string> = {
   refuse_annule: 'Refusé — billet annulé',
   refuse_invalide: 'Refusé — billet invalide',
 };
+
+const quand = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Libreville' });
+
+/** « Concert VIP — Nomad, dim. 13 déc., 17:00 » : la séance, son site et son heure (Libreville). */
+const libellePlateforme = (p: Plateforme) =>
+  [p.nom, [p.lieu ?? 'lieu à annoncer', p.debut ? quand.format(new Date(p.debut)) : null].filter(Boolean).join(', ')].join(' — ');
 
 const lire = (cle: string) => {
   try {
@@ -154,7 +160,7 @@ export default function PageScan() {
           <div className="carte-scan">
             <div className="reglages">
               <label>
-                Plateforme
+                Séance et site
                 <select
                   value={plateforme}
                   onChange={(e) => {
@@ -164,7 +170,7 @@ export default function PageScan() {
                 >
                   {plateformes.map((p) => (
                     <option key={p.code} value={p.code}>
-                      {p.nom}
+                      {libellePlateforme(p)}
                     </option>
                   ))}
                 </select>

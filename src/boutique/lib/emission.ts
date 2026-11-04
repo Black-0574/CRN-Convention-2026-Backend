@@ -1,7 +1,7 @@
 /**
  * Émission après paiement confirmé (webhook) : pour chaque exemplaire de pass ou de ticket, un
- * titulaire avec son jeton signé, ses droits d'accès par plateforme et son billet PDF ; un retrait
- * par article ou kit ; e-mail à l'acheteur (tous les billets) et à chaque titulaire (le sien).
+ * titulaire avec son jeton signé, ses droits d'accès par plateforme et son billet PDF ; un article
+ * à remettre par article ou kit, selon le mode de livraison choisi ; e-mail à l'acheteur (tous les billets) et à chaque titulaire (le sien).
  * Idempotent : une commande déjà émise ne l'est pas deux fois.
  */
 import { creerJeton, empreinteJeton, formaterXAF, genererDroits } from '../domaine/src/index.ts';
@@ -9,6 +9,7 @@ import type { Payload } from 'payload';
 
 import type { Commande, Plateforme, Produit, Variante } from '../../payload-types';
 import { enregistrerBillet, genererBilletPdf, lienBillet } from './billets';
+import { texteLivraison } from './livraison';
 import { urlBackOffice, urlSuivi } from './urls';
 import { convertir } from './ventes';
 import { echapper, gabarit, messagerie } from './messagerie';
@@ -41,6 +42,12 @@ export async function emettre(payload: Payload, commandeId: number): Promise<voi
   const saisis = (commande.titulairesSaisis ?? []) as SaisieTitulaire[];
   const billets: { numero: string; titulaire: string; email: string; produit: string; lien: string }[] = [];
   let rang = 0;
+  // Articles et kits : remis selon le mode de livraison choisi à la commande.
+  const aRemettre = {
+    mode: commande.livraison?.mode ?? ('convention' as const),
+    destination: commande.livraison?.destination ?? null,
+    statut: 'a_preparer' as const,
+  };
 
   for (const [index, ligne] of (commande.lignes ?? []).entries()) {
     const produit = ligne.produit as Produit;
@@ -50,7 +57,7 @@ export async function emettre(payload: Payload, commandeId: number): Promise<voi
     if (!nominatif) {
       await payload.create({
         collection: 'retraits',
-        data: { commande: commande.id, variante: varianteId, libelle: ligne.libelle, quantite: ligne.quantite, mode: 'retrait_site', statut: 'a_retirer' },
+        data: { commande: commande.id, variante: varianteId, libelle: ligne.libelle, quantite: ligne.quantite, ...aRemettre },
       });
       continue;
     }
@@ -94,13 +101,13 @@ export async function emettre(payload: Payload, commandeId: number): Promise<voi
     }
   }
 
-  // Lignes de kit : retrait rattaché au titulaire concerné (nom repris dans le libellé).
+  // Lignes de kit : article à remettre, rattaché au titulaire concerné (nom repris dans le libellé).
   for (const ligne of commande.lignes ?? []) {
     if (!ligne.kitDe) continue;
     const varianteId = typeof ligne.variante === 'object' ? (ligne.variante as Variante).id : ligne.variante;
     await payload.create({
       collection: 'retraits',
-      data: { commande: commande.id, variante: varianteId, libelle: ligne.libelle, quantite: ligne.quantite, mode: 'retrait_site', statut: 'a_retirer' },
+      data: { commande: commande.id, variante: varianteId, libelle: ligne.libelle, quantite: ligne.quantite, ...aRemettre },
     });
   }
 
@@ -113,8 +120,7 @@ async function envoyerCourriels(
   billets: { numero: string; titulaire: string; email: string; produit: string; lien: string }[],
 ) {
   const reglages = await payload.findGlobal({ slug: 'reglages-boutique' });
-  const lieu = reglages.lieuRetrait || 'à annoncer';
-  const horaires = reglages.horairesRetrait || 'à annoncer';
+  const livraison = texteLivraison(commande.livraison ?? {}, reglages.livraison?.horairesRetrait);
   const suivi = urlSuivi(commande.numero, commande.jetonSuivi);
   const articles = (commande.lignes ?? []).filter((l) => !billets.some((b) => b.produit === l.libelle) && (l.kitDe || (l.produit as Produit).type === 'physique'));
 
@@ -132,7 +138,7 @@ async function envoyerCourriels(
       `<p>Bonjour ${echapper(commande.prenom)},</p>
 <p>Votre paiement de <strong>${formaterXAF(commande.totalXAF)}</strong> est confirmé. Merci !</p>
 ${billets.length ? `<h2 style="font-family:'Source Serif 4',Georgia,serif;color:#1A2C5B;font-size:20px">Vos billets</h2><ul style="padding-left:20px">${listeBillets}</ul><p style="color:#6B6B6B">Chaque billet est nominatif : présentez-le avec une pièce d’identité. Le QR code est scanné à chaque entrée.</p>` : ''}
-${articles.length ? `<h2 style="font-family:'Source Serif 4',Georgia,serif;color:#1A2C5B;font-size:20px">Articles à retirer</h2><ul style="padding-left:20px">${listeArticles}</ul><p>Retrait : ${echapper(lieu)} — ${echapper(horaires)}.</p>` : ''}
+${articles.length ? `<h2 style="font-family:'Source Serif 4',Georgia,serif;color:#1A2C5B;font-size:20px">Vos articles</h2><ul style="padding-left:20px">${listeArticles}</ul><p>${echapper(livraison)}${commande.livraison?.fraisXAF ? ` Frais de livraison : ${formaterXAF(commande.livraison.fraisXAF)}.` : ''}</p>` : ''}
 <p><a href="${suivi}" style="color:#1A2C5B;font-weight:700">Suivre ma commande</a></p>`,
     ),
   });

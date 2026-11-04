@@ -1,13 +1,16 @@
 /**
  * Raccordement des prestataires de paiement (interface `PaymentProvider` du cœur métier) et dépôt
  * des événements en base. Le prestataire actif se choisit par variable d'environnement : aucun
- * n'est codé en dur. Tant que l'agrégateur Mobile Money réel n'est pas fourni par le CRN
- * (question bloquante n° 4), seul le « bac à sable » est disponible.
+ * n'est codé en dur. L'agrégateur retenu couvrira plusieurs pays (Mobile Money des différents
+ * opérateurs et carte bancaire) ; tant que le CRN ne l'a pas choisi et n'a pas fourni ses
+ * identifiants (question bloquante n° 4), seul le « bac à sable » est disponible, avec une page de
+ * paiement simulée (`/paiement-simule` du back-office).
  */
 import { BacASable, type DepotPaiements, type Decision, type EvenementPaiement, type PaymentProvider } from '../domaine/src/index.ts';
 import type { Payload } from 'payload';
 
 import { emettre } from './emission';
+import { urlBackOffice } from './urls';
 import { lignes, maintenant, sql } from './db';
 import { expirerReservations, liberer, transition } from './ventes';
 
@@ -16,10 +19,13 @@ let bacASable: BacASable | null = null;
 export function prestataire(nom = process.env.PAIEMENT_PRESTATAIRE || 'bac-a-sable'): PaymentProvider {
   if (nom === 'bac-a-sable') {
     if (process.env.NODE_ENV === 'production') throw new Error('Le prestataire « bac à sable » est interdit en production.');
-    bacASable ??= new BacASable(process.env.PAIEMENT_BAC_A_SABLE_SECRET || 'secret-bac-a-sable-local-uniquement');
+    bacASable ??= new BacASable(
+      process.env.PAIEMENT_BAC_A_SABLE_SECRET || 'secret-bac-a-sable-local-uniquement',
+      (ref, demande) => `${urlBackOffice()}/paiement-simule?ref=${encodeURIComponent(ref)}&retour=${encodeURIComponent(demande.urlRetour)}`,
+    );
     return bacASable;
   }
-  throw new Error(`Prestataire de paiement inconnu : « ${nom} » (agrégateur Mobile Money à raccorder).`);
+  throw new Error(`Prestataire de paiement inconnu : « ${nom} » (agrégateur de paiement à raccorder).`);
 }
 
 export const bacASableActif = (): BacASable => prestataire('bac-a-sable') as BacASable;
@@ -45,7 +51,7 @@ export function depot(payload: Payload, nomPrestataire: string): DepotPaiements 
       const c = docs[0];
       return c ? { statut: c.statut, montantXAF: c.totalXAF } : null;
     },
-    async appliquer(reference, decision: Exclude<Decision, { action: 'ignorer' }>) {
+    async appliquer(reference, decision: Exclude<Decision, { action: 'ignorer' }>, evt: EvenementPaiement) {
       const [c] = await lignes<{ id: number }>(payload, sql`SELECT id FROM commandes WHERE numero = ${reference}`);
       if (!c) return;
       if (decision.action === 'anomalie') {
@@ -54,7 +60,11 @@ export function depot(payload: Payload, nomPrestataire: string): DepotPaiements 
       }
       if (decision.statut === 'payee') {
         if (await transition(payload, c.id, 'payee')) {
-          await payload.update({ collection: 'commandes', id: c.id, data: { paiement: { payeeA: new Date().toISOString() } } });
+          await payload.update({
+            collection: 'commandes',
+            id: c.id,
+            data: { paiement: { payeeA: new Date().toISOString(), ...(evt.moyen ? { moyen: evt.moyen } : {}), ...(evt.detail ? { detail: evt.detail } : {}) } },
+          });
           await emettre(payload, c.id);
         }
       } else if (decision.statut === 'echouee') {

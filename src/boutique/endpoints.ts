@@ -2,14 +2,16 @@
  * API de la boutique (préfixe /api). Public : catalogue, « mis en avant » (site de la Convention),
  * commande, paiement, suivi, téléchargement de billet signé. Réservé : scan (COM Boutique),
  * tableau de bord, exports (comptabilité), réconciliation (administrateur). En développement
- * seulement : simulation du paiement Mobile Money et lecture des e-mails capturés.
+ * seulement : simulation de l'agrégateur de paiement (Mobile Money multi-pays et carte) et lecture
+ * des e-mails capturés.
  */
-import { traiterWebhook, type BacASable } from './domaine/src/index.ts';
+import { traiterWebhook, type BacASable, type MoyenPaiement } from './domaine/src/index.ts';
 import type { Endpoint, PayloadRequest } from 'payload';
 
 import { roleDe, type Role } from './lib/acces';
 import { lienBillet, lienValide, lireBillet } from './lib/billets';
 import { catalogue, DEMO, estVisible, vueProduit } from './lib/catalogue';
+import { optionsLivraison, texteLivraison } from './lib/livraison';
 import { courrielsDe, lireCourriel } from './lib/messagerie';
 import { bacASableActif, depot, prestataire } from './lib/paiement';
 import { scanner } from './lib/scan';
@@ -43,6 +45,13 @@ async function commandeSuivie(req: PayloadRequest) {
   const { docs } = await req.payload.find({ collection: 'commandes', where: { numero: { equals: param(req, 'numero') } }, limit: 1, depth: 1 });
   const c = docs[0];
   return c && c.jetonSuivi === query(req, 't') ? c : null;
+}
+
+/** Commande d'après la référence de paiement externe (page de paiement simulée, local uniquement). */
+async function commandeParReference(req: PayloadRequest, referenceExterne: string) {
+  if (!referenceExterne) return null;
+  const { docs } = await req.payload.find({ collection: 'commandes', where: { 'paiement.referenceExterne': { equals: referenceExterne } }, limit: 1, depth: 0 });
+  return docs[0] ?? null;
 }
 
 export const endpoints: Endpoint[] = [
@@ -91,13 +100,18 @@ export const endpoints: Endpoint[] = [
       const r = await req.payload.findGlobal({ slug: 'reglages-boutique' });
       return json({
         ventesOuvertes: r.ventesOuvertes,
-        lieuRetrait: r.lieuRetrait || null,
-        horairesRetrait: r.horairesRetrait || null,
         consentement: r.consentement,
         legal: { cgvVersion: r.legal?.cgvVersion || null, cgv: r.legal?.cgv || null },
         demo: DEMO,
       });
     },
+  },
+
+  // Modes de livraison des articles proposés au client (lus en direct au moment de la commande).
+  {
+    path: '/boutique/livraison',
+    method: 'get',
+    handler: async (req) => json(await optionsLivraison(req.payload)),
   },
 
   // ——— Commande et paiement ———
@@ -136,11 +150,13 @@ export const endpoints: Endpoint[] = [
           quantite: l.quantite,
           prixUnitaireXAF: l.prixUnitaireXAF,
           inclus: Boolean(l.kitDe),
-          aRetirer: Boolean(l.kitDe) || (typeof l.produit === 'object' && l.produit.type === 'physique'),
+          aLivrer: Boolean(l.kitDe) || (typeof l.produit === 'object' && l.produit.type === 'physique'),
         })),
-        paiement: { operateur: c.paiement?.operateur ?? null, enCours: Boolean(c.paiement?.referenceExterne) },
+        paiement: { moyen: c.paiement?.moyen ?? null, detail: c.paiement?.detail ?? null, enCours: Boolean(c.paiement?.referenceExterne) },
         billets: titulaires.map((t) => ({ numero: t.numeroBillet, titulaire: `${t.prenom} ${t.nom}`, lien: lienBillet(urlBackOffice(), t.numeroBillet) })),
-        retrait: { lieu: reglages.lieuRetrait || null, horaires: reglages.horairesRetrait || null },
+        livraison: c.livraison?.mode
+          ? { mode: c.livraison.mode, destination: c.livraison.destination ?? null, fraisXAF: c.livraison.fraisXAF ?? 0, texte: texteLivraison(c.livraison, reglages.livraison?.horairesRetrait) }
+          : null,
         ...(DEV ? { courrielsLocaux: await courrielsDe(c.numero) } : {}),
       });
     },
@@ -153,25 +169,21 @@ export const endpoints: Endpoint[] = [
       if (!c) return erreur('Commande introuvable.', 404);
       if (c.statut !== 'en_attente') return erreur('Cette commande n’est plus en attente de paiement.', 409);
       if (c.reservationExpireA && new Date(c.reservationExpireA) < new Date()) return erreur('Le délai de réservation est dépassé : recommencez votre commande.', 409);
-      const corps = await corpsJson<{ operateur?: string; telephone?: string }>(req);
-      const operateur = corps?.operateur;
-      if (operateur !== 'airtel' && operateur !== 'moov') return erreur('Choisissez Airtel Money ou Moov Money.');
-      if (!/^\+?[0-9 ]{8,16}$/.test(corps?.telephone ?? '')) return erreur('Numéro Mobile Money invalide.');
+      // Le client choisit son moyen (Mobile Money de son pays ou carte bancaire) sur la page
+      // sécurisée de l'agrégateur, qui le renvoie ensuite vers le suivi de sa commande.
       const p = prestataire();
-      const { referenceExterne } = await p.creerPaiement({
+      const { referenceExterne, redirection } = await p.creerPaiement({
         referenceCommande: c.numero,
         montantXAF: c.totalXAF,
-        telephone: corps!.telephone!,
+        telephone: c.telephone,
         email: c.email,
-        description: `Commande ${c.numero} — CRN Boutique`,
+        nom: `${c.prenom} ${c.nom}`,
+        description: `Commande ${c.numero} — Boutique de la Convention CRN 2026`,
         urlRetour: urlSuivi(c.numero, c.jetonSuivi),
       });
-      await req.payload.update({
-        collection: 'commandes',
-        id: c.id,
-        data: { paiement: { prestataire: p.nom, referenceExterne, operateur, telephone: corps!.telephone } },
-      });
-      return json({ referenceExterne, simulation: p.nom === 'bac-a-sable', message: 'Validez le paiement sur votre téléphone.' });
+      if (!redirection) return erreur('Le prestataire de paiement n’a pas répondu : réessayez dans un instant.', 502);
+      await req.payload.update({ collection: 'commandes', id: c.id, data: { paiement: { prestataire: p.nom, referenceExterne } } });
+      return json({ referenceExterne, redirection, simulation: p.nom === 'bac-a-sable' });
     },
   },
   {
@@ -216,7 +228,7 @@ export const endpoints: Endpoint[] = [
     handler: async (req) => {
       if (!autorise(req, 'com_boutique')) return erreur('Accès réservé à la COM Boutique.', 401);
       const { docs } = await req.payload.find({ collection: 'plateformes', limit: 500, depth: 0, sort: 'debut', pagination: false });
-      return json(docs.map((p) => ({ code: p.code, nom: p.nom, debut: p.debut ?? null })));
+      return json(docs.map((p) => ({ code: p.code, nom: p.nom, lieu: p.lieu ?? null, debut: p.debut ?? null })));
     },
   },
   {
@@ -276,24 +288,37 @@ export const endpoints: Endpoint[] = [
 
   // ——— Développement local uniquement ———
   {
-    path: '/boutique/bac-a-sable/:numero/:issue',
+    path: '/boutique/bac-a-sable/paiement',
+    method: 'get',
+    handler: async (req) => {
+      if (!DEV) return erreur('Indisponible.', 404);
+      const c = await commandeParReference(req, query(req, 'ref') ?? '');
+      if (!c) return erreur('Paiement inconnu.', 404);
+      return json({ numero: c.numero, montantXAF: c.totalXAF, statut: c.statut, email: c.email });
+    },
+  },
+  {
+    path: '/boutique/bac-a-sable/paiement',
     method: 'post',
     handler: async (req) => {
       if (!DEV) return erreur('Indisponible.', 404);
-      const c = await commandeSuivie(req);
-      if (!c?.paiement?.referenceExterne) return erreur('Paiement non engagé.', 404);
-      const issue = param(req, 'issue');
-      if (issue !== 'valider' && issue !== 'refuser') return erreur('Issue inconnue.');
+      const corps = await corpsJson<{ ref?: string; issue?: string; moyen?: string; detail?: string }>(req);
+      const c = await commandeParReference(req, corps?.ref ?? '');
+      if (!c?.paiement?.referenceExterne) return erreur('Paiement inconnu.', 404);
+      if (corps?.issue !== 'valider' && corps?.issue !== 'refuser') return erreur('Issue inconnue.');
+      const moyen: MoyenPaiement | undefined = corps.moyen === 'carte' || corps.moyen === 'mobile_money' ? corps.moyen : undefined;
       // Simule le webhook signé de l'agrégateur, traité exactement comme un vrai.
       const bas: BacASable = bacASableActif();
-      const { corps, entetes } = bas.webhook({
-        idEvenement: `${c.paiement.referenceExterne}:${issue}`,
+      const { corps: brut, entetes } = bas.webhook({
+        idEvenement: `${c.paiement.referenceExterne}:${corps.issue}`,
         referenceCommande: c.numero,
         referenceExterne: c.paiement.referenceExterne,
-        statut: issue === 'valider' ? 'payee' : 'echouee',
+        statut: corps.issue === 'valider' ? 'payee' : 'echouee',
         montantXAF: c.totalXAF,
+        ...(moyen ? { moyen } : {}),
+        ...(corps.detail ? { detail: String(corps.detail).slice(0, 120) } : {}),
       });
-      const r = await traiterWebhook(bas, depot(req.payload, bas.nom), corps, entetes);
+      const r = await traiterWebhook(bas, depot(req.payload, bas.nom), brut, entetes);
       return json({ resultat: r.resultat });
     },
   },
