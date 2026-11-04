@@ -5,9 +5,11 @@
  * Sources (aucune donnée inventée) :
  * - produits, prix et horaires validés pour le site : docs/donnees-reference.md (7 tickets, tee-shirt,
  *   pagne) → mis en vente ;
- * - pass Or, Diamant, Convention Intégral, Génération, Génération Plus : montants et contenus du
- *   prompt maître « CRN Boutique », NON validés par le CRN → importés « Prix à valider », jamais en
- *   vente (visibles seulement en démonstration locale, marqués « aperçu ») ;
+ * - pass Or, Diamant, Convention Intégral (paliers), Génération, Génération Plus : montants et
+ *   contenus du prompt maître « CRN Boutique », validés par le Commanditaire le 4 novembre 2026
+ *   → mis en vente ;
+ * - articles de kit (stylo, bloc-notes, gourde, ventilateurs) : sans prix propre, jamais vendus
+ *   seuls (« Prix à valider ») ;
  * - capacités des quotas et stocks : inconnus → vides en production (ventes bloquées / stock non
  *   suivi) ; valeurs de démonstration UNIQUEMENT si BOUTIQUE_DEMO=1.
  *
@@ -147,10 +149,10 @@ export async function seedBoutique(payload: Payload): Promise<void> {
     badge: 'Inclut le tee-shirt',
     paliers: [{ prixXAF: 120_000, du: '2026-10-25', au: '2026-10-31' }, { prixXAF: 150_000, du: '2026-11-01', au: '2026-11-30' }, { prixXAF: 180_000, du: '2026-12-01' }],
     plateformes: accesIntegral, quotas: [quotaDiner], kit: [{ produit: teeShirt, quantite: 1 }],
-    ...aValider, misEnAvant: true, ordreMiseEnAvant: 1, ordre: 1,
+    ...valide, misEnAvant: true, ordreMiseEnAvant: 1, ordre: 1,
   });
-  await produit({ nom: 'Pass Génération', slug: 'pass-generation', type: 'pass', categorie: catPass, resume: 'Pour les 18 – 28 ans : mêmes accès que l’Intégral, hors Dîner des Élites.', description: 'Réservé aux 18 – 28 ans (contrôle déclaratif). Mêmes accès que le Pass Convention Intégral, hors Dîner des Élites.', paliers: prix(50_000), plateformes: [...toutesClasses, femmeDeFoi, jaiSoif, concertStandard], ageMin: 18, ageMax: 28, ...aValider, misEnAvant: true, ordreMiseEnAvant: 2, ordre: 2 });
-  await produit({ nom: 'Pass Génération Plus', slug: 'pass-generation-plus', type: 'pass', categorie: catPass, resume: 'Pour les 18 – 28 ans : mêmes accès que l’Intégral.', description: 'Réservé aux 18 – 28 ans (contrôle déclaratif). Mêmes accès que le Pass Convention Intégral ; articles vendus séparément.', paliers: prix(100_000), plateformes: accesIntegral, quotas: [quotaDiner], ageMin: 18, ageMax: 28, ...aValider, misEnAvant: true, ordreMiseEnAvant: 3, ordre: 3 });
+  await produit({ nom: 'Pass Génération', slug: 'pass-generation', type: 'pass', categorie: catPass, resume: 'Pour les 18 – 28 ans : mêmes accès que l’Intégral, hors Dîner des Élites.', description: 'Réservé aux 18 – 28 ans (contrôle déclaratif). Mêmes accès que le Pass Convention Intégral, hors Dîner des Élites.', paliers: prix(50_000), plateformes: [...toutesClasses, femmeDeFoi, jaiSoif, concertStandard], ageMin: 18, ageMax: 28, ...valide, misEnAvant: true, ordreMiseEnAvant: 2, ordre: 2 });
+  await produit({ nom: 'Pass Génération Plus', slug: 'pass-generation-plus', type: 'pass', categorie: catPass, resume: 'Pour les 18 – 28 ans : mêmes accès que l’Intégral.', description: 'Réservé aux 18 – 28 ans (contrôle déclaratif). Mêmes accès que le Pass Convention Intégral ; articles vendus séparément.', paliers: prix(100_000), plateformes: accesIntegral, quotas: [quotaDiner], ageMin: 18, ageMax: 28, ...valide, misEnAvant: true, ordreMiseEnAvant: 3, ordre: 3 });
   const accesPartenaire = [...toutesClasses, femmeDeFoi, jaiSoif, diner, concertVip, ...plenieresReservees];
   await produit({
     nom: 'Pass Partenaire Or', slug: 'pass-or', type: 'pass', categorie: catPass,
@@ -158,7 +160,7 @@ export async function seedBoutique(payload: Payload): Promise<void> {
     description: 'Accès intégral, Concert pour la vie — VIP, plénières en placement réservé, Dîner des Élites, badge Or. Kit : pagne mixte, tee-shirt 2026, petit ventilateur.',
     badge: 'Places limitées', paliers: prix(500_000), plateformes: accesPartenaire, quotas: [quotaDiner],
     kit: [{ produit: pagne, quantite: 1 }, { produit: teeShirt, quantite: 1 }, { produit: petitVentilateur, quantite: 1 }],
-    ...aValider, misEnAvant: true, ordreMiseEnAvant: 4, ordre: 4,
+    ...valide, misEnAvant: true, ordreMiseEnAvant: 4, ordre: 4,
   });
   await produit({
     nom: 'Pass Grand Partenaire Diamant', slug: 'pass-diamant', type: 'pass', categorie: catPass,
@@ -166,7 +168,7 @@ export async function seedBoutique(payload: Payload): Promise<void> {
     description: 'Accès intégral, Concert pour la vie — VIP, Dîner des Élites et plénières en placement premium, temps privé réservé aux partenaires Diamant, badge Diamant. Kit : pagne mixte, tee-shirt 2026, stylo, bloc-notes, gourde, ventilateur.',
     badge: 'Places limitées', paliers: prix(1_000_000), plateformes: [...accesPartenaire, repasDiamant], quotas: [quotaDiner, quotaRepas],
     kit: [{ produit: pagne, quantite: 1 }, { produit: teeShirt, quantite: 1 }, { produit: stylo, quantite: 1 }, { produit: blocNotes, quantite: 1 }, { produit: gourde, quantite: 1 }, { produit: ventilateur, quantite: 1 }],
-    ...aValider, misEnAvant: true, ordreMiseEnAvant: 5, ordre: 5,
+    ...valide, misEnAvant: true, ordreMiseEnAvant: 5, ordre: 5,
   });
 
   await payload.updateGlobal({ slug: 'reglages-boutique', data: { ventesOuvertes: true } });

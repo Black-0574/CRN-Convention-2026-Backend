@@ -277,23 +277,23 @@
     {
       "id": "pass-diamant",
       "data": {
-        "nom": "Pass DIAMANT",
+        "nom": "Pass Grand Partenaire Diamant",
         "categorie": "pass",
-        "prixFCFA": null,
-        "description": "Contenu et tarif à annoncer.",
-        "statut": "a_annoncer",
-        "ordre": 11
+        "prixFCFA": 1000000,
+        "description": "Accès intégral, Concert pour la vie — VIP, Dîner des Élites et plénières en placement premium, badge Diamant.",
+        "statut": "disponible",
+        "ordre": 14
       }
     },
     {
       "id": "pass-or",
       "data": {
-        "nom": "Pass OR",
+        "nom": "Pass Partenaire Or",
         "categorie": "pass",
-        "prixFCFA": null,
-        "description": "Contenu et tarif à annoncer.",
-        "statut": "a_annoncer",
-        "ordre": 10
+        "prixFCFA": 500000,
+        "description": "Accès intégral, Concert pour la vie — VIP, plénières réservées, Dîner des Élites, badge Or.",
+        "statut": "disponible",
+        "ordre": 13
       }
     },
     {
@@ -306,6 +306,39 @@
         "lienAchat": "#billetterie-a-configurer",
         "statut": "disponible",
         "ordre": 9
+      }
+    },
+    {
+      "id": "pass-convention-integral",
+      "data": {
+        "nom": "Pass Convention Intégral",
+        "categorie": "pass",
+        "prixFCFA": 150000,
+        "description": "Académie (3 classes), Femme de Foi — Live, J’ai soif, Dîner des Élites, Concert pour la vie — Standard. Tee-shirt inclus. 150 000 F CFA jusqu’au 30 novembre, puis 180 000 F CFA.",
+        "statut": "disponible",
+        "ordre": 10
+      }
+    },
+    {
+      "id": "pass-generation",
+      "data": {
+        "nom": "Pass Génération",
+        "categorie": "pass",
+        "prixFCFA": 50000,
+        "description": "Pour les 18 – 28 ans : mêmes accès que le Pass Convention Intégral, hors Dîner des Élites.",
+        "statut": "disponible",
+        "ordre": 11
+      }
+    },
+    {
+      "id": "pass-generation-plus",
+      "data": {
+        "nom": "Pass Génération Plus",
+        "categorie": "pass",
+        "prixFCFA": 100000,
+        "description": "Pour les 18 – 28 ans : mêmes accès que le Pass Convention Intégral.",
+        "statut": "disponible",
+        "ordre": 12
       }
     }
   ],
