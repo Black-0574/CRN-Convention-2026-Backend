@@ -25,3 +25,7 @@ src/payload-types.ts
 
 # misc
 .DS_Store
+
+# CRN Boutique : billets PDF et courriels capturés en local
+.billets/
+.courriels/

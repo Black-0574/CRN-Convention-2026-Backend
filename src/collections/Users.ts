@@ -1,6 +1,8 @@
 import type { CollectionConfig } from 'payload';
 
-// Comptes nominatifs + rôles (admin / éditeur) — exigence explicite du Commanditaire pour le
+import { ROLES } from '../boutique/lib/acces';
+
+// Comptes nominatifs + rôles (admin / éditeur, et les rôles de la boutique) — exigence explicite du Commanditaire pour le
 // back-office (lot L3).
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -29,10 +31,7 @@ export const Users: CollectionConfig = {
       type: 'select',
       required: true,
       defaultValue: 'editeur',
-      options: [
-        { label: 'Administrateur', value: 'admin' },
-        { label: 'Éditeur', value: 'editeur' },
-      ],
+      options: [...ROLES],
     },
   ],
 };

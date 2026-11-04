@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload';
 
-// Fichiers téléversés (photos orateurs/artistes). Traitement en 480×640 au moment du build du
+// Fichiers téléversés (photos orateurs/artistes, photos des produits de la boutique). Traitement en 480×640 au moment du build du
 // site (voir site/scripts et src/lib/cms.ts), ce champ "card" donne déjà un gabarit cohérent
 // pour la prévisualisation dans l'admin.
 export const Media: CollectionConfig = {
@@ -11,7 +11,12 @@ export const Media: CollectionConfig = {
     // Chemin absolu en production (MEDIA_DIR) : Hostinger reconstruit l'application dans un
     // nouveau dossier à chaque déploiement, un dossier relatif perdrait les fichiers téléversés.
     staticDir: process.env.MEDIA_DIR || 'media',
-    imageSizes: [{ name: 'card', width: 480, height: 640, position: 'attention' }],
+    // card : orateurs/artistes ; produit et fiche : photos de la boutique (carte carrée, fiche).
+    imageSizes: [
+      { name: 'card', width: 480, height: 640, position: 'attention' },
+      { name: 'produit', width: 480, height: 480, position: 'attention' },
+      { name: 'fiche', width: 960, withoutEnlargement: true },
+    ],
     mimeTypes: ['image/*'],
   },
   fields: [

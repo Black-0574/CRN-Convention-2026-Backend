@@ -1,0 +1,177 @@
+/* Pages agents : palette GBIS v2.1, Source Serif 4 / Source Sans 3, rien sous 16 px. */
+:root {
+  --bleu-nuit: #1a2c5b;
+  --bleu-profond: #16244a;
+  --or: #b8963e;
+  --or-lumiere: #d9c48a;
+  --ivoire: #f7f5f0;
+  --blanc: #ffffff;
+  --noir: #101010;
+  --gris: #6b6b6b;
+  --gris-clair: #d8d4cb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--ivoire);
+  color: var(--noir);
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.entete {
+  background: var(--bleu-nuit);
+  color: var(--blanc);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.entete img {
+  height: 40px;
+  width: auto;
+}
+
+.entete p {
+  margin: 0;
+  font-weight: 700;
+}
+
+.scan {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.scan h1 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  color: var(--bleu-nuit);
+  margin: 0 0 16px;
+}
+
+.carte-scan {
+  display: grid;
+  gap: 16px;
+  background: var(--blanc);
+  border: 1px solid var(--gris-clair);
+  border-radius: 12px;
+  padding: 24px 16px;
+}
+
+.carte-scan h2 {
+  margin: 0;
+  font-family: 'Source Serif 4', Georgia, serif;
+  color: var(--bleu-nuit);
+}
+
+.carte-scan label {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.carte-scan input,
+.carte-scan select {
+  min-height: 48px;
+  border: 1.5px solid var(--gris-clair);
+  border-radius: 8px;
+  padding: 0 12px;
+  font: inherit;
+  font-weight: 400;
+  background: var(--blanc);
+  color: var(--noir);
+}
+
+.carte-scan input:focus-visible,
+.carte-scan select:focus-visible,
+.bouton:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
+
+.reglages {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .reglages {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.bouton {
+  min-height: 48px;
+  border-radius: 999px;
+  border: 2px solid var(--bleu-nuit);
+  font: inherit;
+  font-weight: 700;
+  padding: 0 24px;
+  cursor: pointer;
+  background: var(--bleu-nuit);
+  color: var(--blanc);
+}
+
+.bouton--secondaire {
+  background: var(--blanc);
+  color: var(--bleu-nuit);
+}
+
+.camera video {
+  width: 100%;
+  max-height: 320px;
+  background: var(--noir);
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.saisie {
+  display: grid;
+  gap: 8px;
+}
+
+.message {
+  margin: 0;
+  font-weight: 700;
+  color: var(--bleu-nuit);
+}
+
+/* Accepté : bleu nuit ; refusé : or lumière sur noir — palette GBIS, jamais de rouge. */
+.resultat {
+  margin-top: 24px;
+  padding: 24px 16px;
+  border-radius: 12px;
+  text-align: center;
+  background: var(--noir);
+  color: var(--or-lumiere);
+  border: 3px solid var(--or);
+}
+
+.resultat[data-resultat='accepte'] {
+  background: var(--bleu-nuit);
+  color: var(--blanc);
+  border-color: var(--bleu-profond);
+}
+
+.resultat__titre {
+  margin: 0;
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-weight: 700;
+  font-size: 32px;
+}
+
+.resultat__titulaire {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 8px 0;
+}

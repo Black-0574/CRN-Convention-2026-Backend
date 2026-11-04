@@ -20,6 +20,30 @@ import { migrations } from './src/migrations';
 import { allowedOrigins } from './src/lib/allowed-origins';
 import { rebuildAfterChange, rebuildAfterDelete, rebuildAfterGlobalChange } from './src/lib/site-rebuild';
 import { seedFromContent } from './src/seed/seed-from-content';
+// CRN Boutique, intégrée au back-office : catalogue, ventes, billets, contrôle d'accès (le site
+// l'affiche sous /boutique). Plan : C:UsersMael.claudeplansjaunty-cuddling-kahn.md.
+import { Categories, Plateformes, Produits, Quotas, Variantes } from './src/boutique/collections/catalogue';
+import { ReglagesBoutique } from './src/boutique/collections/reglages';
+import {
+  Commandes,
+  Consentements,
+  DroitsAcces,
+  EvenementsWebhook,
+  JournalActions,
+  Reservations,
+  Retraits,
+  Scans,
+  Titulaires,
+} from './src/boutique/collections/ventes';
+import { endpoints as endpointsBoutique } from './src/boutique/endpoints';
+import { journaliser } from './src/boutique/lib/journal';
+import { demarrerTachesPlanifiees } from './src/boutique/lib/taches';
+import { urlBackOffice } from './src/boutique/lib/urls';
+import { seedBoutique } from './src/boutique/seed';
+
+if (process.env.BOUTIQUE_DEMO === '1' && process.env.NODE_ENV === 'production') {
+  throw new Error('BOUTIQUE_DEMO=1 est réservé au développement local : refusé en production.');
+}
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -58,6 +82,7 @@ export default buildConfig({
         Icon: '/components/admin/Icon#Icon',
       },
       header: ['/components/admin/Header#Header'],
+      beforeDashboard: ['/components/admin/TableauVentes#TableauVentes'],
     },
   },
   // Back-office réservé à l'équipe francophone du Commanditaire : français seul, pas de
@@ -78,8 +103,20 @@ export default buildConfig({
   collections: [
     Users,
     ...[Media, Venues, Artists, Faq, Speakers, Products, Announcements, ProgramDays].map(withSiteRebuild),
+    // Catalogue de la boutique : journalisé, et republié sur le site (pages /boutique statiques).
+    ...[Categories, Plateformes, Quotas, Produits, Variantes].map(journaliser).map(withSiteRebuild),
+    Commandes,
+    Reservations,
+    EvenementsWebhook,
+    Titulaires,
+    DroitsAcces,
+    Scans,
+    Retraits,
+    Consentements,
+    JournalActions,
   ],
-  globals: [withGlobalSiteRebuild(Settings)],
+  globals: [withGlobalSiteRebuild(Settings), withGlobalSiteRebuild(ReglagesBoutique)],
+  endpoints: endpointsBoutique,
   // Import initial du contenu du site, une seule fois (src/seed). Un échec ne doit pas empêcher
   // le back-office de démarrer : il est journalisé et retenté au démarrage suivant.
   onInit: async (payload) => {
@@ -88,6 +125,12 @@ export default buildConfig({
     } catch (err) {
       payload.logger.error(`Import initial du contenu échoué : ${(err as Error).message}`);
     }
+    try {
+      await seedBoutique(payload);
+    } catch (err) {
+      payload.logger.error(`Import initial du catalogue de la boutique échoué : ${(err as Error).message}`);
+    }
+    demarrerTachesPlanifiees(payload);
   },
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
@@ -108,4 +151,6 @@ export default buildConfig({
   // Autorise uniquement le site public (ou le serveur de build) à appeler l'API — l'API n'est de
   // toute façon jamais appelée depuis le navigateur du visiteur (voir flux de publication).
   cors: allowedOrigins(),
+  // Sessions par cookie (back-office, poste de scan) acceptées seulement depuis ces origines.
+  csrf: [...allowedOrigins(), urlBackOffice()],
 });
