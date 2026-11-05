@@ -172,7 +172,11 @@ export async function seedBoutique(payload: Payload): Promise<void> {
     ...valide, misEnAvant: true, ordreMiseEnAvant: 5, ordre: 5,
   });
 
-  await payload.updateGlobal({ slug: 'reglages-boutique', data: { ventesOuvertes: true } });
+  // Aucune vente sans encaissement : hors démonstration locale, ventes ouvertes seulement si un
+  // vrai prestataire de paiement est configuré ; sinon le CRN les ouvre dans l'admin (Réglages de
+  // la boutique) une fois l'agrégateur raccordé.
+  const prestataireReel = Boolean(process.env.PAIEMENT_PRESTATAIRE) && process.env.PAIEMENT_PRESTATAIRE !== 'bac-a-sable';
+  await payload.updateGlobal({ slug: 'reglages-boutique', data: { ventesOuvertes: DEMO || prestataireReel } });
   payload.logger.info(`Catalogue importé${DEMO ? ' (avec valeurs de démonstration locales)' : ''}.`);
 }
 
