@@ -10,6 +10,9 @@ export const urlSite = () => sansBarre((process.env.SITE_URL || 'http://localhos
 /** Origine publique du back-office (API, billets). */
 export const urlBackOffice = () => sansBarre(process.env.PUBLIC_SERVER_URL || 'http://localhost:3001');
 
+/** Bandeau d'en-tête du billet PDF et de l'e-mail (BQ-10), dans public/ du back-office. */
+export const CHEMIN_BANDEAU = '/brand/bandeau-billet.jpg';
+
 /** Page de suivi d'une commande sur le site. */
 export const urlSuivi = (numero: string, jeton: string) =>
   `${urlSite()}/boutique/suivi?commande=${encodeURIComponent(numero)}&t=${encodeURIComponent(jeton)}`;

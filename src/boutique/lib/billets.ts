@@ -11,6 +11,8 @@ import path from 'node:path';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import QRCode from 'qrcode';
 
+import { CHEMIN_BANDEAU } from './urls';
+
 const BLEU_NUIT = rgb(0x1a / 255, 0x2c / 255, 0x5b / 255);
 const BLEU_PROFOND = rgb(0x16 / 255, 0x24 / 255, 0x4a / 255);
 const OR = rgb(0xb8 / 255, 0x96 / 255, 0x3e / 255);
@@ -18,6 +20,11 @@ const NOIR = rgb(0x10 / 255, 0x10 / 255, 0x10 / 255);
 const GRIS = rgb(0x6b / 255, 0x6b / 255, 0x6b / 255);
 
 export const DOSSIER_BILLETS = process.env.BILLETS_DIR || path.resolve(process.cwd(), '.billets');
+
+/** Bandeau d'en-tête du billet (BQ-10), lu dans public/ du back-office. */
+let bandeauEnCache: Promise<Uint8Array | null> | undefined;
+const lireBandeau = () =>
+  (bandeauEnCache ??= readFile(path.join(process.cwd(), 'public', CHEMIN_BANDEAU)).catch(() => null));
 
 /** Les polices standard PDF n'ont que le jeu WinAnsi : espaces fines/insécables → espace simple. */
 const pdfTexte = (t: string) => t.replace(/[  ]/g, ' ').replace(/[^\x20-\x7E -ÿ–—‘’“”…Œœ€]/g, '');
@@ -42,12 +49,27 @@ export async function genererBilletPdf(b: DonneesBillet): Promise<Uint8Array> {
   const sansGras = await doc.embedFont(StandardFonts.HelveticaBold);
   const marge = 18;
 
-  page.drawRectangle({ x: 0, y: height - 58, width, height: 58, color: BLEU_PROFOND });
-  page.drawRectangle({ x: 0, y: height - 61, width, height: 3, color: OR });
-  page.drawText(pdfTexte('CONVENTION CRN 2026'), { x: marge, y: height - 30, size: 15, font: serif, color: rgb(1, 1, 1) });
-  page.drawText(pdfTexte('6 – 13 décembre 2026 · Libreville'), { x: marge, y: height - 47, size: 8.5, font: sans, color: rgb(0.85, 0.77, 0.54) });
+  // En-tête (BQ-10) : bandeau officiel 3:1 sur toute la largeur, dates dessous ; bandeau texte si
+  // le fichier manque. Il est plus haut que le bandeau texte : QR et liste des séances raccourcis.
+  const bandeau = await lireBandeau();
+  let y: number;
+  if (bandeau) {
+    const image = await doc.embedJpg(bandeau);
+    const haut = width / 3;
+    page.drawImage(image, { x: 0, y: height - haut, width, height: haut });
+    page.drawRectangle({ x: 0, y: height - haut - 3, width, height: 3, color: OR });
+    page.drawText(pdfTexte('6 – 13 décembre 2026 · Libreville'), { x: marge, y: height - haut - 15, size: 8, font: sans, color: GRIS });
+    y = height - haut - 33;
+  } else {
+    page.drawRectangle({ x: 0, y: height - 58, width, height: 58, color: BLEU_PROFOND });
+    page.drawRectangle({ x: 0, y: height - 61, width, height: 3, color: OR });
+    page.drawText(pdfTexte('CONVENTION CRN 2026'), { x: marge, y: height - 30, size: 15, font: serif, color: rgb(1, 1, 1) });
+    page.drawText(pdfTexte('6 – 13 décembre 2026 · Libreville'), { x: marge, y: height - 47, size: 8.5, font: sans, color: rgb(0.85, 0.77, 0.54) });
+    y = height - 84;
+  }
+  const seancesMax = bandeau ? 4 : 7;
 
-  let y = height - 84;
+
   page.drawText(pdfTexte(b.produit), { x: marge, y, size: 12, font: sansGras, color: BLEU_NUIT, maxWidth: width - 2 * marge });
   y -= 18;
   page.drawText(pdfTexte(b.titulaire), { x: marge, y, size: 13, font: serif, color: NOIR });
@@ -56,7 +78,7 @@ export async function genererBilletPdf(b: DonneesBillet): Promise<Uint8Array> {
 
   const qr = await QRCode.toBuffer(b.jeton, { errorCorrectionLevel: 'M', margin: 1, width: 360, color: { dark: '#101010', light: '#FFFFFF' } });
   const image = await doc.embedPng(qr);
-  const cote = 150;
+  const cote = bandeau ? 120 : 150;
   y -= cote + 10;
   page.drawImage(image, { x: (width - cote) / 2, y, width: cote, height: cote });
   // Code lisible sous le QR : saisie manuelle par l'agent si le QR est abîmé ou illisible.
@@ -66,13 +88,13 @@ export async function genererBilletPdf(b: DonneesBillet): Promise<Uint8Array> {
 
   y -= 14;
   page.drawText(pdfTexte('Séances incluses'), { x: marge, y, size: 8.5, font: sansGras, color: BLEU_NUIT });
-  for (const s of b.seances.slice(0, 7)) {
+  for (const s of b.seances.slice(0, seancesMax)) {
     y -= 11;
     page.drawText(pdfTexte(`• ${s.nom} — ${s.quand}${s.lieu ? `, ${s.lieu}` : ''}`), { x: marge, y, size: 7, font: sans, color: NOIR, maxWidth: width - 2 * marge });
   }
-  if (b.seances.length > 7) {
+  if (b.seances.length > seancesMax) {
     y -= 11;
-    page.drawText(pdfTexte(`… et ${b.seances.length - 7} autres séances`), { x: marge, y, size: 7, font: sans, color: GRIS });
+    page.drawText(pdfTexte(`… et ${b.seances.length - seancesMax} autres séances`), { x: marge, y, size: 7, font: sans, color: GRIS });
   }
   if (b.tailleTeeShirt) {
     y -= 13;

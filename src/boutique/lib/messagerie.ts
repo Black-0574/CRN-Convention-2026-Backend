@@ -6,6 +6,8 @@
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { CHEMIN_BANDEAU, urlBackOffice } from './urls';
+
 export interface Courriel {
   a: string;
   sujet: string;
@@ -44,14 +46,14 @@ export const messagerie: Messagerie = new MessagerieLocale();
 
 const echapper = (t: string) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
-/** Gabarit sobre aux couleurs GBIS (bleu nuit, or, crème), lisible sans images. */
+/** Gabarit sobre aux couleurs GBIS (bleu nuit, or, crème), bandeau officiel en tête (BQ-10) ; lisible sans images (texte de remplacement sur fond bleu nuit). */
 export function gabarit(titre: string, corps: string): string {
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${echapper(titre)}</title></head>
 <body style="margin:0;background:#F7F5F0;font-family:'Source Sans 3',Arial,sans-serif;color:#101010;font-size:16px;line-height:1.5">
 <div style="max-width:560px;margin:0 auto;background:#FFFFFF">
-<div style="background:#16244A;border-bottom:3px solid #B8963E;padding:20px 24px">
-<div style="font-family:'Source Serif 4',Georgia,serif;font-weight:700;font-size:20px;color:#FFFFFF">CRN Boutique</div>
-<div style="color:#D9C48A;font-size:14px">Convention CRN 2026 · 6 – 13 décembre · Libreville</div></div>
+<img src="${urlBackOffice()}${CHEMIN_BANDEAU}" width="560" height="187" alt="Convention CRN 2026" style="display:block;width:100%;height:auto;border:0;background:#16244A;color:#FFFFFF;font-family:'Source Serif 4',Georgia,serif;font-weight:700;font-size:20px">
+<div style="background:#16244A;border-bottom:3px solid #B8963E;padding:12px 24px">
+<div style="color:#D9C48A;font-size:16px">6 – 13 décembre 2026 · Libreville</div></div>
 <div style="padding:24px">${corps}</div>
 <div style="background:#F7F5F0;padding:16px 24px;color:#6B6B6B;font-size:14px">Ministères Christ Révélé aux Nations (CRN) · contact@crn-convention2026.events · +241 62 70 51 83</div>
 </div></body></html>`;
