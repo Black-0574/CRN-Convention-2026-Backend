@@ -7,6 +7,7 @@ import { palierDepuisJours, verifierPaliers } from '../domaine/src/index.ts';
 import { APIError, type CollectionConfig } from 'payload';
 
 import { reserveA, tout } from '../lib/acces';
+import { dateHeure } from './dates';
 import { slugify } from '../../lib/slugify';
 
 const ecritureCatalogue = { create: reserveA('catalogue'), update: reserveA('catalogue'), delete: reserveA('catalogue') };
@@ -49,8 +50,8 @@ export const Plateformes: CollectionConfig = {
   fields: [
     { name: 'nom', type: 'text', required: true },
     { name: 'code', type: 'text', required: true, unique: true, admin: { description: 'Identifiant stable (ex. academie-classe-1-2026-12-08).' } },
-    { name: 'debut', type: 'date', label: 'Début', admin: { date: { pickerAppearance: 'dayAndTime' } } },
-    { name: 'fin', type: 'date', label: 'Fin', admin: { date: { pickerAppearance: 'dayAndTime' } } },
+    dateHeure('debut', 'Début'),
+    dateHeure('fin', 'Fin'),
     { name: 'lieu', type: 'text', admin: { description: 'Laisser vide = « Lieu à annoncer ».' } },
     {
       name: 'publique',

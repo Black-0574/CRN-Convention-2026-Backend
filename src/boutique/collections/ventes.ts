@@ -8,6 +8,7 @@ import type { CollectionConfig } from 'payload';
 
 import { personne, reserveA } from '../lib/acces';
 import { MODES_LIVRAISON } from '../lib/livraison';
+import { creeLe, dateHeure } from './dates';
 
 const lectureVentes = reserveA('comptabilite', 'com_boutique');
 const serveurSeulement = { create: personne, update: personne, delete: personne };
@@ -81,7 +82,7 @@ export const Commandes: CollectionConfig = {
       ],
     },
     { name: 'totalXAF', type: 'number', label: 'Total (F CFA, livraison comprise)', required: true, admin: { readOnly: true } },
-    { name: 'reservationExpireA', type: 'date', label: 'Réservation jusqu’à', admin: { readOnly: true, date: { pickerAppearance: 'dayAndTime' } } },
+    dateHeure('reservationExpireA', 'Réservation jusqu’à', { admin: { readOnly: true } }),
     {
       name: 'paiement',
       type: 'group',
@@ -99,7 +100,7 @@ export const Commandes: CollectionConfig = {
           ],
         },
         { name: 'detail', type: 'text', label: 'Détail (opérateur, pays, carte)', admin: { description: 'Tel que transmis par l’agrégateur de paiement.' } },
-        { name: 'payeeA', type: 'date', label: 'Payée le', admin: { date: { pickerAppearance: 'dayAndTime' } } },
+        dateHeure('payeeA', 'Payée le'),
       ],
     },
     {
@@ -118,6 +119,7 @@ export const Commandes: CollectionConfig = {
     // Titulaires saisis au tunnel, conservés jusqu'au paiement (création des billets à la confirmation).
     { name: 'titulairesSaisis', type: 'json', admin: { hidden: true } },
     { name: 'anomalie', type: 'textarea', admin: { description: 'Renseigné automatiquement si la commande est « à vérifier ».' } },
+    creeLe,
   ],
 };
 
@@ -131,8 +133,18 @@ export const Reservations: CollectionConfig = {
     { name: 'cible', type: 'select', options: ['variante', 'quota'], required: true },
     { name: 'cibleId', type: 'number', required: true },
     { name: 'quantite', type: 'number', required: true },
-    { name: 'expireA', type: 'date', required: true, index: true },
-    { name: 'statut', type: 'select', options: ['active', 'convertie', 'liberee'], defaultValue: 'active', index: true },
+    dateHeure('expireA', 'Expire le', { required: true, index: true }),
+    {
+      name: 'statut',
+      type: 'select',
+      options: [
+        { label: 'Active', value: 'active' },
+        { label: 'Convertie en vente', value: 'convertie' },
+        { label: 'Libérée', value: 'liberee' },
+      ],
+      defaultValue: 'active',
+      index: true,
+    },
   ],
 };
 
@@ -148,6 +160,7 @@ export const EvenementsWebhook: CollectionConfig = {
     { name: 'montantXAF', type: 'number' },
     { name: 'resultat', type: 'text' },
     { name: 'brut', type: 'json' },
+    creeLe,
   ],
 };
 
@@ -179,7 +192,7 @@ export const Titulaires: CollectionConfig = {
     { name: 'tailleTeeShirt', type: 'text', label: 'Taille du tee-shirt du kit' },
     { name: 'empreinteJeton', type: 'text', unique: true, index: true, admin: { hidden: true } },
     { name: 'fichierBillet', type: 'text', admin: { hidden: true } },
-    { name: 'emisA', type: 'date', label: 'Billet émis le', admin: { date: { pickerAppearance: 'dayAndTime' } } },
+    dateHeure('emisA', 'Billet émis le'),
   ],
 };
 
@@ -191,8 +204,18 @@ export const DroitsAcces: CollectionConfig = {
   fields: [
     { name: 'titulaire', type: 'relationship', relationTo: 'titulaires', required: true, index: true },
     { name: 'plateforme', type: 'relationship', relationTo: 'plateformes', required: true, index: true },
-    { name: 'statut', type: 'select', options: ['valide', 'consomme', 'annule'], defaultValue: 'valide', required: true },
-    { name: 'consommeA', type: 'date', label: 'Consommé le', admin: { date: { pickerAppearance: 'dayAndTime' } } },
+    {
+      name: 'statut',
+      type: 'select',
+      options: [
+        { label: 'Valide', value: 'valide' },
+        { label: 'Consommé', value: 'consomme' },
+        { label: 'Annulé', value: 'annule' },
+      ],
+      defaultValue: 'valide',
+      required: true,
+    },
+    dateHeure('consommeA', 'Consommé le'),
     { name: 'poste', type: 'text' },
   ],
   indexes: [{ fields: ['titulaire', 'plateforme'], unique: true }],
@@ -221,6 +244,7 @@ export const Scans: CollectionConfig = {
     { name: 'poste', type: 'text', required: true },
     { name: 'agent', type: 'relationship', relationTo: 'users' },
     { name: 'horsLigne', type: 'checkbox', defaultValue: false },
+    creeLe,
   ],
 };
 
@@ -249,7 +273,7 @@ export const Retraits: CollectionConfig = {
       ],
       defaultValue: 'a_preparer',
     },
-    { name: 'remisA', type: 'date', admin: { date: { pickerAppearance: 'dayAndTime' } } },
+    dateHeure('remisA', 'Remis le'),
   ],
 };
 
@@ -266,6 +290,7 @@ export const Consentements: CollectionConfig = {
     { name: 'accepte', type: 'checkbox', required: true },
     { name: 'version', type: 'text', required: true },
     { name: 'texte', type: 'textarea', required: true },
+    creeLe,
   ],
 };
 
@@ -280,5 +305,6 @@ export const JournalActions: CollectionConfig = {
     { name: 'collection', type: 'text', required: true },
     { name: 'document', type: 'text' },
     { name: 'details', type: 'json' },
+    creeLe,
   ],
 };

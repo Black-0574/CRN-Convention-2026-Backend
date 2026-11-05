@@ -99,14 +99,23 @@ body {
   outline-offset: 2px;
 }
 
+/* minmax(0, …) : les longs libellés de séance ne doivent pas élargir la grille au-delà de l'écran
+   (le champ Poste sortait du cadre, avec un défilement horizontal). */
 .reglages {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
+}
+
+.reglages select {
+  width: 100%;
+  min-width: 0;
+  text-overflow: ellipsis;
 }
 
 @media (min-width: 640px) {
   .reglages {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   }
 }
 
@@ -157,10 +166,19 @@ body {
   border: 3px solid var(--or);
 }
 
+/* Verdict du scan : VERT accepté, ROUGE refusé (tout motif). Dérogation à la palette GBIS,
+   limitée à ce poste de contrôle interne (docs/conformite.md) : lecture instantanée à la porte.
+   Texte blanc (contraste ≥ 5:1) ; le titre dit aussi le verdict, la couleur n'est pas seule. */
 .resultat[data-resultat='accepte'] {
-  background: var(--bleu-nuit);
+  background: #1e7b34;
   color: var(--blanc);
-  border-color: var(--bleu-profond);
+  border-color: #145523;
+}
+
+.resultat[data-resultat^='refuse'] {
+  background: #b3261e;
+  color: var(--blanc);
+  border-color: #7f1b15;
 }
 
 .resultat__titre {

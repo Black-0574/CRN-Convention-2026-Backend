@@ -16,12 +16,29 @@ export const DEMO = process.env.BOUTIQUE_DEMO === '1' && process.env.NODE_ENV !=
 /** Fin de la Convention (13 décembre inclus, Libreville) : borne des paliers sans date de fin. */
 export const FIN_CONVENTION = '2026-12-13';
 
+const estObjet = <T>(v: number | T | null | undefined): v is T => typeof v === 'object' && v !== null;
+
 export interface VueVariante {
   id: number;
   libelle: string;
   /** Places/articles restants ; `null` = non suivi (illimité). */
   disponible: number | null;
+  /** Séances PUBLIQUES propres à la variante (ex. une classe de l'Académie au choix). */
+  plateformes: VueSeance[];
 }
+
+export interface VueSeance {
+  nom: string;
+  debut: string | null;
+  fin: string | null;
+  lieu: string | null;
+}
+
+const vueSeances = (liste: (number | Plateforme)[] | null | undefined): VueSeance[] =>
+  (liste ?? [])
+    .filter(estObjet<Plateforme>)
+    .filter((pl) => pl.publique !== false)
+    .map((pl) => ({ nom: pl.nom, debut: pl.debut ?? null, fin: pl.fin ?? null, lieu: pl.lieu ?? null }));
 
 export interface VueProduit {
   id: number;
@@ -40,7 +57,7 @@ export interface VueProduit {
   ageMin: number | null;
   ageMax: number | null;
   variantes: VueVariante[];
-  plateformes: { nom: string; debut: string | null; fin: string | null; lieu: string | null }[];
+  plateformes: VueSeance[];
   /** Articles inclus ; `tailles` non vide = taille à choisir par le titulaire. */
   kit: { nom: string; quantite: number; tailles: string[] }[];
   /** Raison pour laquelle le produit ne peut pas être acheté maintenant, ou `null`. */
@@ -51,7 +68,6 @@ export interface VueProduit {
   ordre: number;
 }
 
-const estObjet = <T>(v: number | T | null | undefined): v is T => typeof v === 'object' && v !== null;
 
 export const paliersDe = (p: Pick<Produit, 'paliers'>): Palier[] =>
   (p.paliers ?? []).map((l) => palierDepuisJours({ prixXAF: Number(l.prixXAF), du: l.du, ...(l.au ? { au: l.au } : {}) }));
@@ -62,12 +78,11 @@ const restant = (q: Quota) => (q.capacite === null || q.capacite === undefined ?
 
 export async function vueProduit(payload: Payload, p: Produit, maintenant = new Date()): Promise<VueProduit> {
   const variantes = (
-    await payload.find({ collection: 'variantes', where: { produit: { equals: p.id }, actif: { equals: true } }, sort: 'ordre', limit: 50, depth: 0 })
+    await payload.find({ collection: 'variantes', where: { produit: { equals: p.id }, actif: { equals: true } }, sort: 'ordre', limit: 50, depth: 1 })
   ).docs as Variante[];
   const paliers = paliersDe(p);
   const enVigueur = palierEnVigueur(paliers, maintenant);
   const quotas = (p.quotas ?? []).filter(estObjet<Quota>);
-  const plateformes = (p.plateformes ?? []).filter(estObjet<Plateforme>).filter((pl) => pl.publique !== false);
   const kit = await Promise.all(
     (p.kit ?? []).map(async (k) => {
       const kp = estObjet<Produit>(k.produit) ? k.produit : await payload.findByID({ collection: 'produits', id: k.produit, depth: 0 });
@@ -80,6 +95,7 @@ export async function vueProduit(payload: Payload, p: Produit, maintenant = new 
     id: v.id,
     libelle: v.libelle,
     disponible: v.stock === null || v.stock === undefined ? null : Math.max(0, v.stock - (v.stockVendu ?? 0) - (v.stockReserve ?? 0)),
+    plateformes: vueSeances(v.plateformes),
   }));
 
   let indisponible: string | null = null;
@@ -114,7 +130,7 @@ export async function vueProduit(payload: Payload, p: Produit, maintenant = new 
     ageMin: p.ageMin ?? null,
     ageMax: p.ageMax ?? null,
     variantes: vues,
-    plateformes: plateformes.map((pl) => ({ nom: pl.nom, debut: pl.debut ?? null, fin: pl.fin ?? null, lieu: pl.lieu ?? null })),
+    plateformes: vueSeances(p.plateformes),
     kit,
     indisponible,
     apercu: Boolean(p.prixAValider),
