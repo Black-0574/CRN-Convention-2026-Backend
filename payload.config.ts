@@ -40,7 +40,7 @@ import { endpoints as endpointsBoutique } from './src/boutique/endpoints';
 import { journaliser } from './src/boutique/lib/journal';
 import { demarrerTachesPlanifiees } from './src/boutique/lib/taches';
 import { urlBackOffice } from './src/boutique/lib/urls';
-import { seedBoutique } from './src/boutique/seed';
+import { appliquerPrixArticlesAnnonces, seedBoutique } from './src/boutique/seed';
 
 if (process.env.BOUTIQUE_DEMO === '1' && process.env.NODE_ENV === 'production') {
   throw new Error('BOUTIQUE_DEMO=1 est réservé au développement local : refusé en production.');
@@ -131,6 +131,7 @@ export default buildConfig({
     }
     try {
       await seedBoutique(payload);
+      await appliquerPrixArticlesAnnonces(payload);
     } catch (err) {
       payload.logger.error(`Import initial du catalogue de la boutique échoué : ${(err as Error).message}`);
     }

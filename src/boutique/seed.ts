@@ -182,29 +182,48 @@ export async function seedBoutique(payload: Payload): Promise<void> {
 
 /**
  * Articles officiels annoncés par le Commanditaire le 5 novembre 2026 (pins, huile d'onction, polo,
- * casquette), sans prix : « Prix à valider », donc hors vente et absents du catalogue public tant
- * que le CRN n'a pas saisi le prix dans l'admin. Ajoute seulement les slugs absents ; appelé par
- * l'import initial et, sur une base déjà importée, par `npm run ajouter-articles`.
+ * casquette), prix validés le même jour (grille du Commanditaire). Ajoute seulement les slugs
+ * absents ; appelé par l'import initial et, sur une base déjà importée, par
+ * `npm run ajouter-articles`.
  */
+const TAILLES_POLO = ['S', 'M', 'L', 'XL', 'XXL'];
+const ARTICLES_ANNONCES = [
+  { nom: 'Pins officiel', slug: 'pins-officiel', resume: 'Pins officiel de la Convention CRN 2026.', variantes: ['Unique'], ordre: 32, prixXAF: 5_000 },
+  { nom: 'Huile d’onction', slug: 'huile-d-onction', resume: 'Huile d’onction de la Convention CRN 2026.', variantes: ['Unique'], ordre: 33, prixXAF: 3_000 },
+  { nom: 'Polo officiel', slug: 'polo-officiel', resume: 'Polo officiel de la Convention CRN 2026.', variantes: TAILLES_POLO, ordre: 34, prixXAF: 12_500 },
+  { nom: 'Casquette officielle', slug: 'casquette-officielle', resume: 'Casquette officielle de la Convention CRN 2026.', variantes: ['Unique'], ordre: 35, prixXAF: 10_000 },
+];
+/** Prix en vigueur à partir de sa validation, à 00h00 Libreville. */
+const paliersValides = (prixXAF: number) => [{ prixXAF, du: '2026-11-05' }];
+
 export async function ajouterArticlesAnnonces(payload: Payload): Promise<void> {
   const categorie = (await payload.find({ collection: 'categories', where: { slug: { equals: 'articles' } }, limit: 1 })).docs[0];
   if (!categorie) return payload.logger.warn('Rayon « Articles officiels » introuvable : articles annoncés non ajoutés.');
-  const TAILLES = ['S', 'M', 'L', 'XL', 'XXL'];
-  const articles = [
-    { nom: 'Pins officiel', slug: 'pins-officiel', resume: 'Pins officiel de la Convention CRN 2026.', variantes: ['Unique'], ordre: 32 },
-    { nom: 'Huile d’onction', slug: 'huile-d-onction', resume: 'Huile d’onction de la Convention CRN 2026.', variantes: ['Unique'], ordre: 33 },
-    { nom: 'Polo officiel', slug: 'polo-officiel', resume: 'Polo officiel de la Convention CRN 2026.', variantes: TAILLES, ordre: 34 },
-    { nom: 'Casquette officielle', slug: 'casquette-officielle', resume: 'Casquette officielle de la Convention CRN 2026.', variantes: ['Unique'], ordre: 35 },
-  ];
-  for (const a of articles) {
+  for (const a of ARTICLES_ANNONCES) {
     if ((await payload.count({ collection: 'produits', where: { slug: { equals: a.slug } } })).totalDocs) continue;
+    // Créé inactif, activé une fois ses variantes en place (comme le reste du catalogue).
     const p = await payload.create({
       collection: 'produits',
-      data: { nom: a.nom, slug: a.slug, type: 'physique', categorie: categorie.id, resume: a.resume, description: a.resume, actif: false, prixAValider: true, ordre: a.ordre } as never,
+      data: { nom: a.nom, slug: a.slug, type: 'physique', categorie: categorie.id, resume: a.resume, description: a.resume, paliers: paliersValides(a.prixXAF), actif: false, prixAValider: false, ordre: a.ordre } as never,
     });
     for (const [i, libelle] of a.variantes.entries()) {
       await payload.create({ collection: 'variantes', data: { produit: p.id, libelle, sku: `${a.slug}-${libelle}`.toLowerCase().replace(/[^a-z0-9]+/g, '-'), ordre: i } });
     }
-    payload.logger.info(`Article ajouté (prix à valider) : ${a.nom}.`);
+    await payload.update({ collection: 'produits', id: p.id, data: { actif: true } });
+    payload.logger.info(`Article ajouté : ${a.nom} (${a.prixXAF} F CFA).`);
+  }
+}
+
+/**
+ * Base déjà importée (production) : ces articles y existent en « Prix à valider ». À chaque
+ * démarrage, un article encore en attente de prix (prix à valider, aucun palier) reçoit son prix
+ * validé et passe en vente ; un article déjà tarifé ou modifié dans l'admin n'est jamais touché.
+ */
+export async function appliquerPrixArticlesAnnonces(payload: Payload): Promise<void> {
+  for (const a of ARTICLES_ANNONCES) {
+    const doc = (await payload.find({ collection: 'produits', where: { slug: { equals: a.slug } }, limit: 1, depth: 0 })).docs[0];
+    if (!doc || !doc.prixAValider || (doc.paliers?.length ?? 0) > 0) continue;
+    await payload.update({ collection: 'produits', id: doc.id, data: { paliers: paliersValides(a.prixXAF), prixAValider: false, actif: true } as never });
+    payload.logger.info(`Prix validé appliqué : ${a.nom} (${a.prixXAF} F CFA), article mis en vente.`);
   }
 }
