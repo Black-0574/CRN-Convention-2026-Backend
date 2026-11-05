@@ -19,7 +19,7 @@ import { Settings } from './src/globals/Settings';
 import { migrations } from './src/migrations';
 import { allowedOrigins } from './src/lib/allowed-origins';
 import { rebuildAfterChange, rebuildAfterDelete, rebuildAfterGlobalChange } from './src/lib/site-rebuild';
-import { seedFromContent } from './src/seed/seed-from-content';
+import { completerProfilsOrateurs, organiserOrateurs, seedFromContent } from './src/seed/seed-from-content';
 // CRN Boutique, intégrée au back-office : catalogue, ventes, billets, contrôle d'accès (le site
 // l'affiche sous /boutique). Plan : C:UsersMael.claudeplansjaunty-cuddling-kahn.md.
 import { Categories, Plateformes, Produits, Quotas, Variantes } from './src/boutique/collections/catalogue';
@@ -124,6 +124,8 @@ export default buildConfig({
   onInit: async (payload) => {
     try {
       await seedFromContent(payload);
+      await completerProfilsOrateurs(payload);
+      await organiserOrateurs(payload);
     } catch (err) {
       payload.logger.error(`Import initial du contenu échoué : ${(err as Error).message}`);
     }

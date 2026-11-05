@@ -3,6 +3,7 @@ import * as migration_20261101_224214 from './20261101_224214';
 import * as migration_20261102_074843 from './20261102_074843';
 import * as migration_20261102_083128 from './20261102_083128';
 import * as migration_20261104_172946_boutique from './20261104_172946_boutique';
+import * as migration_20261105_203919_orateurs_ordre from './20261105_203919_orateurs_ordre';
 
 export const migrations = [
   {
@@ -28,6 +29,11 @@ export const migrations = [
   {
     up: migration_20261104_172946_boutique.up,
     down: migration_20261104_172946_boutique.down,
-    name: '20261104_172946_boutique'
+    name: '20261104_172946_boutique',
+  },
+  {
+    up: migration_20261105_203919_orateurs_ordre.up,
+    down: migration_20261105_203919_orateurs_ordre.down,
+    name: '20261105_203919_orateurs_ordre',
   },
 ];

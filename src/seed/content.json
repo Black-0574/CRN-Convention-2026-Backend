@@ -792,88 +792,114 @@
       "id": "carelle-ambouroue",
       "data": {
         "nom": "Carelle Ambouroué",
-        "categorie": "plateforme",
-        "datePublication": "2026-10-31",
-        "photo": "/images/orateurs/carelle-ambouroue.webp"
+        "categorie": "national",
+        "ordre": 5,
+        "photo": "/images/orateurs/carelle-ambouroue-2.webp",
+        "datePublication": "2026-10-31"
       }
     },
     {
       "id": "francois-rabenkogo",
       "data": {
         "nom": "François Rabenkogo",
+        "fonction": "Vicaire Général National des Ministères CRN",
         "categorie": "national",
-        "datePublication": "2026-10-31",
-        "photo": "/images/orateurs/francois-rabenkogo.webp"
+        "ordre": 3,
+        "bio": "Un parcours de service, de formation et de transmission.\n\nNé le 18 janvier 1975 à Libreville, Monseigneur François Rabenkogo est un leader religieux gabonais dont le parcours est marqué par l’engagement pastoral, la formation et le service des Ministères Christ Révélé aux Nations.\n\nSa rencontre personnelle avec le Christ en 1992 ouvre une étape décisive de sa vie.\n\nQuelques années plus tard, il se forme au ministère à l’École Biblique Domata, en France. Il exerce ensuite comme pasteur assistant en région parisienne, prend la responsabilité du Club Élite — qui rassemble des leaders et hauts cadres chrétiens du Gabon — et conseille différentes structures ecclésiastiques nationales. Il devient par la suite pasteur associé à Libreville, puis Directeur de Cabinet de l’Évêque Général Mike Steeve Jocktane.\n\nDe 2014 à 2016, il crée et dirige la Direction des Missions des Ministères CRN. Depuis 2016, il est Directeur de l’École du Ministère CRN, contribuant ainsi à la formation et à l’accompagnement de ceux qui se préparent au service.\n\nEn 2022, il est consacré évêque par un collège d’évêques internationaux et installé comme Évêque de la ville de Moanda. En mars 2025, il devient premier Conseiller du Bureau Exécutif du CNEPER. En septembre 2026, il est élevé à la fonction de Vicaire Général National des Ministères CRN.\n\nAumônier des hôpitaux certifié et conférencier, il est également auteur. Parmi ses ouvrages figurent « Les Mystères du Culte », « Courir sa course ou Croire en soi-même » et « Dieu s’exprime au moyen du bruit ». Vingt manuscrits sont annoncés en préparation de publication.\n\nMarié à la Révérende Bénédicta Kwouayit, Monseigneur François Rabenkogo partage régulièrement des enseignements et des inspirations avec une large communauté, notamment sur les réseaux sociaux.",
+        "photo": "/images/orateurs/francois-rabenkogo.webp",
+        "datePublication": "2026-10-31"
       }
     },
     {
       "id": "jek-kalombo",
       "data": {
         "nom": "Jek Kalombo",
-        "categorie": "prophetique",
-        "datePublication": "2026-10-31",
-        "photo": "/images/orateurs/jek-kalombo.webp"
+        "fonction": "Diplomate ecclésiastique – Prédicateur de la Bonne Nouvelle",
+        "categorie": "international",
+        "ordre": 5,
+        "bio": "Un message christocentrique tourné vers la jeunesse et les élites.\n\nLe Révérend Jek Kalombo se présente comme un diplomate ecclésiastique et un prédicateur de la Bonne Nouvelle du Christ. Porteur d’un message christocentrique et se définissant comme prophète des Nations, il souhaite contribuer à l’épanouissement de la jeunesse et des élites.\n\nNatif de Kinshasa, il est le cadet d’une famille instruite de cinq enfants. Il est ordonné Révérend en 2024 au sein des Ministères Christ Révélé aux Nations, par Monseigneur Mike Steeve Jocktane.\n\nSon parcours associe formation et expérience entrepreneuriale. Titulaire d’un diplôme en sciences commerciales et financières, il est certifié en « doing business », homme d’affaires et lobbyiste interentreprises.\n\nIl préside Eagle Style International, une structure entrepreneuriale spécialisée dans la mode et le stylisme. Cet engagement dans l’univers de l’entreprise nourrit un regard tourné vers les initiatives, les opportunités et le développement des talents.\n\nSa détermination est d’apporter une contribution féconde à l’épanouissement de la jeunesse et des élites, en leur révélant les possibilités qu’offre la vie en Christ et les moyens de poursuivre une vie épanouie et prospère.",
+        "photo": "/images/orateurs/jek-kalombo-2.webp",
+        "datePublication": "2026-10-31"
       }
     },
     {
       "id": "michel-ambouroue",
       "data": {
         "nom": "Michel Ambouroué",
+        "fonction": "Évêque des Ministères Christ Révélé aux Nations – Responsable de l’Église Métropolitaine de Paris et de la Direction Occident",
         "categorie": "national",
-        "datePublication": "2026-10-31",
-        "photo": "/images/orateurs/michel-ambouroue.webp"
+        "ordre": 4,
+        "bio": "Intelligence spirituelle, guérison et engagement pour la prochaine génération.\n\nConverti dès l’âge de 14 ans, Monseigneur Michel Ambouroue s’engage tôt dans un cheminement de foi qui le conduit à poursuivre une formation théologique aux États-Unis. Il est ordonné Révérend Pasteur en 2012, puis consacré évêque en 2022.\n\nIl exerce aujourd’hui comme Évêque des Ministères Christ Révélé aux Nations, Responsable de l’Église Métropolitaine de Paris et de la Direction Occident. Reconnu comme une référence dans la francophonie, il porte, à travers ses prédications, un message destiné à transformer les mentalités.\n\nEnseignant de l’Intelligence Spirituelle, il associe dans son discours intelligence spirituelle et maîtrise intellectuelle.\n\nSon ministère est également présenté comme celui d’un ministre de guérison et d’un prophète, engagé dans l’expansion du Royaume.\n\nÉcrivain et conférencier, il est aussi philanthrope. Son appel vise notamment à susciter et accompagner la prochaine génération. Depuis 2023, il est Président Fondateur de M.A Organisation, structure engagée dans des évangélisations à grande échelle et des actions sociales.\n\nSon parcours conjugue ainsi enseignement, ministère, action sociale et transmission, avec une attention particulière portée à l’émergence de la génération appelée à prendre le relais.\n\nIl est marié à la Révérende Carelle Ambouroue. Ils ont trois enfants.",
+        "photo": "/images/orateurs/michel-ambouroue.webp",
+        "datePublication": "2026-10-31"
       }
     },
     {
       "id": "mike-jocktane",
       "data": {
         "nom": "Dr. Mike Jocktane",
-        "categorie": "hote",
-        "datePublication": "2026-10-31",
-        "photo": "/images/orateurs/mike-jocktane.webp"
+        "fonction": "Fondateur et Président Directeur International des Ministères Christ Révélé aux Nations",
+        "categorie": "national",
+        "ordre": 1,
+        "bio": "« Vivre c’est choisir, choisir Christ c’est réussir. »\n\nConstruire les nations en formant des disciples : cette vision résume l’engagement de Monseigneur Mike Steeve Jocktane. Sa vocation est de faire connaître Christ dans la francophonie en s’appuyant sur les moyens modernes disponibles, avec une conviction qui guide son action : aimer Dieu et les hommes de tout son cœur, c’est servir autrement, dans l’excellence et avec compassion.\n\nNé le 3 juillet 1972 à Paris, en France, deuxième d’une fratrie de quatre enfants, il fait une rencontre personnelle avec Christ à l’âge de 14 ans, le mardi 3 février 1987. Après un parcours scolaire mené sans redoublement entre le Gabon et la France, il obtient un baccalauréat série B au lycée Saint-Aspais, au terme de l’année académique 1990-1991. Il poursuit ensuite des études en sciences économiques à l’Université Panthéon-Assas Paris II, de 1991 à 1992.\n\nC’est au cours de cette deuxième année universitaire que l’appel de Dieu devient pressant. Avec la bénédiction de ses parents, il quitte alors la France pour les États-Unis. Il y entreprend sa formation théologique au Christ for the Nations Institute, à Dallas, puis l’approfondit à l’Université chrétienne Oral Roberts. Le 17 janvier 1994, il est ordonné ministre de l’Évangile. Le 22 mars 2003, il est consacré évêque par l’archevêque Nicolas Duncan William et un collège d’évêques de Tapac Global.\n\nFondateur et Président Directeur International des Ministères Christ Révélé aux Nations, il est conférencier international, enseignant et prédicateur de la Parole de Dieu. Son ministère apostolique met l’accent sur l’enseignement des mystères de la Parole et la manifestation de la puissance du Saint-Esprit. Son message appelle au renouvellement de la pensée et à la transformation du destin des personnes comme des nations.\n\nSon engagement s’étend également à la sphère publique : depuis 2005, il s’investit dans la vie politique de son pays avec l’ambition de contribuer à un « Gabon Nouveau ». En 2022, l’Université internationale Highstone, en Californie, lui décerne un doctorat honorifique en Divinité. En 2023 et 2024, il figure parmi les 100 personnalités africaines les plus réputées selon Réputation Poll International (RPI).\n\nIl est marié à l’Évêque Nadia Jocktane. Ensemble, ils ont quatre enfants.",
+        "photo": "/images/orateurs/mike-jocktane.webp",
+        "datePublication": "2026-10-31"
       }
     },
     {
       "id": "nadia-jocktane",
       "data": {
         "nom": "Nadia Jocktane",
+        "fonction": "Prophétesse-Évangéliste",
         "categorie": "national",
-        "datePublication": "2026-10-31",
-        "photo": "/images/orateurs/nadia-jocktane.webp"
+        "ordre": 2,
+        "bio": "« Si Dieu te parle au futur, c’est que tu en as un. »\n\n« Tourne le dos au passé, ne permets à personne de te coller l’étiquette de ton passé limité et embrasse ton futur illimité. » Cette pensée de Monseigneur Nadia Jocktane exprime une dimension essentielle de son ministère : rappeler à chacun que son histoire ne constitue pas une limite à ce que Dieu peut encore accomplir.\n\nNée le 3 février à Gonesse, en France, de parents d’origine gabonaise, elle grandit dans une famille chrétienne, avec un père catholique et une mère protestante. Dès l’âge de 14 ans, elle choisit de répondre à son appel et fonde par la suite l’organisation Nadia Jocktane Organisation (NJO). En 2000, elle est ordonnée ministre de l’Évangile.\n\nSon parcours marque l’histoire ecclésiale du Gabon. Elle devient la première femme pasteur de Port-Gentil, capitale économique du pays. En 2022, elle est consacrée évêque, devenant également la première femme évêque du Gabon.\n\nEn 2026, elle est nommée Responsable épiscopal du Pôle prophétique, de l’Évangélisation, des Actions sociales et de l’Engagement sociétal. Son ministère est caractérisé par la sagesse de la prédication, l’adoration, le prophétique, ainsi que des témoignages de miracles et de guérisons.\n\nAu-delà de ses responsabilités, Monseigneur Nadia Jocktane incarne un leadership féminin qui associe humanité et spiritualité. Elle se définit comme une activatrice de destinée et porte une parole qui encourage à ne pas attendre passivement que les choses arrivent, mais à agir avec foi et détermination.\n\nElle est mariée à l’Évêque Général Mike Steeve Jocktane et mère de quatre enfants.",
+        "photo": "/images/orateurs/nadia-jocktane-2.webp",
+        "datePublication": "2026-10-31"
       }
     },
     {
       "id": "patricia-piebi",
       "data": {
         "nom": "Patricia Piebi",
-        "categorie": "plateforme",
-        "datePublication": "2026-10-31",
-        "photo": "/images/orateurs/patricia-piebi.webp"
+        "categorie": "international",
+        "ordre": 4,
+        "photo": "/images/orateurs/patricia-piebi.webp",
+        "datePublication": "2026-10-31"
       }
     },
     {
       "id": "robert-ondoa",
       "data": {
         "nom": "Robert Ondoa",
+        "fonction": "Rhematologue – Docteur de la Loi – Enseignant",
         "categorie": "international",
-        "datePublication": "2026-10-31",
-        "photo": "/images/orateurs/robert-ondoa.webp"
+        "ordre": 1,
+        "bio": "Un ministère d’enseignement porté par la profondeur de la Parole.\n\nReconnu dans la biographie qui nous a été transmise comme une voix particulièrement autorisée en matière d’enseignement biblique dans la francophonie et au-delà, l’Évêque Dr Robert Ondoa Enyegue est présenté comme un enseignant dont la démarche se distingue par la profondeur de l’étude et de l’explication des Écritures.\n\nNé un 30 décembre à Ntang, près de Mbalmayo, au Cameroun, il est issu d’une famille d’anciens chrétiens fervents de confession catholique romaine. Son parcours de formation comprend une licence en théologie, une formation à l’Institut Haggai, spécialisé dans le leadership, un Graduate Diploma in Ministry du Glory Word Seminar, un diplôme d’enseignant en leadership ainsi qu’un doctorat en théologie.\n\nPour lui, le titre de docteur ne se réduit pas à l’accumulation de diplômes : il représente la consécration d’un investissement divin dans sa vie. Il considère le ministère moins comme une activité académique que comme le revêtement d’un manteau divin, reçu dans le cadre d’une instruction spirituelle.\n\nSon rayonnement s’exprime dans plusieurs domaines. Il intervient comme motivateur, coach, formateur, conférencier, prédicateur et enseignant de la Parole de Dieu. Il dirige également BETHEL GLOBAL MISSIONS, une entreprise missionnaire.\n\nSon parcours invite à redécouvrir la richesse de l’enseignement biblique et à prendre le temps d’examiner les Écritures avec rigueur, profondeur et disponibilité spirituelle.\n\nIl est marié au pasteur Honorine. Leur famille compte six enfants : Lydie, Emmanuel-Eunice, Marie Paul Gertrude, Simon Pierre Ariel, Paul Blaise et Venant Magdie.",
+        "photo": "/images/orateurs/robert-ondoa-2.webp",
+        "datePublication": "2026-10-31"
       }
     },
     {
       "id": "silas-makangu",
       "data": {
         "nom": "Silas Makangu",
+        "fonction": "Professeur des Universités – Expert en géopolitique et géostratégie",
         "categorie": "international",
-        "datePublication": "2026-10-31",
-        "photo": "/images/orateurs/silas-makangu.webp"
+        "ordre": 2,
+        "bio": "Leadership, stratégie et responsabilité au service des communautés.\n\nLe Docteur Silas Mimile Makangu évolue à la croisée de l’enseignement supérieur, du conseil stratégique et de l’engagement ecclésial. Professeur des Universités, il est expert en géopolitique et géostratégie, et intervient également comme consultant en leadership, management stratégique et communication politique.\n\nIl est Directeur Général de l’International Leadership Institute (I.L.I), une structure dédiée à la formation et à l’accompagnement en leadership. À travers cette responsabilité, il contribue au développement des capacités de celles et ceux qui exercent ou aspirent à exercer des fonctions d’influence et de responsabilité.\n\nAuteur prolifique, il compte plusieurs ouvrages à son actif, parmi lesquels « Bâtisseurs des Nations », « Leadership au Féminin » et « Le Chef ». Ses publications témoignent de son intérêt pour la construction des nations, la place des femmes dans le leadership et les exigences liées à l’exercice de l’autorité.\n\nHomme d’Église, il dirige l’Église Cité Rama, située à Kinshasa-Gombe. Son profil réunit ainsi réflexion universitaire, accompagnement des leaders, production intellectuelle et responsabilité pastorale.\n\nÀ travers ses interventions, il apporte un regard qui relie les enjeux du leadership aux défis du management, de la communication et de la construction collective.",
+        "photo": "/images/orateurs/silas-makangu-2.webp",
+        "datePublication": "2026-10-31"
       }
     },
     {
       "id": "wilson-ndi",
       "data": {
         "nom": "Wilson Ndi",
+        "fonction": "Presiding Bishop – Garden of Life Ministries Worldwide",
         "categorie": "international",
+        "ordre": 3,
+        "bio": "Un ministère d’enseignement, de formation et de diffusion médiatique.\n\nBishop Dr Ndi Wilson Njinwi est un ministre de l’Évangile dont le parcours associe expertise professionnelle, responsabilité ecclésiale, enseignement théologique et communication chrétienne. Formé à la comptabilité, il est expert-comptable certifié de l’ACCA, à Glasgow, au Royaume-Uni.\n\nIl est l’évêque président de Garden of Life Ministries Worldwide, un réseau d’églises en croissance. Ministre ordonné et consacré, il a reçu la mission de prêcher la « Secret Theology of Christ », avec pour orientation de présenter chaque personne parfaite en Christ.\n\nTitulaire d’un doctorat en théologie systématique, il occupe plusieurs responsabilités ecclésiales au Cameroun. Il est notamment prélat de la région du Sud-Ouest au sein de la CAIFMIC, vice-président régional du Sud-Ouest de la Congrégation Baptiste Camerounaise et membre du comité exécutif du Synode épiscopal du Cameroun.\n\nAuteur de plusieurs ouvrages chrétiens, il anime depuis douze ans et plus le programme quotidien de méditation « Spirit and Life Daily Devotional », qui a touché des centaines de milliers de personnes.\n\nIl est également CEO de Life TV, une chaîne chrétienne diffusée dans plus de trente pays africains. Son engagement médiatique prolonge ainsi son désir de transmettre la foi et l’enseignement chrétien au-delà des frontières.\n\nIl est marié et père de trois enfants.",
         "photo": "/images/orateurs/wilson-ndi.webp",
         "datePublication": "2026-10-31"
       }

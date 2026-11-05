@@ -23,7 +23,7 @@ interface SeedContent {
   faq: Entry<{ question: string; reponse: string; etats?: string[]; ordre: number }>[];
   products: Entry<Record<string, unknown>>[];
   announcements: Entry<{ titre: string; texte: string; date: string; ordre: number }>[];
-  speakers: Entry<{ nom: string; categorie: string; bio?: string; photo?: string; videoInvitation?: string; datePublication?: string }>[];
+  speakers: Entry<{ nom: string; fonction?: string; categorie: string; ordre?: number; bio?: string; photo?: string; videoInvitation?: string; datePublication?: string }>[];
   program: Entry<{
     date: string;
     label: string;
@@ -129,8 +129,10 @@ async function run(payload: Payload): Promise<boolean> {
         collection: 'speakers',
         data: {
           nom: s.data.nom,
+          fonction: s.data.fonction,
           slug: s.id,
           categorie: s.data.categorie as never,
+          ordre: s.data.ordre,
           bio: s.data.bio,
           photo,
           videoInvitation: s.data.videoInvitation,
@@ -174,4 +176,57 @@ async function run(payload: Payload): Promise<boolean> {
   });
   payload.logger.info('Import initial du contenu du site terminé.');
   return true;
+}
+
+/**
+ * Biographies et fonctions des orateurs (document « Biographies des orateurs », 5 novembre 2026)
+ * pour une base déjà importée : complète seulement les champs encore vides, à chaque démarrage,
+ * sans jamais écraser une saisie faite dans l'admin. Orateur retrouvé par son identifiant
+ * d'adresse (slug) ; absent ou renommé : ignoré.
+ */
+export async function completerProfilsOrateurs(payload: Payload): Promise<void> {
+  const c = content as unknown as SeedContent;
+  for (const s of c.speakers) {
+    if (!s.data.bio && !s.data.fonction) continue;
+    const doc = (await payload.find({ collection: 'speakers', where: { slug: { equals: s.id } }, limit: 1, depth: 0 })).docs[0];
+    if (!doc) continue;
+    const data: { bio?: string; fonction?: string } = {};
+    if (s.data.bio && !doc.bio?.trim()) data.bio = s.data.bio;
+    if (s.data.fonction && !doc.fonction?.trim()) data.fonction = s.data.fonction;
+    if (Object.keys(data).length === 0) continue;
+    await payload.update({ collection: 'speakers', id: doc.id, data });
+    payload.logger.info(`Profil complété : ${doc.nom} (${Object.keys(data).join(', ')}).`);
+  }
+}
+
+/** Photos remplacées à la demande du Commanditaire le 5 novembre 2026 (nouveaux fichiers « -2 »). */
+const PHOTOS_REMPLACEES = new Set(['carelle-ambouroue', 'nadia-jocktane', 'jek-kalombo', 'robert-ondoa', 'silas-makangu']);
+
+/**
+ * Organisation des orateurs demandée le 5 novembre 2026, à chaque démarrage, sans jamais écraser
+ * une saisie de l'admin :
+ * - catégorie et ordre (nationaux puis internationaux, de gauche à droite) : une seule fois, pour
+ *   les orateurs dont l'ordre est encore vide (colonne ajoutée par la migration
+ *   20261105_203919_orateurs_ordre) ;
+ * - photo : remplacée seulement si c'est encore la photo d'origine importée (« <identifiant>.webp ») ;
+ *   téléchargée depuis le site public, donc retentée à chaque démarrage tant que le site qui la
+ *   sert n'est pas en ligne.
+ */
+export async function organiserOrateurs(payload: Payload): Promise<void> {
+  const c = content as unknown as SeedContent;
+  for (const s of c.speakers) {
+    if (s.data.ordre === undefined) continue;
+    const doc = (await payload.find({ collection: 'speakers', where: { slug: { equals: s.id } }, limit: 1, depth: 1 })).docs[0];
+    if (!doc) continue;
+    const data: { ordre?: number; categorie?: never; photo?: number } = {};
+    if (doc.ordre === null || doc.ordre === undefined) Object.assign(data, { ordre: s.data.ordre, categorie: s.data.categorie as never });
+    const photoActuelle = typeof doc.photo === 'object' && doc.photo ? doc.photo.filename : null;
+    if (PHOTOS_REMPLACEES.has(s.id) && photoActuelle === `${s.id}.webp`) {
+      const photo = await uploadPhoto(payload, s.data.photo, s.data.nom);
+      if (photo) data.photo = photo;
+    }
+    if (Object.keys(data).length === 0) continue;
+    await payload.update({ collection: 'speakers', id: doc.id, data });
+    payload.logger.info(`Orateur organisé : ${doc.nom} (${Object.keys(data).join(', ')}).`);
+  }
 }
