@@ -17,7 +17,8 @@
     "migrate-from-content": "payload run scripts/migrate-from-content.ts",
     "test:boutique": "vitest run --root src/boutique/domaine",
     "test:concurrence": "payload run scripts/test-concurrence.ts",
-    "test:scan": "payload run scripts/test-scan.ts"
+    "test:scan": "payload run scripts/test-scan.ts",
+    "ajouter-articles": "payload run scripts/ajouter-articles.ts"
   },
   "dependencies": {
     "@fontsource/source-sans-3": "5.3.1",

@@ -120,6 +120,7 @@ export async function seedBoutique(payload: Payload): Promise<void> {
     { nom: 'Pagne officiel mixte', slug: 'pagne-officiel', type: 'physique', categorie: catArticles, resume: 'Pagne officiel de la Convention CRN 2026, modèle mixte.', description: 'Pagne officiel de la Convention CRN 2026, modèle mixte. Retrait sur le lieu de la Convention.', paliers: prix(10_000), ...valide, misEnAvant: true, ordreMiseEnAvant: 7, ordre: 31 },
     [{ libelle: 'Unique', ...(DEMO ? { stock: 100 } : {}) }],
   );
+  await ajouterArticlesAnnonces(payload);
   // Articles de kit sans prix connu : jamais vendus seuls.
   const kitSeul = async (nom: string, slug: string) => produit({ nom, slug, type: 'physique', categorie: catArticles, ...aValider, ordre: 90 });
   const stylo = await kitSeul('Stylo officiel', 'stylo-officiel');
@@ -173,4 +174,33 @@ export async function seedBoutique(payload: Payload): Promise<void> {
 
   await payload.updateGlobal({ slug: 'reglages-boutique', data: { ventesOuvertes: true } });
   payload.logger.info(`Catalogue importé${DEMO ? ' (avec valeurs de démonstration locales)' : ''}.`);
+}
+
+/**
+ * Articles officiels annoncés par le Commanditaire le 5 novembre 2026 (pins, huile d'onction, polo,
+ * casquette), sans prix : « Prix à valider », donc hors vente et absents du catalogue public tant
+ * que le CRN n'a pas saisi le prix dans l'admin. Ajoute seulement les slugs absents ; appelé par
+ * l'import initial et, sur une base déjà importée, par `npm run ajouter-articles`.
+ */
+export async function ajouterArticlesAnnonces(payload: Payload): Promise<void> {
+  const categorie = (await payload.find({ collection: 'categories', where: { slug: { equals: 'articles' } }, limit: 1 })).docs[0];
+  if (!categorie) return payload.logger.warn('Rayon « Articles officiels » introuvable : articles annoncés non ajoutés.');
+  const TAILLES = ['S', 'M', 'L', 'XL', 'XXL'];
+  const articles = [
+    { nom: 'Pins officiel', slug: 'pins-officiel', resume: 'Pins officiel de la Convention CRN 2026.', variantes: ['Unique'], ordre: 32 },
+    { nom: 'Huile d’onction', slug: 'huile-d-onction', resume: 'Huile d’onction de la Convention CRN 2026.', variantes: ['Unique'], ordre: 33 },
+    { nom: 'Polo officiel', slug: 'polo-officiel', resume: 'Polo officiel de la Convention CRN 2026.', variantes: TAILLES, ordre: 34 },
+    { nom: 'Casquette officielle', slug: 'casquette-officielle', resume: 'Casquette officielle de la Convention CRN 2026.', variantes: ['Unique'], ordre: 35 },
+  ];
+  for (const a of articles) {
+    if ((await payload.count({ collection: 'produits', where: { slug: { equals: a.slug } } })).totalDocs) continue;
+    const p = await payload.create({
+      collection: 'produits',
+      data: { nom: a.nom, slug: a.slug, type: 'physique', categorie: categorie.id, resume: a.resume, description: a.resume, actif: false, prixAValider: true, ordre: a.ordre } as never,
+    });
+    for (const [i, libelle] of a.variantes.entries()) {
+      await payload.create({ collection: 'variantes', data: { produit: p.id, libelle, sku: `${a.slug}-${libelle}`.toLowerCase().replace(/[^a-z0-9]+/g, '-'), ordre: i } });
+    }
+    payload.logger.info(`Article ajouté (prix à valider) : ${a.nom}.`);
+  }
 }

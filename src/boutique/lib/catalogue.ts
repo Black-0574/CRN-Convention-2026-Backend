@@ -99,7 +99,7 @@ export async function vueProduit(payload: Payload, p: Produit, maintenant = new 
   }));
 
   let indisponible: string | null = null;
-  if (!enVigueur) indisponible = paliers.length === 0 ? 'Non vendu séparément' : 'Hors période de vente';
+  if (!enVigueur) indisponible = paliers.length === 0 ? (p.prixAValider ? 'Ouverture des ventes à annoncer' : 'Non vendu séparément') : 'Hors période de vente';
   else if (quotas.some((q) => restant(q) === null)) indisponible = 'Ouverture des ventes à annoncer';
   else if (quotas.some((q) => (restant(q) ?? 1) <= 0)) indisponible = 'Complet';
   else if (vues.length === 0 || vues.every((v) => v.disponible === 0)) indisponible = 'Épuisé';
@@ -143,6 +143,8 @@ export async function vueProduit(payload: Payload, p: Produit, maintenant = new 
 export async function catalogue(payload: Payload, maintenant = new Date()): Promise<VueProduit[]> {
   const produits = (await payload.find({ collection: 'produits', limit: 200, depth: 1, sort: 'ordre' })).docs as Produit[];
   const vues = await Promise.all(produits.filter(estVisible).map((p) => vueProduit(payload, p, maintenant)));
-  // Les articles de kit sans prix propre ne s'affichent pas comme produits.
-  return vues.filter((v) => v.paliers.length > 0);
+  // Les articles de kit sans prix propre ne s'affichent pas comme produits ; un article annoncé
+  // sans prix (aperçu seulement, voir estVisible) s'affiche « À annoncer ».
+  const dansUnKit = new Set(produits.flatMap((p) => (p.kit ?? []).map((k) => (estObjet<Produit>(k.produit) ? k.produit.id : k.produit))));
+  return vues.filter((v) => v.paliers.length > 0 || !dansUnKit.has(v.id));
 }
