@@ -1,12 +1,13 @@
 /**
  * Raccordement des prestataires de paiement (interface `PaymentProvider` du cœur métier) et dépôt
- * des événements en base. Le prestataire actif se choisit par variable d'environnement : aucun
- * n'est codé en dur. L'agrégateur retenu couvrira plusieurs pays (Mobile Money des différents
- * opérateurs et carte bancaire) ; tant que le CRN ne l'a pas choisi et n'a pas fourni ses
- * identifiants (question bloquante n° 4), seul le « bac à sable » est disponible, avec une page de
- * paiement simulée (`/paiement-simule` du back-office).
+ * des événements en base. Le prestataire actif se choisit par variable d'environnement
+ * (`PAIEMENT_PRESTATAIRE`) : aucun n'est codé en dur.
+ * - `saspay` : agrégateur retenu par le CRN le 6 novembre 2026 (Mobile Money et carte, plusieurs
+ *   pays) — `SASPAY_API_KEY` (sk_test_… / sk_live_…) et `SASPAY_WEBHOOK_SECRET` ; options
+ *   `SASPAY_PAYS` (pays présélectionné, GA par défaut) et `SASPAY_MODE_FRAIS` (ADD_ON ou DEDUCTED).
+ * - `bac-a-sable` : page de paiement simulée (`/paiement-simule` du back-office), hors production.
  */
-import { BacASable, type DepotPaiements, type Decision, type EvenementPaiement, type PaymentProvider } from '../domaine/src/index.ts';
+import { BacASable, SasPay, type DepotPaiements, type Decision, type EvenementPaiement, type PaymentProvider } from '../domaine/src/index.ts';
 import type { Payload } from 'payload';
 
 import { emettre } from './emission';
@@ -15,6 +16,7 @@ import { lignes, maintenant, sql } from './db';
 import { expirerReservations, liberer, transition } from './ventes';
 
 let bacASable: BacASable | null = null;
+let sasPay: SasPay | null = null;
 
 export function prestataire(nom = process.env.PAIEMENT_PRESTATAIRE || 'bac-a-sable'): PaymentProvider {
   if (nom === 'bac-a-sable') {
@@ -24,6 +26,17 @@ export function prestataire(nom = process.env.PAIEMENT_PRESTATAIRE || 'bac-a-sab
       (ref, demande) => `${urlBackOffice()}/paiement-simule?ref=${encodeURIComponent(ref)}&retour=${encodeURIComponent(demande.urlRetour)}`,
     );
     return bacASable;
+  }
+  if (nom === 'saspay') {
+    const modeFrais = process.env.SASPAY_MODE_FRAIS;
+    sasPay ??= new SasPay({
+      cleApi: process.env.SASPAY_API_KEY ?? '',
+      secretWebhook: process.env.SASPAY_WEBHOOK_SECRET ?? '',
+      pays: process.env.SASPAY_PAYS || 'GA',
+      ...(modeFrais === 'ADD_ON' || modeFrais === 'DEDUCTED' ? { modeFrais } : {}),
+      ...(process.env.SASPAY_API_URL ? { urlApi: process.env.SASPAY_API_URL } : {}),
+    });
+    return sasPay;
   }
   throw new Error(`Prestataire de paiement inconnu : « ${nom} » (agrégateur de paiement à raccorder).`);
 }

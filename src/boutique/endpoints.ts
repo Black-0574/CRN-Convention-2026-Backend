@@ -5,7 +5,7 @@
  * seulement : simulation de l'agrégateur de paiement (Mobile Money multi-pays et carte) et lecture
  * des e-mails capturés.
  */
-import { traiterWebhook, type BacASable, type MoyenPaiement } from './domaine/src/index.ts';
+import { ErreurSasPay, SasPay, traiterWebhook, type BacASable, type MoyenPaiement } from './domaine/src/index.ts';
 import type { Endpoint, PayloadRequest } from 'payload';
 
 import { roleDe, type Role } from './lib/acces';
@@ -16,7 +16,7 @@ import { courrielsDe, lireCourriel } from './lib/messagerie';
 import { bacASableActif, depot, prestataire } from './lib/paiement';
 import { scanner } from './lib/scan';
 import { csv, tableau } from './lib/tableau';
-import { reconcilier } from './lib/taches';
+import { reconcilier, reconcilierEnArrierePlan } from './lib/taches';
 import { urlBackOffice, urlSuivi } from './lib/urls';
 import { creerCommande, ErreurVente, type EntreeCommande } from './lib/ventes';
 
@@ -171,16 +171,27 @@ export const endpoints: Endpoint[] = [
       if (c.reservationExpireA && new Date(c.reservationExpireA) < new Date()) return erreur('Le délai de réservation est dépassé : recommencez votre commande.', 409);
       // Le client choisit son moyen (Mobile Money de son pays ou carte bancaire) sur la page
       // sécurisée de l'agrégateur, qui le renvoie ensuite vers le suivi de sa commande.
-      const p = prestataire();
-      const { referenceExterne, redirection } = await p.creerPaiement({
-        referenceCommande: c.numero,
-        montantXAF: c.totalXAF,
-        telephone: c.telephone,
-        email: c.email,
-        nom: `${c.prenom} ${c.nom}`,
-        description: `Commande ${c.numero} — Boutique de la Convention CRN 2026`,
-        urlRetour: urlSuivi(c.numero, c.jetonSuivi),
-      });
+      let p;
+      let session;
+      try {
+        p = prestataire();
+        session = await p.creerPaiement({
+          referenceCommande: c.numero,
+          montantXAF: c.totalXAF,
+          telephone: c.telephone,
+          email: c.email,
+          nom: `${c.prenom} ${c.nom}`,
+          description: `Commande ${c.numero} — Boutique de la Convention CRN 2026`,
+          urlRetour: urlSuivi(c.numero, c.jetonSuivi),
+          ...(c.reservationExpireA ? { expireA: new Date(c.reservationExpireA).toISOString() } : {}),
+        });
+      } catch (e) {
+        // Détail (clé refusée, réseau…) dans le journal du back-office, jamais montré au client.
+        const code = e instanceof ErreurSasPay && e.codeSasPay ? ` (${e.codeSasPay})` : '';
+        req.payload.logger.error(`Paiement ${c.numero} : ${(e as Error).message}${code}`);
+        return erreur('Le paiement est momentanément indisponible : réessayez dans un instant.', 502);
+      }
+      const { referenceExterne, redirection } = session;
       if (!redirection) return erreur('Le prestataire de paiement n’a pas répondu : réessayez dans un instant.', 502);
       await req.payload.update({ collection: 'commandes', id: c.id, data: { paiement: { prestataire: p.nom, referenceExterne } } });
       return json({ referenceExterne, redirection, simulation: p.nom === 'bac-a-sable' });
@@ -199,6 +210,15 @@ export const endpoints: Endpoint[] = [
       }
       const corps = (await req.text?.()) ?? '';
       const entetes = Object.fromEntries(req.headers.entries());
+      // SasPay : notification signée sans référence de commande → relecture par l'API du statut
+      // des commandes SasPay en attente (mêmes règles de transition, idempotent), en arrière-plan
+      // pour répondre aussitôt (SasPay coupe à 15 s).
+      if (p instanceof SasPay) {
+        const notif = p.lireNotification(corps, entetes);
+        if (!notif) return json({ resultat: 'signature_invalide' }, 401);
+        reconcilierEnArrierePlan(req.payload, 'saspay');
+        return json({ resultat: 'notification', evenement: notif.evenement });
+      }
       const r = await traiterWebhook(p, depot(req.payload, nom), corps, entetes);
       return json({ resultat: r.resultat }, r.code);
     },

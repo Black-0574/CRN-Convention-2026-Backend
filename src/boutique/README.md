@@ -44,9 +44,10 @@ ne partent pas : ils sont écrits dans `backend/.courriels/` et listés sur la p
 ## Tests
 
 ```bash
-npm --prefix backend run test:boutique     # cœur métier (44 tests)
+npm --prefix backend run test:boutique     # cœur métier (68 tests, dont l’adaptateur SasPay)
 npm --prefix backend run test:concurrence  # 200 commandes simultanées sur 50 places : 50 acceptées
 npm --prefix backend run test:scan         # double passage refusé, QR falsifié refusé, scans simultanés
+npm --prefix backend run test:saspay       # paiement SasPay de bout en bout contre un faux SasPay
 E2E_BOUTIQUE=1 npx playwright test tests/e2e/boutique-achat.spec.ts   # achats complets à 360 × 740
 ```
 
@@ -81,9 +82,42 @@ E2E_BOUTIQUE=1 npx playwright test tests/e2e/boutique-achat.spec.ts   # achats c
 - **Back-office** : rôles nominatifs (administrateur, éditeur, catalogue, COM Boutique,
   comptabilité), journal des actions, tableau des ventes, exports CSV.
 
-## Reste à raccorder avant la mise en production (questions au CRN)
+## Paiement SasPay (agrégateur retenu le 6 novembre 2026)
 
-Agrégateur de paiement multi-pays (Mobile Money et carte : choix du prestataire, pays couverts,
-identifiants), liste des églises du réseau et frais de livraison, frais de livraison à domicile,
-prestataire d’e-mail, grille tarifaire validée, capacités et stocks, lieu de retrait à la
-Convention, CGV, double authentification devant `/admin`.
+`domaine/src/saspay.ts`, branché par `PAIEMENT_PRESTATAIRE=saspay` (variables : `backend/.env.example`).
+
+- **Checkout hébergé** : `POST /checkout-sessions/` en XAF, montant de la commande, page SasPay où
+  le client choisit son pays, son réseau ou la carte ; la session expire avec la réservation des
+  places ; retour automatique au suivi de commande après un paiement réussi.
+- **Webhook** `https://admin.crn-convention2026.events/api/boutique/paiements/saspay/webhook`
+  (à créer dans le tableau de bord SasPay : événements `transaction.success`, `transaction.failed`,
+  `transaction.cancelled`) : signature HMAC et horodatage (5 min) vérifiés ; le corps ne porte pas
+  la référence de la commande, il déclenche donc la relecture du statut des commandes SasPay en
+  attente (`GET /checkout-sessions/{id}/status/`, revérifié par SasPay chez l'opérateur). Réponse
+  immédiate, traitement en arrière-plan et en file (SasPay coupe à 15 s).
+- **Vérifier avant de livrer** : une commande ne passe « payée » (billets émis) que si
+  `GET /payments/{id}/verify/` renvoie `SUCCESS` ; montant débité au client et net reçu notés dans
+  le détail du paiement de la commande (comptabilité).
+- **Filet de sécurité** : même relecture toutes les 2 minutes (webhook perdu ou pas encore créé),
+  commandes expirées depuis moins de 24 h comprises (paiement tardif → « à vérifier ») ; arrêt au
+  premier `429` (limite de débit), reprise au passage suivant.
+- **Contrôle de configuration** : `npm --prefix backend run saspay:verifier` (variables, clé acceptée,
+  réseaux ouverts au Gabon et plafonds par paiement, webhook déclaré et abonnements, secrets des
+  billets) ; n'affiche jamais la clé ni les secrets.
+- **Non vérifié contre le vrai SasPay** (faute de clé à ce jour) : création de session, page de
+  paiement, webhook réel, réseaux du Gabon. Testé contre un faux SasPay conforme à la
+  documentation (`test:saspay`).
+
+## Reste à raccorder avant d'ouvrir les ventes
+
+1. **SasPay** : compte vérifié (KYC), clé `sk_test_…` puis `sk_live_…` (scope PAYIN), point de
+   réception webhook et son secret, réseaux réellement ouverts au Gabon (Airtel Money, Moov Money)
+   et à la carte, choix de qui paie les frais (`SASPAY_MODE_FRAIS`).
+2. **Variables de production** (hPanel du back-office) : `BILLETS_SECRET`, `LIENS_SECRET`,
+   `PUBLIC_SERVER_URL`, puis les variables SasPay.
+3. **Prestataire d'e-mail** : en production les e-mails (confirmation, lien des billets) ne partent
+   pas encore — ils sont écrits sur le serveur (`MessagerieLocale`). Le client voit ses billets sur
+   la page de suivi au retour de SasPay, mais ne reçoit rien par e-mail.
+4. CGV publiées, capacités des séances (quota vide = ventes bloquées), stocks, liste des églises
+   du réseau et frais de livraison, lieu de retrait, double authentification devant `/admin`.
+5. Puis cocher « Ventes ouvertes » (Boutique · Réglages) et faire une vente réelle de contrôle.

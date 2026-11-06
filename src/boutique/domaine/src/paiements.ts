@@ -34,6 +34,8 @@ export interface DemandePaiement {
   description: string;
   /** Page où l'agrégateur renvoie le client après le paiement (suivi de commande). */
   urlRetour: string;
+  /** Fin de la réservation (ISO) : la page de paiement ne doit plus encaisser au-delà. */
+  expireA?: string;
 }
 
 export interface PaymentProvider {
@@ -47,6 +49,8 @@ export interface PaymentProvider {
   verifierWebhook(corpsBrut: string, entetes: Readonly<Record<string, string | undefined>>): EvenementPaiement | null;
   /** Statut côté prestataire (réconciliation quotidienne, reprise après webhook perdu). */
   statut(referenceExterne: string): Promise<StatutPrestataire | 'en_attente'>;
+  /** Détail du paiement vérifié (montant débité, net reçu…), après `statut` → payée. */
+  informations?(referenceExterne: string): { detail?: string; moyen?: MoyenPaiement } | undefined;
   rembourser?(referenceExterne: string, montantXAF: number): Promise<void>;
 }
 

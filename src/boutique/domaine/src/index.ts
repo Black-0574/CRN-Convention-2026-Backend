@@ -6,3 +6,4 @@ export * from './quotas.ts';
 export * from './jetons.ts';
 export * from './droits.ts';
 export * from './paiements.ts';
+export * from './saspay.ts';

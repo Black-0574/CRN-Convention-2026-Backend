@@ -18,7 +18,9 @@
     "test:boutique": "vitest run --root src/boutique/domaine",
     "test:concurrence": "payload run scripts/test-concurrence.ts",
     "test:scan": "payload run scripts/test-scan.ts",
-    "ajouter-articles": "payload run scripts/ajouter-articles.ts"
+    "ajouter-articles": "payload run scripts/ajouter-articles.ts",
+    "test:saspay": "payload run scripts/test-saspay.ts",
+    "saspay:verifier": "payload run scripts/saspay-verifier.ts"
   },
   "dependencies": {
     "@fontsource/source-sans-3": "5.3.1",
