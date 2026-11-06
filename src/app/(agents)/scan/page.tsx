@@ -75,14 +75,30 @@ export default function PageScan() {
   const connecter = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const champs = Object.fromEntries(new FormData(e.currentTarget));
-    const res = await fetch('/api/users/login', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(champs),
-    });
-    setMessageConnexion(res.ok ? '' : 'Identifiants incorrects ou compte verrouillé.');
-    if (res.ok) chargerPlateformes();
+    let res: Response;
+    try {
+      res = await fetch('/api/users/login', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(champs),
+      });
+    } catch {
+      return setMessageConnexion('Connexion impossible : vérifiez le réseau du poste, puis réessayez.');
+    }
+    if (res.ok) {
+      setMessageConnexion('');
+      return chargerPlateformes();
+    }
+    // Message exact du back-office : identifiants incorrects, ou compte verrouillé (5 échecs).
+    const message = ((await res.json().catch(() => null)) as { errors?: { message?: string }[] } | null)?.errors?.[0]?.message;
+    setMessageConnexion(
+      !message
+        ? 'Connexion refusée, veuillez réessayer.'
+        : /verrouill/i.test(message)
+          ? `${message} Réessayez dans 10 minutes, ou demandez à un administrateur de le déverrouiller (Utilisateurs → Forcer le déverrouillage).`
+          : message,
+    );
   };
 
   const verifier = useCallback(async (brut: string) => {
