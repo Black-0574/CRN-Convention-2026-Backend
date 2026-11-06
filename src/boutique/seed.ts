@@ -227,3 +227,24 @@ export async function appliquerPrixArticlesAnnonces(payload: Payload): Promise<v
     payload.logger.info(`Prix validé appliqué : ${a.nom} (${a.prixXAF} F CFA), article mis en vente.`);
   }
 }
+
+/**
+ * Points relais du réseau pour la livraison des articles (liste et frais donnés par le
+ * Commanditaire le 6 novembre 2026). Créés une seule fois, sur une liste encore vide : ensuite,
+ * ajouts, modifications et retraits se font dans l'admin (Boutique · Logistique). Adresse, horaires
+ * et délai restent à saisir par le CRN (« à confirmer » côté client tant qu'ils sont vides).
+ */
+const POINTS_RELAIS = [
+  { nom: 'CRN — Église Centrale', ville: 'Libreville', fraisXAF: 0, ordre: 1 },
+  { nom: 'CRN — Église de Plein Ciel', ville: 'Libreville (Plein Ciel)', fraisXAF: 2_000, ordre: 2 },
+  { nom: 'CRN — Église d’Angondjé', ville: 'Akanda (Angondjé)', fraisXAF: 2_500, ordre: 3 },
+  { nom: 'CRN — Église d’Owendo', ville: 'Owendo', fraisXAF: 2_500, ordre: 4 },
+];
+
+export async function installerPointsRelais(payload: Payload): Promise<void> {
+  if ((await payload.count({ collection: 'points-livraison' })).totalDocs > 0) return;
+  for (const p of POINTS_RELAIS) {
+    await payload.create({ collection: 'points-livraison', data: { ...p, pays: 'Gabon', actif: true } });
+    payload.logger.info(`Point relais ajouté : ${p.nom} (${p.fraisXAF} F CFA).`);
+  }
+}

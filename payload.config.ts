@@ -41,7 +41,7 @@ import { journaliser } from './src/boutique/lib/journal';
 import { demarrerTachesPlanifiees } from './src/boutique/lib/taches';
 import { installerProduitsTest } from './src/boutique/produits-test';
 import { urlBackOffice } from './src/boutique/lib/urls';
-import { appliquerPrixArticlesAnnonces, seedBoutique } from './src/boutique/seed';
+import { appliquerPrixArticlesAnnonces, installerPointsRelais, seedBoutique } from './src/boutique/seed';
 
 if (process.env.BOUTIQUE_DEMO === '1' && process.env.NODE_ENV === 'production') {
   throw new Error('BOUTIQUE_DEMO=1 est réservé au développement local : refusé en production.');
@@ -133,6 +133,8 @@ export default buildConfig({
     try {
       await seedBoutique(payload);
       await appliquerPrixArticlesAnnonces(payload);
+      // Points relais du réseau et leurs frais (6 novembre 2026), sur une liste encore vide.
+      await installerPointsRelais(payload);
       // Produits à 200 F CFA pour les tests des équipes (6 novembre 2026), créés une seule fois.
       await installerProduitsTest(payload);
     } catch (err) {
