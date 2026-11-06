@@ -114,9 +114,15 @@ E2E_BOUTIQUE=1 npx playwright test tests/e2e/boutique-achat.spec.ts   # achats c
   le prix affiché, décision du CRN du 6 novembre 2026, réglé le jour même). Aucune route de l'API
   ne donne ce réglage (le `fee_charge_mode` de `/pricing/my-rates/` est celui du barème) : le
   contrôle le rappelle, la preuve est un paiement dont le montant débité égale le prix.
+- **Produits réservés aux tests** (case « Réservé aux tests » du produit) : jamais listés dans la
+  boutique ni mis en avant, achetables par leur lien direct même ventes fermées (tout autre produit
+  reste refusé). Pass, ticket et article à 200 F CFA créés une seule fois au démarrage
+  (`src/boutique/produits-test.ts`), en ligne depuis le 6 novembre 2026 pour les tests des équipes :
+  `/boutique/produits/test-pass-200`, `test-ticket-200`, `test-article-200` (exclus par robots.txt).
+  À retirer avant l'ouverture des ventes : décocher « Actif » dans l'admin (ils ne reviennent pas).
+  En local : `npm --prefix backend run produits-test` (`-- --retirer` pour les retirer).
 - **Vérifié contre le vrai SasPay** le 6 novembre 2026, depuis un poste local avec la clé de
-  production : produits de test à 200 F CFA (`npm --prefix backend run produits-test`, refusé hors
-  local ; `-- --retirer` pour les retirer de la vente), session créée, paiement Mobile Money
+  production : produits de test à 200 F CFA, session créée, paiement Mobile Money
   réussi, commande payée à la relecture suivante, billet PDF et e-mail générés, webhook livré au
   back-office en ligne (signature acceptée).
 
