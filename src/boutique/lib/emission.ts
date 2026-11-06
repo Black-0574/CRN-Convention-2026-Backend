@@ -12,7 +12,7 @@ import { enregistrerBillet, genererBilletPdf, lienBillet } from './billets';
 import { texteLivraison } from './livraison';
 import { urlBackOffice, urlSuivi } from './urls';
 import { convertir } from './ventes';
-import { echapper, gabarit, messagerie } from './messagerie';
+import { echapper, gabarit, messagerie, type Courriel } from './messagerie';
 import type { SaisieTitulaire } from './ventes';
 
 const quand = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Libreville' });
@@ -129,7 +129,12 @@ async function envoyerCourriels(
     .join('');
   const listeArticles = articles.map((a) => `<li>${echapper(a.libelle)} × ${a.quantite}</li>`).join('');
 
-  await messagerie.envoyer({
+  // Un e-mail non parti (serveur indisponible, quota d'envoi du jour atteint) ne bloque jamais la
+  // confirmation : billets émis et visibles sur la page de suivi, échec journalisé.
+  const envoyer = (c: Courriel) =>
+    messagerie.envoyer(c).catch((e) => payload.logger.error(`E-mail « ${c.sujet} » → ${c.a} non envoyé : ${(e as Error).message}`));
+
+  await envoyer({
     a: commande.email,
     reference: commande.numero,
     sujet: `Votre commande ${commande.numero} — Convention CRN 2026`,
@@ -144,7 +149,7 @@ ${articles.length ? `<h2 style="font-family:'Source Serif 4',Georgia,serif;color
   });
 
   for (const b of billets.filter((x) => x.email !== commande.email)) {
-    await messagerie.envoyer({
+    await envoyer({
       a: b.email,
       reference: commande.numero,
       sujet: `Votre billet ${b.numero} — Convention CRN 2026`,

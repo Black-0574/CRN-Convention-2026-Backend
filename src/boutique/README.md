@@ -98,6 +98,10 @@ E2E_BOUTIQUE=1 npx playwright test tests/e2e/boutique-achat.spec.ts   # achats c
 - **Vérifier avant de livrer** : une commande ne passe « payée » (billets émis) que si
   `GET /payments/{id}/verify/` renvoie `SUCCESS` ; montant débité au client et net reçu notés dans
   le détail du paiement de la commande (comptabilité).
+- **Confirmation rapide côté client** : la page de suivi interroge le back-office toutes les 3 s ;
+  pour une commande en attente, chaque interrogation relit SasPay (au plus une fois toutes les
+  5 s par commande, réponse bornée à 8 s). La commande passe « payée » dès que SasPay confirme,
+  sans attendre le webhook ni la relecture périodique (`npm run test:saspay`, vérifications 10-11).
 - **Filet de sécurité** : même relecture toutes les 2 minutes (webhook perdu ou pas encore créé),
   commandes expirées depuis moins de 24 h comprises (paiement tardif → « à vérifier ») ; arrêt au
   premier `429` (limite de débit), reprise au passage suivant.
@@ -119,13 +123,17 @@ E2E_BOUTIQUE=1 npx playwright test tests/e2e/boutique-achat.spec.ts   # achats c
 ## Reste à raccorder avant d'ouvrir les ventes
 
 1. **SasPay** : fait (compte vérifié, clé `sk_live_…` « Encaissement », webhook et abonnements,
-   Airtel Gabon et Moov Money Gabon ouverts, frais « Déduits ») ; reste à constater sur un
-   paiement que le montant débité égale le prix. La carte bancaire est indisponible chez SasPay :
-   retirer « ou carte bancaire » des textes de la boutique.
+   Airtel Gabon et Moov Money Gabon ouverts, frais « Déduits », vérifiés par un paiement réel). La
+   carte bancaire est indisponible chez SasPay : retirer « ou carte bancaire » des textes de la
+   boutique.
 2. **Variables de production** (hPanel du back-office) : faites le 6 novembre 2026.
-3. **Prestataire d'e-mail** : en production les e-mails (confirmation, lien des billets) ne partent
-   pas encore — ils sont écrits sur le serveur (`MessagerieLocale`). Le client voit ses billets sur
-   la page de suivi au retour de SasPay, mais ne reçoit rien par e-mail.
+3. **E-mails** : envoi SMTP depuis `boutique@crn-convention2026.events` (boîte Hostinger du
+   domaine, active) dès que `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` sont renseignés dans hPanel ;
+   essai : `npm --prefix backend run courriel:test -- adresse@exemple.com`. Sans eux, les e-mails
+   sont écrits sur le serveur et rien n'est envoyé. Un échec d'envoi ne bloque jamais la
+   confirmation (billets visibles sur la page de suivi, échec journalisé). **Limite** : l'offre
+   actuelle (Starter Business Email, essai gratuit) plafonne à 100 e-mails envoyés par 24 h, soit
+   un e-mail par commande plus un par titulaire offert ; à relever avant l'ouverture des ventes.
 4. CGV publiées, capacités des séances (quota vide = ventes bloquées), stocks, liste des églises
    du réseau et frais de livraison, lieu de retrait, double authentification devant `/admin`.
 5. Puis cocher « Ventes ouvertes » (Boutique · Réglages) et faire une vente réelle de contrôle.

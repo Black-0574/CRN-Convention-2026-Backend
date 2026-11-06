@@ -16,7 +16,7 @@ import { courrielsDe, lireCourriel } from './lib/messagerie';
 import { bacASableActif, depot, prestataire } from './lib/paiement';
 import { scanner } from './lib/scan';
 import { csv, tableau } from './lib/tableau';
-import { reconcilier, reconcilierEnArrierePlan } from './lib/taches';
+import { reconcilier, reconcilierEnArrierePlan, relireCommande } from './lib/taches';
 import { urlBackOffice, urlSuivi } from './lib/urls';
 import { creerCommande, ErreurVente, type EntreeCommande } from './lib/ventes';
 
@@ -135,8 +135,15 @@ export const endpoints: Endpoint[] = [
     path: '/boutique/commandes/:numero',
     method: 'get',
     handler: async (req) => {
-      const c = await commandeSuivie(req);
+      let c = await commandeSuivie(req);
       if (!c) return erreur('Commande introuvable.', 404);
+      if (c.statut === 'en_attente') {
+        // Paiement en cours : relecture chez le prestataire à chaque passage de la page de suivi,
+        // bornée à 8 s pour que la page reste réactive (la relecture se poursuit sinon en fond).
+        const relecture = relireCommande(req.payload, c).catch((e) => req.payload.logger.error(`Relecture de ${c!.numero} : ${(e as Error).message}`));
+        await Promise.race([relecture, new Promise((r) => setTimeout(r, 8_000))]);
+        c = (await commandeSuivie(req)) ?? c;
+      }
       const titulaires = c.statut === 'payee' ? (await req.payload.find({ collection: 'titulaires', where: { commande: { equals: c.id } }, limit: 200, depth: 0, sort: 'numeroBillet' })).docs : [];
       const reglages = await req.payload.findGlobal({ slug: 'reglages-boutique' });
       return json({

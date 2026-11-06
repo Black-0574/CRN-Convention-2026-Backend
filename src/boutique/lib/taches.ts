@@ -53,48 +53,78 @@ export async function reconcilier(payload: Payload, seulementPrestataire?: strin
   });
   let corrigees = 0;
   for (const c of enAttente.docs) {
-    const nom = c.paiement?.prestataire;
-    const ref = c.paiement?.referenceExterne;
-    if (!nom || !ref) continue;
-    // Commande expirée dont l'échec est déjà connu : inutile d'interroger le prestataire à nouveau.
-    if (c.statut === 'expiree' && (await payload.count({ collection: 'evenements-webhook', where: { cle: { equals: `${nom}:reconciliation:${ref}:echouee` } } })).totalDocs) continue;
-    const p = prestataire(nom);
-    let statut;
-    try {
-      statut = await p.statut(ref);
-    } catch (e) {
-      // 429 : limite de débit du prestataire atteinte, on s'arrête là (reprise au passage suivant).
-      if ((e as { code?: number }).code === 429) {
-        payload.logger.warn(`${nom} : limite de débit atteinte, réconciliation reportée.`);
-        break;
-      }
-      payload.logger.error(`${nom} : statut de ${c.numero} illisible (${(e as Error).message}).`);
-      continue;
-    }
-    if (statut === 'en_attente') continue;
-    const d = depot(payload, nom);
-    const infos = statut === 'payee' ? p.informations?.(ref) : undefined;
-    const evt = {
-      idEvenement: `reconciliation:${ref}:${statut}`,
-      referenceCommande: c.numero,
-      referenceExterne: ref,
-      statut,
-      montantXAF: c.totalXAF,
-      ...(infos?.detail ? { detail: infos.detail } : {}),
-      ...(infos?.moyen ? { moyen: infos.moyen } : {}),
-    };
-    if (await d.enregistrerEvenement(p.nom, evt)) {
-      const { deciderTransition } = await import('../domaine/src/index.ts');
-      const commande = await d.commande(c.numero);
-      if (!commande) continue;
-      const decision = deciderTransition(commande, evt);
-      if (decision.action !== 'ignorer') {
-        await d.appliquer(c.numero, decision, evt);
-        corrigees++;
-      }
-    }
+    const r = await relire(payload, c);
+    // 429 : limite de débit du prestataire atteinte, on s'arrête là (reprise au passage suivant).
+    if (r === 'limite') break;
+    if (r === 'corrigee') corrigees++;
   }
   return { verifiees: enAttente.docs.length, corrigees };
+}
+
+type CommandeARelire = { numero: string; statut: string; totalXAF: number; paiement?: { prestataire?: string | null; referenceExterne?: string | null } | null };
+
+/**
+ * Relit une commande chez son prestataire et applique le statut obtenu comme le ferait un webhook
+ * (mêmes règles, idempotent : un même résultat n'est appliqué qu'une fois, quelle que soit la
+ * relecture qui l'obtient en premier).
+ */
+async function relire(payload: Payload, c: CommandeARelire): Promise<'corrigee' | 'inchangee' | 'limite'> {
+  const nom = c.paiement?.prestataire;
+  const ref = c.paiement?.referenceExterne;
+  if (!nom || !ref) return 'inchangee';
+  // Commande expirée dont l'échec est déjà connu : inutile d'interroger le prestataire à nouveau.
+  if (c.statut === 'expiree' && (await payload.count({ collection: 'evenements-webhook', where: { cle: { equals: `${nom}:reconciliation:${ref}:echouee` } } })).totalDocs) return 'inchangee';
+  const p = prestataire(nom);
+  let statut;
+  try {
+    statut = await p.statut(ref);
+  } catch (e) {
+    if ((e as { code?: number }).code === 429) {
+      payload.logger.warn(`${nom} : limite de débit atteinte, réconciliation reportée.`);
+      return 'limite';
+    }
+    payload.logger.error(`${nom} : statut de ${c.numero} illisible (${(e as Error).message}).`);
+    return 'inchangee';
+  }
+  if (statut === 'en_attente') return 'inchangee';
+  const d = depot(payload, nom);
+  const infos = statut === 'payee' ? p.informations?.(ref) : undefined;
+  const evt = {
+    idEvenement: `reconciliation:${ref}:${statut}`,
+    referenceCommande: c.numero,
+    referenceExterne: ref,
+    statut,
+    montantXAF: c.totalXAF,
+    ...(infos?.detail ? { detail: infos.detail } : {}),
+    ...(infos?.moyen ? { moyen: infos.moyen } : {}),
+  };
+  if (!(await d.enregistrerEvenement(p.nom, evt))) return 'inchangee';
+  const { deciderTransition } = await import('../domaine/src/index.ts');
+  const commande = await d.commande(c.numero);
+  if (!commande) return 'inchangee';
+  const decision = deciderTransition(commande, evt);
+  if (decision.action === 'ignorer') return 'inchangee';
+  await d.appliquer(c.numero, decision, evt);
+  return 'corrigee';
+}
+
+/**
+ * Relecture à la demande depuis la page de suivi du client (interrogée toutes les 3 s) : la
+ * confirmation suit le prestataire en quelques secondes, sans attendre le webhook ni la relecture
+ * périodique. Au plus une interrogation du prestataire toutes les 5 s par commande.
+ */
+const INTERVALLE_RELECTURE_MS = 5_000;
+const dernieresRelectures = new Map<string, number>();
+
+export async function relireCommande(payload: Payload, c: CommandeARelire): Promise<void> {
+  if (c.statut !== 'en_attente' || !c.paiement?.referenceExterne) return;
+  const maintenant = Date.now();
+  if (maintenant - (dernieresRelectures.get(c.numero) ?? 0) < INTERVALLE_RELECTURE_MS) return;
+  dernieresRelectures.set(c.numero, maintenant);
+  if (dernieresRelectures.size > 1_000) {
+    for (const [numero, t] of dernieresRelectures) if (maintenant - t > INTERVALLE_RELECTURE_MS) dernieresRelectures.delete(numero);
+  }
+  await relire(payload, c);
 }
 
 /**

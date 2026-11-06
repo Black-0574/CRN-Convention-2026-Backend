@@ -21,7 +21,8 @@
     "ajouter-articles": "payload run scripts/ajouter-articles.ts",
     "test:saspay": "payload run scripts/test-saspay.ts",
     "saspay:verifier": "payload run scripts/saspay-verifier.ts",
-    "produits-test": "payload run scripts/produits-test.ts"
+    "produits-test": "payload run scripts/produits-test.ts",
+    "courriel:test": "payload run scripts/courriel-test.ts"
   },
   "dependencies": {
     "@fontsource/source-sans-3": "5.3.1",
@@ -32,6 +33,7 @@
     "@payloadcms/translations": "3.45.0",
     "graphql": "16.9.0",
     "next": "15.5.28",
+    "nodemailer": "10.2.1",
     "payload": "3.45.0",
     "pdf-lib": "1.17.1",
     "qrcode": "1.5.4",

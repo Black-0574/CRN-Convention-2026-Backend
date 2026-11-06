@@ -7,8 +7,9 @@
  * sur une session encore ouverte sans effet ; session payée dont la transaction n'est pas vérifiée
  * SUCCESS sans effet ; transaction vérifiée SUCCESS → commande payée, billet émis, place vendue,
  * montants débité et net enregistrés ; rejeu sans effet ; session expirée → commande échouée et place
- * rendue ; paiement confirmé sur une commande déjà expirée → « à vérifier ». Données de test
- * supprimées à la fin.
+ * rendue ; paiement confirmé sur une commande déjà expirée → « à vérifier » ; page de suivi du
+ * client : paiement confirmé sans webhook, SasPay lu au plus une fois toutes les 5 s. Données de
+ * test supprimées à la fin.
  *
  *   npm run test:saspay
  */
@@ -21,6 +22,7 @@ import { getPayload, type PayloadRequest } from 'payload';
 // transaction, dont la vérification (`verify`) peut être forcée à un autre statut que SUCCESS.
 const sessions = new Map<string, { status: 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED'; amount: string; currency: string; verification?: 'SUCCESS' | 'FAILED' | 'PENDING' }>();
 let compteur = 0;
+let lecturesStatut = 0;
 const serveur = createServer((req, res) => {
   let corps = '';
   req.on('data', (d) => (corps += d));
@@ -38,6 +40,7 @@ const serveur = createServer((req, res) => {
     }
     const m = req.url?.match(/^\/api\/v1\/checkout-sessions\/([^/]+)\/status\/$/);
     if (req.method === 'GET' && m) {
+      lecturesStatut++;
       const s = sessions.get(decodeURIComponent(m[1]!));
       if (!s) return repondre(404, { message: 'Session introuvable', code: 'not_found' });
       const paye = s.status === 'PAID';
@@ -166,6 +169,19 @@ try {
   sessions.get(c.session)!.status = 'PAID';
   await webhook();
   verifier('paiement reçu sur une commande expirée : « à vérifier », jamais perdu', (await statutCommande(c.c.numero)) === 'a_verifier');
+
+  // 9. Page de suivi du client : confirmation dès l'interrogation suivante, sans webhook.
+  const d = await nouvelleCommandePayable(4);
+  sessions.get(d.session)!.status = 'PAID';
+  const suivi = await appeler('/boutique/commandes/:numero', 'get', { numero: d.c.numero }, { t: d.c.jetonSuivi });
+  verifier('page de suivi : paiement confirmé et billet affiché sans attendre le webhook', suivi.corps.statut === 'payee' && (suivi.corps.billets as unknown[]).length === 1);
+
+  // 10. Interrogations rapprochées de la page de suivi : SasPay lu au plus une fois toutes les 5 s.
+  const e = await nouvelleCommandePayable(5);
+  const avant = lecturesStatut;
+  await appeler('/boutique/commandes/:numero', 'get', { numero: e.c.numero }, { t: e.c.jetonSuivi });
+  await appeler('/boutique/commandes/:numero', 'get', { numero: e.c.numero }, { t: e.c.jetonSuivi });
+  verifier('page de suivi interrogée deux fois de suite : une seule lecture chez SasPay', lecturesStatut - avant === 1);
 } finally {
   // Nettoyage des données de test.
   const commandes = await payload.find({ collection: 'commandes', where: { email: { like: `@${marqueur}` } }, limit: 100, depth: 0 });

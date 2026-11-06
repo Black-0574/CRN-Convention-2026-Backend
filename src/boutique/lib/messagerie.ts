@@ -1,10 +1,13 @@
 /**
- * Envoi des e-mails transactionnels derrière une interface : en local, chaque e-mail est écrit
- * dans `.courriels/` (lisible dans un navigateur, rien n'est envoyé) ; en production, un
- * prestataire d'envoi (à choisir par le CRN, question bloquante n° 7) implémentera `Messagerie`.
+ * Envoi des e-mails transactionnels derrière une interface : avec `SMTP_HOST`, `SMTP_USER` et
+ * `SMTP_PASS`, envoi réel par SMTP depuis l'adresse de la boutique (boutique@crn-convention2026.events,
+ * messagerie Hostinger du domaine) ; sinon (développement local), chaque e-mail est écrit dans
+ * `.courriels/` (lisible dans un navigateur, rien n'est envoyé).
  */
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+
+import nodemailer from 'nodemailer';
 
 import { CHEMIN_BANDEAU, urlBackOffice } from './urls';
 
@@ -42,7 +45,53 @@ export async function courrielsDe(reference: string): Promise<string[]> {
 
 export const lireCourriel = (fichier: string) => readFile(path.join(DOSSIER_COURRIELS, path.basename(fichier)), 'utf8');
 
-export const messagerie: Messagerie = new MessagerieLocale();
+/** Adresse d'expédition des e-mails de la boutique aux clients (choisie par le CRN). */
+export const EXPEDITEUR_BOUTIQUE = 'boutique@crn-convention2026.events';
+
+export class MessagerieSmtp implements Messagerie {
+  private readonly transport;
+  private readonly expediteur: string;
+
+  constructor(config: { hote: string; port?: number; utilisateur: string; motDePasse: string; expediteur?: string }) {
+    const port = config.port ?? 465;
+    this.expediteur = config.expediteur || `Convention CRN 2026 <${EXPEDITEUR_BOUTIQUE}>`;
+    this.transport = nodemailer.createTransport({
+      host: config.hote,
+      port,
+      secure: port === 465, // 465 : TLS d'emblée ; 587 : STARTTLS
+      auth: { user: config.utilisateur, pass: config.motDePasse },
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 20_000,
+    });
+  }
+
+  async envoyer(c: Courriel) {
+    await this.transport.sendMail({ from: this.expediteur, to: c.a, subject: c.sujet, html: c.html });
+    console.info(`[e-mail] ${c.sujet} → ${c.a}`);
+  }
+
+  /** Connexion et authentification au serveur SMTP, sans rien envoyer. */
+  async verifier(): Promise<void> {
+    await this.transport.verify();
+  }
+}
+
+export function messagerieDepuisEnv(env: NodeJS.ProcessEnv = process.env): Messagerie {
+  if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS) {
+    return new MessagerieSmtp({
+      hote: env.SMTP_HOST,
+      ...(env.SMTP_PORT ? { port: Number(env.SMTP_PORT) } : {}),
+      utilisateur: env.SMTP_USER,
+      motDePasse: env.SMTP_PASS,
+      ...(env.COURRIEL_EXPEDITEUR ? { expediteur: env.COURRIEL_EXPEDITEUR } : {}),
+    });
+  }
+  if (env.NODE_ENV === 'production') console.warn('[e-mail] SMTP non configuré (SMTP_HOST, SMTP_USER, SMTP_PASS) : e-mails écrits sur le serveur, rien n’est envoyé aux clients.');
+  return new MessagerieLocale();
+}
+
+export const messagerie: Messagerie = messagerieDepuisEnv();
 
 const echapper = (t: string) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
