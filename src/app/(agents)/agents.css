@@ -136,15 +136,101 @@ body {
   color: var(--bleu-nuit);
 }
 
-.camera video {
+.bouton--petit {
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 16px;
+}
+
+.bouton--large {
   width: 100%;
-  max-height: 320px;
+  min-height: 64px;
+  font-size: 20px;
+}
+
+/* Poste en cours de scan : séance, poste et compteur toujours visibles, réglages repliés. */
+.contexte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--bleu-nuit);
+  color: var(--blanc);
+}
+
+.contexte__texte {
+  display: grid;
+  min-width: 0;
+}
+
+.contexte__texte strong,
+.contexte__texte span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contexte__texte span {
+  color: var(--or-lumiere);
+}
+
+.contexte__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.camera__cadre {
+  position: relative;
+}
+
+.camera video {
+  display: block;
+  width: 100%;
+  height: min(60vh, 480px);
   background: var(--noir);
-  border-radius: 8px;
+  border-radius: 12px;
   object-fit: cover;
 }
 
-.saisie {
+/* Viseur : où placer le QR. */
+.camera__viseur {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: min(60vw, 260px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border: 4px solid var(--or-lumiere);
+  border-radius: 16px;
+  box-shadow: 0 0 0 100vmax rgba(16, 16, 16, 0.35);
+  pointer-events: none;
+}
+
+.camera__etat {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--noir);
+  color: var(--or-lumiere);
+  font-weight: 700;
+}
+
+.saisie summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--bleu-nuit);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.saisie form {
   display: grid;
   gap: 8px;
 }
@@ -155,43 +241,115 @@ body {
   color: var(--bleu-nuit);
 }
 
-/* Accepté : bleu nuit ; refusé : or lumière sur noir — palette GBIS, jamais de rouge. */
-.resultat {
-  margin-top: 24px;
-  padding: 24px 16px;
-  border-radius: 12px;
+/* Verdict en plein écran, au-dessus de tout : impossible à manquer, scan en pause jusqu'à
+   « Scanner le suivant ». Erreur (réseau, poste non nommé) : or lumière sur noir. */
+.verdict {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 24px;
+  padding: max(24px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
   text-align: center;
   background: var(--noir);
   color: var(--or-lumiere);
-  border: 3px solid var(--or);
+  overflow-y: auto;
+  animation: apparition 160ms ease-out;
 }
 
 /* Verdict du scan : VERT accepté, ROUGE refusé (tout motif). Dérogation à la palette GBIS,
    limitée à ce poste de contrôle interne (docs/conformite.md) : lecture instantanée à la porte.
-   Texte blanc (contraste ≥ 5:1) ; le titre dit aussi le verdict, la couleur n'est pas seule. */
-.resultat[data-resultat='accepte'] {
+   Texte blanc (contraste ≥ 5:1) ; l'icône, le titre, le son et la vibration disent aussi le
+   verdict, la couleur n'est jamais seule. */
+.verdict[data-resultat='accepte'] {
   background: #1e7b34;
   color: var(--blanc);
-  border-color: #145523;
 }
 
-.resultat[data-resultat^='refuse'] {
+.verdict[data-resultat^='refuse'] {
   background: #b3261e;
   color: var(--blanc);
-  border-color: #7f1b15;
 }
 
-.resultat__titre {
+.verdict__corps {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin: auto 0;
+}
+
+.verdict__corps p {
   margin: 0;
+}
+
+.verdict__icone {
+  display: grid;
+  place-items: center;
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  border: 6px solid currentColor;
+  font-size: 80px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.verdict__titre {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-weight: 700;
+  font-size: 36px;
+  line-height: 1.15;
+}
+
+.verdict__titulaire {
+  margin-top: 16px !important;
   font-family: 'Source Serif 4', Georgia, serif;
   font-weight: 700;
   font-size: 32px;
+  line-height: 1.2;
 }
 
-.resultat__titulaire {
+.verdict__produit,
+.verdict__consigne,
+.verdict__message {
+  font-size: 20px;
+}
+
+.verdict__consigne {
+  font-weight: 700;
+}
+
+.verdict__suivant {
+  width: 100%;
+  min-height: 72px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--blanc);
+  color: var(--noir);
+  font: inherit;
   font-size: 22px;
   font-weight: 700;
-  margin: 8px 0;
+  cursor: pointer;
+}
+
+.verdict__suivant:focus-visible {
+  outline: 4px solid var(--or-lumiere);
+  outline-offset: 3px;
+}
+
+@keyframes apparition {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verdict {
+    animation: none;
+  }
 }
 
 /* Page de paiement simulée (agrégateur) */

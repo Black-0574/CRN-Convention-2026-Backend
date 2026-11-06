@@ -3,9 +3,11 @@
 /*
   Contrôle d'accès des agents COM Boutique (Palier 1 : en ligne ; hors ligne au Palier 2).
   Connexion nominative (compte du back-office, rôle COM Boutique), choix de la plateforme et du
-  poste, lecture du QR par la caméra (BarcodeDetector) ou saisie du code. Résultat affiché en grand
-  avec le nom du titulaire pour le contrôle d'identité ; second passage refusé avec l'heure et le
-  poste du premier.
+  poste, lecture du QR par la caméra (BarcodeDetector) ou saisie du code. Verdict en plein écran
+  (vert accepté, rouge refusé), avec un son et une vibration propres à chaque verdict, et le nom du
+  titulaire pour le contrôle d'identité. La lecture est en pause tant que l'agent n'a pas touché
+  « Scanner le suivant » : un QR resté devant la caméra n'est jamais compté deux fois (retour du
+  test du 6 novembre 2026 : sept refus « déjà utilisé » après une entrée acceptée).
 */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -42,6 +44,48 @@ const ecrire = (cle: string, valeur: string) => {
   }
 };
 
+/*
+  Sons synthétisés dans le navigateur (aucun fichier ni service externe) : deux notes montantes
+  pour une entrée acceptée, trois bourdonnements graves pour un refus. Le contexte audio n'est
+  autorisé qu'après un geste de l'agent : il est préparé au toucher de « Activer la caméra ».
+*/
+let contexteAudio: AudioContext | null = null;
+
+const preparerSon = () => {
+  try {
+    contexteAudio ??= new AudioContext();
+    if (contexteAudio.state === 'suspended') void contexteAudio.resume();
+  } catch {
+    /* audio indisponible : la vibration et l'écran suffisent */
+  }
+};
+
+const jouer = (notes: { frequence: number; debut: number; duree: number }[], forme: OscillatorType) => {
+  const ctx = contexteAudio;
+  if (!ctx) return;
+  for (const n of notes) {
+    const osc = ctx.createOscillator();
+    const volume = ctx.createGain();
+    const t = ctx.currentTime + n.debut;
+    osc.type = forme;
+    osc.frequency.value = n.frequence;
+    volume.gain.setValueAtTime(0.0001, t);
+    volume.gain.exponentialRampToValueAtTime(0.6, t + 0.01);
+    volume.gain.exponentialRampToValueAtTime(0.0001, t + n.duree);
+    osc.connect(volume).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + n.duree + 0.02);
+  }
+};
+
+const signaler = (accepte: boolean, avecSon: boolean) => {
+  if (avecSon) {
+    if (accepte) jouer([{ frequence: 880, debut: 0, duree: 0.14 }, { frequence: 1320, debut: 0.16, duree: 0.28 }], 'sine');
+    else jouer([0, 0.24, 0.48].map((debut) => ({ frequence: 196, debut, duree: 0.2 })), 'square');
+  }
+  navigator.vibrate?.(accepte ? 150 : [300, 120, 300, 120, 300]);
+};
+
 export default function PageScan() {
   const [etat, setEtat] = useState<'chargement' | 'connexion' | 'poste'>('chargement');
   const [plateformes, setPlateformes] = useState<Plateforme[]>([]);
@@ -50,12 +94,21 @@ export default function PageScan() {
   const [code, setCode] = useState('');
   const [messageConnexion, setMessageConnexion] = useState('');
   const [resultat, setResultat] = useState<Resultat | null>(null);
+  const [enCours, setEnCours] = useState(false);
   const [camera, setCamera] = useState(false);
+  const [reglagesOuverts, setReglagesOuverts] = useState(false);
+  const [son, setSon] = useState(true);
+  const [acceptes, setAcceptes] = useState(0);
   const video = useRef<HTMLVideoElement>(null);
   const champPoste = useRef<HTMLInputElement>(null);
-  const dernier = useRef({ code: '', instant: 0 });
-  const reglages = useRef({ plateforme: '', poste: '' });
-  reglages.current = { plateforme, poste };
+  const boutonSuivant = useRef<HTMLButtonElement>(null);
+  // Lecture en pause pendant la vérification et tant que le verdict est affiché.
+  const enPause = useRef(false);
+  // Dernier QR traité : ignoré par la caméra 15 s après « Scanner le suivant » (resté devant l'objectif).
+  const ignore = useRef({ code: '', jusqua: 0 });
+  const dernierCode = useRef('');
+  const reglages = useRef({ plateforme: '', poste: '', son: true });
+  reglages.current = { plateforme, poste, son };
 
   const chargerPlateformes = useCallback(async () => {
     const res = await fetch('/api/boutique/scan/plateformes', { credentials: 'include' });
@@ -69,8 +122,14 @@ export default function PageScan() {
 
   useEffect(() => {
     setPoste(lire('crn-scan-poste'));
+    setSon(lire('crn-scan-son') !== 'coupe');
     chargerPlateformes();
   }, [chargerPlateformes]);
+
+  // Le bouton « Scanner le suivant » prend le focus dès que le verdict s'affiche.
+  useEffect(() => {
+    if (resultat) boutonSuivant.current?.focus();
+  }, [resultat]);
 
   const connecter = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -101,47 +160,98 @@ export default function PageScan() {
     );
   };
 
-  const verifier = useCallback(async (brut: string) => {
+  /** `manuel` : saisie de l'agent, vérifiée même si le même code vient d'être lu. */
+  const verifier = useCallback(async (brut: string, manuel = false) => {
     const jeton = brut.trim();
-    if (!jeton) return;
-    // Évite de compter deux fois le même QR resté devant la caméra.
-    if (jeton === dernier.current.code && Date.now() - dernier.current.instant < 4000) return;
-    dernier.current = { code: jeton, instant: Date.now() };
-    const { plateforme: p, poste: nomPoste } = reglages.current;
+    if (!jeton || enPause.current) return;
+    if (!manuel && jeton === ignore.current.code && Date.now() < ignore.current.jusqua) return;
+    const { plateforme: p, poste: nomPoste, son: avecSon } = reglages.current;
+    enPause.current = true;
+    dernierCode.current = jeton;
     if (!nomPoste.trim()) {
-      champPoste.current?.focus();
+      setReglagesOuverts(true);
+      signaler(false, avecSon);
       return setResultat({ erreur: 'Indiquez d’abord le nom du poste.' });
     }
-    const res = await fetch('/api/boutique/scan', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jeton, plateforme: p, poste: nomPoste.trim() }),
-    });
-    const r: Resultat = await res.json().catch(() => ({ erreur: 'Réponse illisible du serveur.' }));
+    setEnCours(true);
+    let r: Resultat;
+    try {
+      const res = await fetch('/api/boutique/scan', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jeton, plateforme: p, poste: nomPoste.trim() }),
+      });
+      r = res.status === 401 ? { erreur: 'Session expirée : reconnectez-vous.' } : await res.json().catch(() => ({ erreur: 'Réponse illisible du serveur.' }));
+    } catch {
+      r = { erreur: 'Vérification impossible : réseau indisponible. Réessayez.' };
+    }
+    setEnCours(false);
     setResultat(r);
-    navigator.vibrate?.(r.resultat === 'accepte' ? 80 : [200, 100, 200]);
+    if (r.resultat === 'accepte') setAcceptes((n) => n + 1);
+    signaler(r.resultat === 'accepte', avecSon);
   }, []);
 
+  const suivant = () => {
+    ignore.current = { code: dernierCode.current, jusqua: Date.now() + 15_000 };
+    if (resultat?.erreur?.startsWith('Session expirée')) setEtat('connexion');
+    setResultat(null);
+    setCode('');
+    enPause.current = false;
+  };
+
+  const garderEcranAllume = async () => {
+    try {
+      await (navigator as unknown as { wakeLock?: { request: (t: 'screen') => Promise<unknown> } }).wakeLock?.request('screen');
+    } catch {
+      /* non pris en charge : l'écran suit le réglage du téléphone */
+    }
+  };
+
   const activerCamera = async () => {
+    preparerSon();
     const Ctor = (window as unknown as { BarcodeDetector?: new (o: { formats: string[] }) => Detecteur }).BarcodeDetector;
-    if (!Ctor) return setResultat({ erreur: 'Lecture du QR non prise en charge par ce navigateur : utilisez la saisie du code, ou Chrome sur Android.' });
+    if (!Ctor) {
+      enPause.current = true;
+      return setResultat({ erreur: 'Lecture du QR non prise en charge par ce navigateur : utilisez la saisie du code, ou Chrome sur Android.' });
+    }
     const v = video.current!;
-    v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    await v.play();
+    try {
+      v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      await v.play();
+    } catch {
+      enPause.current = true;
+      return setResultat({ erreur: 'Caméra inaccessible : autorisez-la pour ce site dans le navigateur, puis réessayez.' });
+    }
     setCamera(true);
+    void garderEcranAllume();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') void garderEcranAllume();
+    });
     const detecteur = new Ctor({ formats: ['qr_code'] });
     const boucle = async () => {
-      try {
-        const [qr] = await detecteur.detect(v);
-        if (qr) await verifier(qr.rawValue);
-      } catch {
-        /* image non lisible : on continue */
+      if (!enPause.current) {
+        try {
+          const [qr] = await detecteur.detect(v);
+          if (qr) await verifier(qr.rawValue);
+        } catch {
+          /* image non lisible : on continue */
+        }
       }
-      setTimeout(boucle, 300);
+      setTimeout(boucle, 250);
     };
     boucle();
   };
+
+  const changerSon = () => {
+    preparerSon();
+    const actif = !son;
+    setSon(actif);
+    ecrire('crn-scan-son', actif ? 'actif' : 'coupe');
+  };
+
+  const seance = plateformes.find((p) => p.code === plateforme);
+  const accepte = resultat?.resultat === 'accepte';
 
   return (
     <>
@@ -150,7 +260,7 @@ export default function PageScan() {
         <p>Convention CRN 2026 — COM Boutique</p>
       </header>
       <main className="scan">
-        <h1>Contrôle d’accès</h1>
+        <h1 hidden={camera}>Contrôle d’accès</h1>
 
         {etat === 'connexion' && (
           <form className="carte-scan" onSubmit={connecter}>
@@ -173,8 +283,26 @@ export default function PageScan() {
         )}
 
         <div hidden={etat !== 'poste'}>
+          {camera && (
+            <div className="contexte">
+              <div className="contexte__texte">
+                <strong>{seance?.nom ?? 'Séance à choisir'}</strong>
+                <span>
+                  {poste.trim() || 'Poste à nommer'} · {acceptes} entrée{acceptes > 1 ? 's' : ''} acceptée{acceptes > 1 ? 's' : ''}
+                </span>
+              </div>
+              <div className="contexte__actions">
+                <button className="bouton bouton--petit bouton--secondaire" type="button" onClick={changerSon} aria-pressed={son}>
+                  {son ? 'Son activé' : 'Son coupé'}
+                </button>
+                <button className="bouton bouton--petit bouton--secondaire" type="button" onClick={() => setReglagesOuverts((o) => !o)} aria-expanded={reglagesOuverts}>
+                  {reglagesOuverts ? 'Fermer' : 'Modifier'}
+                </button>
+              </div>
+            </div>
+          )}
           <div className="carte-scan">
-            <div className="reglages">
+            <div className="reglages" hidden={camera && !reglagesOuverts}>
               <label>
                 Séance et site
                 <select
@@ -205,43 +333,66 @@ export default function PageScan() {
               </label>
             </div>
             <div className="camera">
-              <video ref={video} playsInline muted hidden={!camera} />
+              <div className="camera__cadre" hidden={!camera}>
+                <video ref={video} playsInline muted />
+                <span className="camera__viseur" aria-hidden="true" />
+                {enCours && <span className="camera__etat">Vérification…</span>}
+              </div>
               {!camera && (
-                <button className="bouton" type="button" onClick={activerCamera}>
+                <button className="bouton bouton--large" type="button" onClick={activerCamera}>
                   Activer la caméra
                 </button>
               )}
             </div>
-            <form
-              className="saisie"
-              onSubmit={(e) => {
-                e.preventDefault();
-                dernier.current.code = '';
-                verifier(code);
-              }}
-            >
-              <label>
-                Code du billet
-                <input value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" spellCheck={false} placeholder="Coller ou saisir le code du QR" />
-              </label>
-              <button className="bouton bouton--secondaire" type="submit">
-                Vérifier
-              </button>
-            </form>
+            <details className="saisie" open={!camera}>
+              <summary>Saisir un code à la main</summary>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  preparerSon();
+                  verifier(code, true);
+                }}
+              >
+                <label>
+                  Code du billet
+                  <input value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" spellCheck={false} placeholder="Coller ou saisir le code du QR" />
+                </label>
+                <button className="bouton bouton--secondaire" type="submit">
+                  Vérifier
+                </button>
+              </form>
+            </details>
           </div>
-          {resultat && (
-            <div className="resultat" data-resultat={resultat.resultat ?? 'erreur'} role="status" aria-live="assertive">
-              <p className="resultat__titre">{(resultat.resultat && TITRES[resultat.resultat]) || resultat.erreur || 'Erreur'}</p>
-              {resultat.titulaire && (
-                <p className="resultat__titulaire">
-                  {resultat.titulaire.prenom} {resultat.titulaire.nom} — {resultat.titulaire.produit}
-                </p>
-              )}
-              {resultat.message && <p>{resultat.message}</p>}
-            </div>
-          )}
         </div>
       </main>
+
+      {resultat && (
+        <div className="verdict" data-resultat={resultat.resultat ?? 'erreur'} role="alertdialog" aria-modal="true" aria-labelledby="verdict-titre" aria-describedby="verdict-detail">
+          <div className="verdict__corps">
+            <span className="verdict__icone" aria-hidden="true">
+              {accepte ? '✓' : '✕'}
+            </span>
+            <p id="verdict-titre" className="verdict__titre">
+              {(resultat.resultat && TITRES[resultat.resultat]) || resultat.erreur || 'Erreur'}
+            </p>
+            <div id="verdict-detail">
+              {resultat.titulaire && (
+                <>
+                  <p className="verdict__titulaire">
+                    {resultat.titulaire.prenom} {resultat.titulaire.nom}
+                  </p>
+                  <p className="verdict__produit">{resultat.titulaire.produit}</p>
+                </>
+              )}
+              {accepte && <p className="verdict__consigne">Contrôlez la pièce d’identité.</p>}
+              {resultat.message && <p className="verdict__message">{resultat.message}</p>}
+            </div>
+          </div>
+          <button ref={boutonSuivant} className="verdict__suivant" type="button" onClick={suivant}>
+            Scanner le suivant
+          </button>
+        </div>
+      )}
     </>
   );
 }
