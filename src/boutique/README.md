@@ -102,19 +102,27 @@ E2E_BOUTIQUE=1 npx playwright test tests/e2e/boutique-achat.spec.ts   # achats c
   commandes expirées depuis moins de 24 h comprises (paiement tardif → « à vérifier ») ; arrêt au
   premier `429` (limite de débit), reprise au passage suivant.
 - **Contrôle de configuration** : `npm --prefix backend run saspay:verifier` (variables, clé acceptée,
-  réseaux ouverts au Gabon et plafonds par paiement, webhook déclaré et abonnements, secrets des
-  billets) ; n'affiche jamais la clé ni les secrets.
-- **Non vérifié contre le vrai SasPay** (faute de clé à ce jour) : création de session, page de
-  paiement, webhook réel, réseaux du Gabon. Testé contre un faux SasPay conforme à la
-  documentation (`test:saspay`).
+  réseaux ouverts au Gabon et plafonds par paiement, webhook déclaré, abonnements et doublons,
+  secrets des billets) ; n'affiche jamais la clé ni les secrets.
+- **Mode de frais** : le `fee_charge_mode` envoyé à la création de session est ignoré par SasPay
+  sans l'option « Autoriser le choix du mode de frais par l'API ». Seul le réglage du compte fait
+  foi : tableau de bord SasPay → Paramètres → Frais → Encaissements (« Déduits » : le client paie
+  le prix affiché, décision du CRN du 6 novembre 2026, réglé le jour même). Aucune route de l'API
+  ne donne ce réglage (le `fee_charge_mode` de `/pricing/my-rates/` est celui du barème) : le
+  contrôle le rappelle, la preuve est un paiement dont le montant débité égale le prix.
+- **Vérifié contre le vrai SasPay** le 6 novembre 2026, depuis un poste local avec la clé de
+  production : produits de test à 200 F CFA (`npm --prefix backend run produits-test`, refusé hors
+  local ; `-- --retirer` pour les retirer de la vente), session créée, paiement Mobile Money
+  réussi, commande payée à la relecture suivante, billet PDF et e-mail générés, webhook livré au
+  back-office en ligne (signature acceptée).
 
 ## Reste à raccorder avant d'ouvrir les ventes
 
-1. **SasPay** : compte vérifié (KYC), clé `sk_test_…` puis `sk_live_…` (scope PAYIN), point de
-   réception webhook et son secret, réseaux réellement ouverts au Gabon (Airtel Money, Moov Money)
-   et à la carte, choix de qui paie les frais (`SASPAY_MODE_FRAIS`).
-2. **Variables de production** (hPanel du back-office) : `BILLETS_SECRET`, `LIENS_SECRET`,
-   `PUBLIC_SERVER_URL`, puis les variables SasPay.
+1. **SasPay** : fait (compte vérifié, clé `sk_live_…` « Encaissement », webhook et abonnements,
+   Airtel Gabon et Moov Money Gabon ouverts, frais « Déduits ») ; reste à constater sur un
+   paiement que le montant débité égale le prix. La carte bancaire est indisponible chez SasPay :
+   retirer « ou carte bancaire » des textes de la boutique.
+2. **Variables de production** (hPanel du back-office) : faites le 6 novembre 2026.
 3. **Prestataire d'e-mail** : en production les e-mails (confirmation, lien des billets) ne partent
    pas encore — ils sont écrits sur le serveur (`MessagerieLocale`). Le client voit ses billets sur
    la page de suivi au retour de SasPay, mais ne reçoit rien par e-mail.

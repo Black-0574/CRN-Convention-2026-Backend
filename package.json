@@ -20,7 +20,8 @@
     "test:scan": "payload run scripts/test-scan.ts",
     "ajouter-articles": "payload run scripts/ajouter-articles.ts",
     "test:saspay": "payload run scripts/test-saspay.ts",
-    "saspay:verifier": "payload run scripts/saspay-verifier.ts"
+    "saspay:verifier": "payload run scripts/saspay-verifier.ts",
+    "produits-test": "payload run scripts/produits-test.ts"
   },
   "dependencies": {
     "@fontsource/source-sans-3": "5.3.1",

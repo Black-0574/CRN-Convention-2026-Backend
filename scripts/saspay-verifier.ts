@@ -62,9 +62,22 @@ if (formeCle && secret) {
       noter(`Plafond ${r.nom}`, 'attention', `${r.montantMax} F CFA par paiement < prix le plus élevé du catalogue (${prixMax} F CFA)`);
     }
   }
+  // Le mode envoyé à la création de session est ignoré sans l'option « Autoriser le choix du mode
+  // de frais par l'API » : c'est le réglage du compte qui fait foi, et aucune route de l'API ne le
+  // donne (le fee_charge_mode des paliers de /pricing/my-rates/ est celui du barème SasPay).
+  noter(
+    'Mode de frais du compte SasPay',
+    'attention',
+    `illisible par l'API : vérifier Paramètres → Frais → Encaissements = ${frais === 'ADD_ON' ? '« Ajoutés »' : '« Déduits »'}, puis au premier paiement que le montant débité égale le prix`,
+  );
 
   try {
-    const w = (await p.webhooks()).find((x) => x.url.replace(/\/$/, '') === URL_WEBHOOK);
+    const tous = await p.webhooks();
+    const w = tous.find((x) => x.url.replace(/\/$/, '') === URL_WEBHOOK);
+    // Point de réception mal saisi vers notre domaine : SasPay le relance en boucle (404).
+    for (const x of tous.filter((x) => x !== w && x.url.startsWith(urlBackOffice()))) {
+      noter('Webhook en double', 'attention', `${x.url} : à supprimer dans le tableau de bord SasPay`);
+    }
     if (!w) noter('Webhook déclaré', 'bloquant', `aucun point de réception vers ${URL_WEBHOOK} (tableau de bord SasPay → Webhooks)`);
     else {
       const manquants = EVENEMENTS.filter((e) => !w.evenements.includes(e));
@@ -80,6 +93,6 @@ const bloquants = resultats.filter(([, e]) => e === 'bloquant').length;
 console.log(
   bloquants
     ? `\n${bloquants} point(s) bloquant(s) : ne pas ouvrir les ventes.`
-    : '\nConfiguration prête. Étapes suivantes : « webhook.test » depuis le tableau de bord SasPay, paiement de test (sk_test_), puis petit paiement réel avec sk_live_ avant d’ouvrir les ventes.',
+    : '\nConfiguration prête. Avant d’ouvrir les ventes : petit paiement réel (produits de test en local, `npm run produits-test`) dont le montant débité égale le prix, billet émis.',
 );
 process.exit(bloquants ? 1 : 0);

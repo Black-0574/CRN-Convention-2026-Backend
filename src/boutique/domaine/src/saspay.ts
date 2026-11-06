@@ -164,7 +164,7 @@ export class SasPay implements PaymentProvider {
         idTransaction: s.transaction_id,
         debiteXAF: debite,
         netXAF: net,
-        detail: [`SasPay ${s.transaction_id}`, debite !== null && `débité ${fcfa(debite)}`, net !== null && `net reçu ${fcfa(net)}`, frais ? `frais client ${fcfa(frais)}` : null]
+        detail: [`SasPay ${s.transaction_id}`, debite !== null && `débité ${fcfa(debite)}`, net !== null && `net reçu ${fcfa(net)}`, frais ? `frais SasPay ${fcfa(frais)}` : null]
           .filter(Boolean)
           .join(' · '),
       });
