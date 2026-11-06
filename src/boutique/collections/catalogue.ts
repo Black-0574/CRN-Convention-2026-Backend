@@ -230,6 +230,16 @@ export const Produits: CollectionConfig = {
       defaultValue: true,
       admin: { position: 'sidebar', description: 'Coché tant que la grille tarifaire du CRN n’a pas confirmé ce prix.' },
     },
+    {
+      name: 'reserveTests',
+      type: 'checkbox',
+      label: 'Réservé aux tests',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+        description: 'Jamais listé dans la boutique ni mis en avant ; achetable par son lien direct, même ventes fermées (tests des équipes). Décocher « Actif » pour le retirer.',
+      },
+    },
     { name: 'misEnAvant', type: 'checkbox', label: 'Mis en avant (accueil du site)', defaultValue: false, admin: { position: 'sidebar' } },
     { name: 'ordreMiseEnAvant', type: 'number', label: 'Ordre de mise en avant', defaultValue: 100, admin: { position: 'sidebar' } },
     { name: 'ordre', type: 'number', label: 'Ordre dans la boutique', defaultValue: 100, admin: { position: 'sidebar' } },

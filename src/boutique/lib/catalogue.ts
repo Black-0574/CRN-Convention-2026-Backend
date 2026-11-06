@@ -63,6 +63,8 @@ export interface VueProduit {
   /** Raison pour laquelle le produit ne peut pas être acheté maintenant, ou `null`. */
   indisponible: string | null;
   apercu: boolean;
+  /** Produit de test : page accessible par lien direct, absent des listes de la boutique. */
+  reserveTests: boolean;
   misEnAvant: boolean;
   ordreMiseEnAvant: number;
   ordre: number;
@@ -134,7 +136,8 @@ export async function vueProduit(payload: Payload, p: Produit, maintenant = new 
     kit,
     indisponible,
     apercu: Boolean(p.prixAValider),
-    misEnAvant: Boolean(p.misEnAvant),
+    reserveTests: Boolean(p.reserveTests),
+    misEnAvant: Boolean(p.misEnAvant) && !p.reserveTests,
     ordreMiseEnAvant: p.ordreMiseEnAvant ?? 100,
     ordre: p.ordre ?? 100,
   };

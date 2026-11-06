@@ -8,8 +8,8 @@
  * SUCCESS sans effet ; transaction vérifiée SUCCESS → commande payée, billet émis, place vendue,
  * montants débité et net enregistrés ; rejeu sans effet ; session expirée → commande échouée et place
  * rendue ; paiement confirmé sur une commande déjà expirée → « à vérifier » ; page de suivi du
- * client : paiement confirmé sans webhook, SasPay lu au plus une fois toutes les 5 s. Données de
- * test supprimées à la fin.
+ * client : paiement confirmé sans webhook, SasPay lu au plus une fois toutes les 5 s ; ventes
+ * fermées : seul un produit réservé aux tests reste achetable. Données de test supprimées à la fin.
  *
  *   npm run test:saspay
  */
@@ -182,6 +182,22 @@ try {
   await appeler('/boutique/commandes/:numero', 'get', { numero: e.c.numero }, { t: e.c.jetonSuivi });
   await appeler('/boutique/commandes/:numero', 'get', { numero: e.c.numero }, { t: e.c.jetonSuivi });
   verifier('page de suivi interrogée deux fois de suite : une seule lecture chez SasPay', lecturesStatut - avant === 1);
+
+  // 11. Ventes fermées : seul un produit réservé aux tests reste achetable (lien direct).
+  const ouvertes = (await payload.findGlobal({ slug: 'reglages-boutique' })).ventesOuvertes;
+  await payload.updateGlobal({ slug: 'reglages-boutique', data: { ventesOuvertes: false } });
+  try {
+    const refus = await nouvelleCommandePayable(6).then(() => null, (e: { statut?: number; message: string }) => e);
+    await payload.update({ collection: 'produits', id: produit.id, data: { reserveTests: true } });
+    const f = await nouvelleCommandePayable(7);
+    const vue = (await (await import('../src/boutique/lib/catalogue')).catalogue(payload)).find((v) => v.id === produit.id);
+    verifier(
+      'ventes fermées : produit normal refusé, produit réservé aux tests vendu (paiement ouvert), signalé au catalogue',
+      refus?.message === 'Les ventes sont momentanément fermées.' && f.r.code === 200 && vue?.reserveTests === true && vue.misEnAvant === false,
+    );
+  } finally {
+    await payload.updateGlobal({ slug: 'reglages-boutique', data: { ventesOuvertes: ouvertes } });
+  }
 } finally {
   // Nettoyage des données de test.
   const commandes = await payload.find({ collection: 'commandes', where: { email: { like: `@${marqueur}` } }, limit: 100, depth: 0 });

@@ -103,7 +103,8 @@ async function varianteDeKit(payload: Payload, produitKit: Produit, taille: stri
 
 export async function creerCommande(payload: Payload, entree: EntreeCommande, maintenant = new Date()) {
   const reglages = await payload.findGlobal({ slug: 'reglages-boutique' });
-  if (!reglages.ventesOuvertes) throw new ErreurVente('Les ventes sont momentanément fermées.', 503);
+  // Ventes fermées : seuls les produits réservés aux tests restent achetables (tests des équipes).
+  const fermees = new ErreurVente('Les ventes sont momentanément fermées.', 503);
   if (!entree.cgvAcceptees) throw new ErreurVente('Veuillez accepter les conditions générales de vente.');
   verifierPersonne(entree.client, 'Acheteur');
   if (!Array.isArray(entree.lignes) || entree.lignes.length === 0) throw new ErreurVente('Votre panier est vide.');
@@ -117,6 +118,7 @@ export async function creerCommande(payload: Payload, entree: EntreeCommande, ma
     const variante = (await payload.findByID({ collection: 'variantes', id: l.varianteId, depth: 2 }).catch(() => null)) as Variante | null;
     const produit = variante && typeof variante.produit === 'object' ? (variante.produit as Produit) : null;
     if (!variante || !produit || !variante.actif || !estVisible(produit)) throw new ErreurVente('Un article de votre panier n’est plus disponible.', 409);
+    if (!reglages.ventesOuvertes && !produit.reserveTests) throw fermees;
     const palier = palierEnVigueur(paliersDe(produit), maintenant);
     if (!palier) throw new ErreurVente(`${produit.nom} : pas en vente à cette date.`, 409);
 

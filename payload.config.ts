@@ -39,6 +39,7 @@ import {
 import { endpoints as endpointsBoutique } from './src/boutique/endpoints';
 import { journaliser } from './src/boutique/lib/journal';
 import { demarrerTachesPlanifiees } from './src/boutique/lib/taches';
+import { installerProduitsTest } from './src/boutique/produits-test';
 import { urlBackOffice } from './src/boutique/lib/urls';
 import { appliquerPrixArticlesAnnonces, seedBoutique } from './src/boutique/seed';
 
@@ -132,6 +133,8 @@ export default buildConfig({
     try {
       await seedBoutique(payload);
       await appliquerPrixArticlesAnnonces(payload);
+      // Produits à 200 F CFA pour les tests des équipes (6 novembre 2026), créés une seule fois.
+      await installerProduitsTest(payload);
     } catch (err) {
       payload.logger.error(`Import initial du catalogue de la boutique échoué : ${(err as Error).message}`);
     }
