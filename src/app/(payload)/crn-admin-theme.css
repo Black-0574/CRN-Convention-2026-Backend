@@ -247,11 +247,10 @@ textarea:focus-visible {
   appearance: none;
 }
 
-/* Menu en tiroir (petits écrans) : la croix de fermeture de Payload occupe le coin haut gauche. */
-@media (max-width: 1024px) {
-  .crn-menu-tete {
-    padding-top: 44px;
-  }
+/* Le bouton de repli du menu de Payload (‹, ou × en tiroir) occupe le coin haut gauche : la tête
+   du menu commence sous lui, à toutes les largeurs. */
+.crn-menu-tete {
+  padding-top: 44px;
 }
 
 .crn-menu-recherche input:focus {
