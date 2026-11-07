@@ -43,8 +43,8 @@ Aucun accès verbal n'est accepté.
   chaque pass, et renvoie vers la boutique.
 - Achat : choisir le pass ou le ticket, renseigner le nom, le prénom, le téléphone et l'e-mail de
   chaque titulaire (un titulaire par billet), puis payer.
-- Paiement : Mobile Money auprès des opérateurs de plusieurs pays d'Afrique, ou carte bancaire,
-  sur la page sécurisée d'un prestataire de paiement agréé. Le site ne conserve aucune donnée de
+- Paiement : Mobile Money auprès des opérateurs de plusieurs pays d'Afrique (la carte bancaire
+  n'est pas proposée pour le moment), sur la page sécurisée d'un prestataire de paiement agréé. Le site ne conserve aucune donnée de
   paiement.
 - Billet : tous les pass et tickets sont nominatifs ; chaque billet a son QR code unique, émis dès
   le paiement confirmé et envoyé par e-mail, scanné à l'entrée de chaque site auquel il donne accès
