@@ -43,7 +43,7 @@ import { journaliser } from './src/boutique/lib/journal';
 import { demarrerTachesPlanifiees } from './src/boutique/lib/taches';
 import { installerProduitsTest } from './src/boutique/produits-test';
 import { urlBackOffice } from './src/boutique/lib/urls';
-import { appliquerPrixArticlesAnnonces, installerPointsRelais, seedBoutique } from './src/boutique/seed';
+import { appliquerHorairesDu12Decembre, appliquerPrixArticlesAnnonces, installerPointsRelais, seedBoutique } from './src/boutique/seed';
 
 if (process.env.BOUTIQUE_DEMO === '1' && process.env.NODE_ENV === 'production') {
   throw new Error('BOUTIQUE_DEMO=1 est réservé au développement local : refusé en production.');
@@ -148,6 +148,8 @@ export default buildConfig({
       await appliquerPrixArticlesAnnonces(payload);
       // Points relais du réseau et leurs frais (6 novembre 2026), sur une liste encore vide.
       await installerPointsRelais(payload);
+      // Nouveaux horaires du 12 décembre (7 novembre 2026), sur les anciennes valeurs seulement.
+      await appliquerHorairesDu12Decembre(payload);
       // Produits à 200 F CFA pour les tests des équipes (6 novembre 2026), créés une seule fois.
       await installerProduitsTest(payload);
     } catch (err) {

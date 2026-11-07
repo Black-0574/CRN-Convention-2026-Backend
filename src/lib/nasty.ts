@@ -66,7 +66,7 @@ Aucun accès verbal n'est accepté.
   Silas Makangu et François Rabenkogo · jeu. Wilson Ndi et Silas Makangu)
 - Ven. 11 déc. : 6h–7h30 Matin de gloire spécial, Sainte Cène et prière pour les familles ;
   17h–21h Soirée africaine et prophétique (Nadia Jocktane, Wilson Ndi, Jek Kalombo)
-- Sam. 12 déc. : 8h–11h Femme de Foi — Live (Patricia Piebi) ; 13h–16h30 J'ai soif (Jek Kalombo,
+- Sam. 12 déc. : 9h–12h Femme de Foi — Live (Patricia Piebi) ; 14h–17h30 J'ai soif (Jek Kalombo,
   Carelle Ambouroué) ; 19h–22h Dîner des Élites (lieu à annoncer)
 - Dim. 13 déc., au Nomad : 9h–12h Culte unique de toutes les églises (orateur à annoncer) ;
   13h–14h30 Cérémonie d'ordination ; 17h Concert pour la vie

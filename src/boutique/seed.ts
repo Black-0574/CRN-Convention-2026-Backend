@@ -77,8 +77,8 @@ export async function seedBoutique(payload: Payload): Promise<void> {
     }
   }
   const toutesClasses = Object.values(academie).flat();
-  const femmeDeFoi = await plateforme('femme-de-foi-live', 'Femme de Foi — Live', L('2026-12-12', '08:00'), L('2026-12-12', '11:00'), EGLISE);
-  const jaiSoif = await plateforme('jai-soif', 'J’ai soif', L('2026-12-12', '13:00'), L('2026-12-12', '16:30'), EGLISE);
+  const femmeDeFoi = await plateforme('femme-de-foi-live', 'Femme de Foi — Live', L('2026-12-12', '09:00'), L('2026-12-12', '12:00'), EGLISE);
+  const jaiSoif = await plateforme('jai-soif', 'J’ai soif', L('2026-12-12', '14:00'), L('2026-12-12', '17:30'), EGLISE);
   const diner = await plateforme('diner-des-elites', 'Dîner des Élites', L('2026-12-12', '19:00'), L('2026-12-12', '22:00'), null);
   const concertStandard = await plateforme('concert-standard', 'Concert pour la vie — Standard', L('2026-12-13', '17:00'), null, NOMAD);
   const concertVip = await plateforme('concert-vip', 'Concert pour la vie — VIP', L('2026-12-13', '17:00'), null, NOMAD);
@@ -135,8 +135,8 @@ export async function seedBoutique(payload: Payload): Promise<void> {
     CLASSES.map((c) => ({ libelle: `Classe ${c.n} — ${c.nom}`, plateformes: academie[c.n]! })),
   );
   await produit({ nom: 'Pass Académie Intégral', slug: 'pass-academie-integral', type: 'ticket', categorie: catTickets, resume: 'Les trois classes de l’Académie, du 8 au 10 décembre.', description: 'Les trois classes de l’Académie des Sciences Divines, du 8 au 10 décembre, Église Centrale.', badge: 'Les trois classes', paliers: prix(50_000), plateformes: toutesClasses, ...valide, misEnAvant: true, ordreMiseEnAvant: 8, ordre: 21 });
-  await produit({ nom: 'Femme de Foi — Live', slug: 'femme-de-foi-live', type: 'ticket', categorie: catTickets, resume: 'Samedi 12 décembre, 8h–11h, Église Centrale.', description: 'Samedi 12 décembre, 8h–11h, Église Centrale.', paliers: prix(10_000), plateformes: [femmeDeFoi], ...valide, misEnAvant: true, ordreMiseEnAvant: 11, ordre: 22 });
-  await produit({ nom: 'J’ai soif', slug: 'jai-soif', type: 'ticket', categorie: catTickets, resume: 'Samedi 12 décembre, 13h–16h30, Église Centrale.', description: 'Samedi 12 décembre, 13h–16h30, Église Centrale.', paliers: prix(5_000), plateformes: [jaiSoif], ...valide, ordre: 23 });
+  await produit({ nom: 'Femme de Foi — Live', slug: 'femme-de-foi-live', type: 'ticket', categorie: catTickets, resume: 'Samedi 12 décembre, 9h–12h, Église Centrale.', description: 'Samedi 12 décembre, 9h–12h, Église Centrale.', paliers: prix(10_000), plateformes: [femmeDeFoi], ...valide, misEnAvant: true, ordreMiseEnAvant: 11, ordre: 22 });
+  await produit({ nom: 'J’ai soif', slug: 'jai-soif', type: 'ticket', categorie: catTickets, resume: 'Samedi 12 décembre, 14h–17h30, Église Centrale.', description: 'Samedi 12 décembre, 14h–17h30, Église Centrale.', paliers: prix(5_000), plateformes: [jaiSoif], ...valide, ordre: 23 });
   await produit({ nom: 'Dîner des Élites', slug: 'diner-des-elites', type: 'ticket', categorie: catTickets, resume: 'Samedi 12 décembre, 19h–22h. Lieu à annoncer.', description: 'Samedi 12 décembre, 19h–22h. Lieu à annoncer.', badge: 'Places limitées', paliers: prix(100_000), plateformes: [diner], quotas: [quotaDiner], ...valide, misEnAvant: true, ordreMiseEnAvant: 10, ordre: 24 });
   await produit({ nom: 'Concert pour la vie — Standard', slug: 'concert-standard', type: 'ticket', categorie: catTickets, resume: 'Dimanche 13 décembre, 17h, Nomad.', description: 'Dimanche 13 décembre, 17h, Nomad.', paliers: prix(5_000), plateformes: [concertStandard], ...valide, ordre: 25 });
   await produit({ nom: 'Concert pour la vie — VIP', slug: 'concert-vip', type: 'ticket', categorie: catTickets, resume: 'Dimanche 13 décembre, 17h, Nomad.', description: 'Dimanche 13 décembre, 17h, Nomad.', paliers: prix(25_000), plateformes: [concertVip], ...valide, misEnAvant: true, ordreMiseEnAvant: 9, ordre: 26 });
@@ -247,4 +247,68 @@ export async function installerPointsRelais(payload: Payload): Promise<void> {
     await payload.create({ collection: 'points-livraison', data: { ...p, pays: 'Gabon', actif: true } });
     payload.logger.info(`Point relais ajouté : ${p.nom} (${p.fraisXAF} F CFA).`);
   }
+}
+
+/**
+ * Nouveaux horaires du samedi 12 décembre (Commanditaire, 7 novembre 2026) : Femme de Foi — Live
+ * 9h–12h (au lieu de 8h–11h), J'ai soif 14h–17h30 (au lieu de 13h–16h30). Appliqués au démarrage
+ * sur une base déjà importée : programme, fiches Billetterie du site, produits et séances de la
+ * boutique. Seules les anciennes valeurs exactes sont remplacées : une saisie ultérieure dans
+ * l'admin n'est jamais écrasée.
+ */
+const HORAIRES_12_DECEMBRE = [
+  { titre: 'Femme de Foi — Live', code: 'femme-de-foi-live', avant: ['08:00', '11:00', '8h–11h'], apres: ['09:00', '12:00', '9h–12h'] },
+  { titre: 'J’ai soif', code: 'jai-soif', avant: ['13:00', '16:30', '13h–16h30'], apres: ['14:00', '17:30', '14h–17h30'] },
+] as const;
+
+const heureLibreville = (heure: string) => new Date(`2026-12-12T${heure}:00+01:00`).toISOString();
+
+export async function appliquerHorairesDu12Decembre(payload: Payload): Promise<void> {
+  let n = 0;
+  // Programme du jour.
+  // Repéré par sa date ou son libellé : la date peut être enregistrée avec ou sans décalage horaire.
+  const jour = (await payload.find({ collection: 'program-days', limit: 50, depth: 0, pagination: false })).docs.find(
+    (d) => String(d.date).startsWith('2026-12-12') || /12 décembre/.test(d.label),
+  );
+  if (jour) {
+    let change = false;
+    const sessions = (jour.sessions ?? []).map((s) => {
+      const h = HORAIRES_12_DECEMBRE.find((x) => x.titre === s.titre && s.heureDebut === x.avant[0] && s.heureFin === x.avant[1]);
+      if (!h) return s;
+      change = true;
+      return { ...s, heureDebut: h.apres[0], heureFin: h.apres[1] };
+    });
+    if (change) {
+      await payload.update({ collection: 'program-days', id: jour.id, data: { sessions } });
+      n++;
+    }
+  }
+  for (const h of HORAIRES_12_DECEMBRE) {
+    const remplacer = (t?: string | null) => (t && t.includes(h.avant[2]) ? t.replace(h.avant[2], h.apres[2]) : null);
+    // Fiche Billetterie du site.
+    for (const p of (await payload.find({ collection: 'products', where: { nom: { equals: h.titre } }, limit: 5, depth: 0 })).docs) {
+      const description = remplacer(p.description);
+      if (description) {
+        await payload.update({ collection: 'products', id: p.id, data: { description } });
+        n++;
+      }
+    }
+    // Produit de la boutique (résumé et description).
+    const produit = (await payload.find({ collection: 'produits', where: { slug: { equals: h.code } }, limit: 1, depth: 0 })).docs[0];
+    if (produit) {
+      const resume = remplacer(produit.resume);
+      const description = remplacer(produit.description);
+      if (resume || description) {
+        await payload.update({ collection: 'produits', id: produit.id, data: { ...(resume ? { resume } : {}), ...(description ? { description } : {}) } });
+        n++;
+      }
+    }
+    // Séance (billets, contrôle d'accès, fiches de la boutique).
+    const seance = (await payload.find({ collection: 'plateformes', where: { code: { equals: h.code } }, limit: 1, depth: 0 })).docs[0];
+    if (seance && seance.debut === heureLibreville(h.avant[0]) && seance.fin === heureLibreville(h.avant[1])) {
+      await payload.update({ collection: 'plateformes', id: seance.id, data: { debut: heureLibreville(h.apres[0]), fin: heureLibreville(h.apres[1]) } });
+      n++;
+    }
+  }
+  if (n) payload.logger.info(`Horaires du 12 décembre mis à jour (${n} fiche(s)) : Femme de Foi — Live 9h–12h, J’ai soif 14h–17h30.`);
 }

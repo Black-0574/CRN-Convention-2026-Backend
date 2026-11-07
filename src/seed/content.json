@@ -232,7 +232,7 @@
         "nom": "Femme de Foi — Live",
         "categorie": "plateforme",
         "prixFCFA": 10000,
-        "description": "Samedi 12 décembre, 8h–11h, Église Centrale.",
+        "description": "Samedi 12 décembre, 9h–12h, Église Centrale.",
         "lienAchat": "#billetterie-a-configurer",
         "statut": "disponible",
         "ordre": 3
@@ -244,7 +244,7 @@
         "nom": "J’ai soif",
         "categorie": "plateforme",
         "prixFCFA": 5000,
-        "description": "Samedi 12 décembre, 13h–16h30, Église Centrale.",
+        "description": "Samedi 12 décembre, 14h–17h30, Église Centrale.",
         "lienAchat": "#billetterie-a-configurer",
         "statut": "disponible",
         "ordre": 4
@@ -693,8 +693,8 @@
         "ordre": 8,
         "sessions": [
           {
-            "heureDebut": "08:00",
-            "heureFin": "11:00",
+            "heureDebut": "09:00",
+            "heureFin": "12:00",
             "titre": "Femme de Foi — Live",
             "lieu": "Église Centrale",
             "intervenants": [
@@ -704,8 +704,8 @@
             "visible": true
           },
           {
-            "heureDebut": "13:00",
-            "heureFin": "16:30",
+            "heureDebut": "14:00",
+            "heureFin": "17:30",
             "titre": "J’ai soif",
             "lieu": "Église Centrale",
             "intervenants": [
