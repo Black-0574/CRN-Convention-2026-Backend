@@ -31,7 +31,7 @@ export async function seedBoutique(payload: Payload): Promise<void> {
     if (!email || !motDePasse) return payload.logger.warn(`${nomComplet} : identifiants absents de .env, compte non créé.`);
     const existe = await payload.count({ collection: 'users', where: { email: { equals: email } } });
     if (existe.totalDocs) return;
-    await payload.create({ collection: 'users', data: { email, password: motDePasse, nom: nomComplet, role: role as never } });
+    await payload.create({ collection: 'users', data: { email, password: motDePasse, nom: nomComplet, role: role as never, statut: 'actif' } });
     payload.logger.info(`Compte créé : ${nomComplet} (${role}).`);
   };
 

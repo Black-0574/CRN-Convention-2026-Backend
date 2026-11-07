@@ -115,8 +115,14 @@ export default function PageScan() {
     if (res.status === 401 || res.status === 403) return setEtat('connexion');
     const liste: Plateforme[] = await res.json();
     setPlateformes(liste);
-    const memo = lire('crn-scan-plateforme');
+    // Affectation du profil (séance et poste par défaut), si ce téléphone n'a rien mémorisé.
+    const profil = await fetch('/api/users/me?depth=1', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((m: { user?: { seanceScan?: { code?: string } | null; posteScan?: string | null } } | null) => m?.user)
+      .catch(() => undefined);
+    const memo = lire('crn-scan-plateforme') || profil?.seanceScan?.code || '';
     setPlateforme(liste.some((p) => p.code === memo) ? memo : (liste[0]?.code ?? ''));
+    if (!lire('crn-scan-poste') && profil?.posteScan) setPoste(profil.posteScan);
     setEtat('poste');
   }, []);
 

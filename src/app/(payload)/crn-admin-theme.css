@@ -1,22 +1,67 @@
 /*
-  Thème du back-office — aligné sur GBIS v2.1 (voir docs/GBIS-v2.1.md et src/styles/tokens.css
-  côté site). Règles non surchargées par Payload : ces déclarations, hors de tout @layer,
-  l'emportent automatiquement sur les styles par défaut de Payload (@layer payload-default).
+  Thème du back-office — charte du site (GBIS v2.1, voir docs/GBIS-v2.1.md et src/styles/tokens.css
+  côté site), refonte du 7 novembre 2026 : menu latéral bleu nuit à icônes, fond crème, cartes
+  blanches arrondies, boutons pilules, tableau de bord par rôle (préfixe crn-tdb).
+
+  Règles non surchargées par Payload : ces déclarations, hors de tout @layer, l'emportent
+  automatiquement sur les styles par défaut de Payload (@layer payload-default).
 
   Les polices (Source Serif 4 / Source Sans 3) sont importées via @fontsource dans layout.tsx —
-  auto-hébergées, aucune requête vers un service externe (NF-CNV-001).
+  auto-hébergées, aucune requête vers un service externe (NF-CNV-001). Rien sous 16 px.
 */
 
+/* ——— 1. Jetons ——— */
 :root {
+  /* Palette exclusive GBIS v2.1 (§03) */
+  --crn-noir: #101010;
+  --crn-blanc: #ffffff;
+  --crn-or: #b8963e;
+  --crn-bleu-nuit: #1a2c5b;
+  --crn-bleu-nuit-profond: #16244a;
+  --crn-creme: #f7f5f0;
+  --crn-gris: #6b6b6b;
+  --crn-gris-clair: #d8d4cb;
+
+  --crn-rayon-controle: 10px;
+  --crn-rayon-carte: 20px;
+  --crn-rayon-carte-sm: 14px;
+  --crn-ombre-carte: 0 1px 2px rgba(16, 16, 16, 0.04), 0 12px 32px -16px rgba(16, 16, 16, 0.18);
+  --crn-ombre-levee: 0 24px 48px -20px rgba(16, 16, 16, 0.3);
+  --crn-transition: 200ms cubic-bezier(0.22, 1, 0.36, 1);
+
   --font-body: 'Source Sans 3', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   --font-serif: 'Source Serif 4', Georgia, serif;
 
   /*
-    Remplace l'échelle « success » de Payload (utilisée pour l'anneau de focus clavier, les
-    badges/bannières positifs et certains états actifs) par une rampe dérivée de l'or GBIS
-    (--crn-or #B8963E), ancrée exactement sur cette valeur au palier 500 — jamais d'autre teinte
-    substituée à l'or de la charte. Mêmes paires clair/foncé que l'original Payload (ex. fond 150
-    + texte 800), donc le contraste reste correct.
+    Échelle neutre de Payload (fonds, bordures, textes) remplacée par une rampe dérivée de la
+    palette : blanc → crème → gris clair → gris → bleu nuit → noir, ancrée exactement sur ces
+    valeurs (0, 50, 200, 500, 1000). Mêmes rôles que l'échelle d'origine, contraste conservé.
+  */
+  --color-base-0: #ffffff;
+  --color-base-50: #f7f5f0;
+  --color-base-100: #efece5;
+  --color-base-150: #e6e2d9;
+  --color-base-200: #d8d4cb;
+  --color-base-250: #cbc7bf;
+  --color-base-300: #b9b5ad;
+  --color-base-350: #a5a29b;
+  --color-base-400: #918f8a;
+  --color-base-450: #7e7d7a;
+  --color-base-500: #6b6b6b;
+  --color-base-550: #5a5d66;
+  --color-base-600: #4a4f5e;
+  --color-base-650: #3b4256;
+  --color-base-700: #2d364f;
+  --color-base-750: #232d4a;
+  --color-base-800: #1c2541;
+  --color-base-850: #182036;
+  --color-base-900: #141a2b;
+  --color-base-950: #121520;
+  --color-base-1000: #101010;
+
+  /*
+    Échelle « success » de Payload (anneau de focus, badges positifs) : rampe dérivée de l'or
+    GBIS, ancrée sur #B8963E au palier 500 — jamais d'autre teinte substituée à l'or de la charte.
   */
   --color-success-50: #faf6ea;
   --color-success-100: #f3ebd7;
@@ -37,44 +82,25 @@
   --color-success-850: #332810;
   --color-success-900: #271f0c;
   --color-success-950: #1c1608;
+
+  --style-radius-s: 8px;
+  --style-radius-m: 10px;
+  --style-radius-l: 20px;
 }
 
-/* En-tête de marque, injecté via admin.components.header (toutes les pages de l'admin). */
-.crn-admin-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 32px;
-  background: #1a2c5b; /* --crn-bleu-nuit */
-  color: #ffffff;
-  font-family: var(--font-serif);
-  font-weight: 700;
-  font-size: 17px;
-  letter-spacing: 0.02em;
+html[data-theme='light'] {
+  --theme-bg: var(--crn-creme);
+  --theme-input-bg: var(--crn-blanc);
+  --theme-text: var(--crn-noir);
+  --theme-border-color: var(--crn-gris-clair);
 }
 
-.crn-admin-header img {
-  display: block;
-}
-
-/* Logo de la page de connexion / création du premier compte. */
-.crn-admin-logo {
-  display: flex;
-  justify-content: center;
-  padding: 8px 0 4px;
-}
-
-.crn-admin-logo img {
-  width: min(240px, 60vw);
-  height: auto;
-}
-
+/* ——— 2. Base et lisibilité ——— */
 /*
   Lisibilité (demande du Commanditaire : caractères et champs trop petits). Payload fixe la base
   de l'admin à 13 px (12 px sur petit écran) et exprime ses espacements et hauteurs de champs en
   rem : relever la taille de base agrandit d'un même facteur (16/13 ≈ ×1,23) le texte, les champs
-  de saisie, les listes déroulantes et les boutons, sans casser les proportions. La GBIS demande
-  au moins 16 px pour le texte courant.
+  de saisie, les listes déroulantes et les boutons, sans casser les proportions.
 */
 html {
   font-size: 16px;
@@ -88,29 +114,415 @@ html {
   }
 }
 
+body {
+  background: var(--crn-creme);
+  color: var(--crn-noir);
+}
+
 /* Quelques tailles fixées en pixels par Payload, qui ne suivraient pas la base. */
 label.field-label:not(.unstyled),
 .localized,
 .collapsible__toggle,
 .card__title,
 .react-select .rs__option,
-.loading-overlay__text {
-  font-size: 16px;
-}
-
+.loading-overlay__text,
 .multi-value-label,
 .relationship--multi-value-label__content,
 .pill--rounded,
 .section-title:after,
 .section-title__input,
-.error-pill {
-  font-size: 15px;
-}
-
+.error-pill,
 .date-time-picker .react-datepicker__day,
 .date-time-picker .react-datepicker__month-text,
 .react-datepicker__time-container .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item {
-  font-size: 14px;
+  font-size: 16px;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
+  color: var(--crn-bleu-nuit);
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--crn-or);
+  outline-offset: 2px;
+}
+
+/* Lecteurs d'écran seulement (tableaux de valeurs des graphiques). */
+.crn-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ——— 3. Menu latéral ——— */
+.nav {
+  background: var(--crn-bleu-nuit);
+  color: var(--crn-blanc);
+  border-right: 0;
+}
+
+.nav__scroll {
+  padding-top: 16px;
+}
+
+.nav__wrap {
+  gap: 4px;
+}
+
+.crn-menu-marque {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 20px;
+  padding: 4px 4px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--crn-blanc);
+  text-decoration: none;
+}
+
+.crn-menu-marque img {
+  flex: none;
+  border-radius: 10px;
+  background: var(--crn-blanc);
+  padding: 3px;
+}
+
+.crn-menu-marque span {
+  display: grid;
+  line-height: 1.2;
+}
+
+.crn-menu-marque strong {
+  font-family: var(--font-serif);
+  font-size: 17px;
+}
+
+.crn-menu-marque span span {
+  color: var(--crn-gris-clair);
+  font-size: 16px;
+}
+
+/* Groupes : intitulé discret en petites capitales, sans fond. */
+.nav-group__toggle {
+  color: var(--crn-gris-clair);
+  font-size: 16px;
+  font-weight: 700;
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+  padding: 14px 8px 6px;
+}
+
+.nav-group__toggle:hover,
+.nav-group__toggle:focus-visible {
+  color: var(--crn-blanc);
+}
+
+.nav-group__indicator svg path,
+.nav-group__toggle svg path {
+  stroke: currentColor;
+}
+
+/* Liens : pastille arrondie, lien actif sur fond blanc avec filet or (références du Commanditaire). */
+.nav__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 12px 8px 44px;
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 16px;
+  text-decoration: none;
+  transition: background var(--crn-transition), color var(--crn-transition);
+}
+
+.nav__link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--crn-blanc);
+}
+
+.nav__link.active,
+.nav__link[aria-current='page'] {
+  background: var(--crn-blanc);
+  color: var(--crn-bleu-nuit);
+  font-weight: 700;
+  box-shadow: inset 4px 0 0 var(--crn-or);
+}
+
+.nav__link-indicator {
+  display: none;
+}
+
+/* Icônes par rubrique : masque SVG (trait 2 px), couleur du texte du lien. */
+.nav__link::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  transform: translateY(-50%);
+  background: currentColor;
+  -webkit-mask: var(--crn-icone, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E")) center / contain no-repeat;
+  mask: var(--crn-icone, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E")) center / contain no-repeat;
+}
+
+[href$='/admin/collections/speakers'],
+[data-rubrique='speakers'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z'/%3E%3Cpath d='M19 10v2a7 7 0 0 1-14 0v-2M12 19v3'/%3E%3C/svg%3E"); }
+[href$='/admin/collections/artists'],
+[data-rubrique='artists'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18V5l12-2v13'/%3E%3Ccircle cx='6' cy='18' r='3'/%3E%3Ccircle cx='18' cy='16' r='3'/%3E%3C/svg%3E"); }
+[href$='/admin/collections/venues'],
+[data-rubrique='venues'],
+[href$='/admin/collections/points-livraison'],
+[data-rubrique='points-livraison'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z'/%3E%3Ccircle cx='12' cy='10' r='3'/%3E%3C/svg%3E"); }
+[href$='/admin/collections/announcements'],
+[data-rubrique='announcements'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 11 18-5v12L3 14v-3z'/%3E%3Cpath d='M11.6 16.8a3 3 0 1 1-5.8-1.6'/%3E%3C/svg%3E"); }
+[href$='/admin/collections/program-days'],
+[data-rubrique='program-days'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18'/%3E%3C/svg%3E"); }
+[href$='/admin/collections/faq'],
+[data-rubrique='faq'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01'/%3E%3C/svg%3E"); }
+[href$='/admin/collections/products'],
+[data-rubrique='products'],
+[href$='/admin/collections/titulaires'],
+[data-rubrique='titulaires'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z'/%3E%3Cpath d='M13 5v2M13 17v2M13 11v2'/%3E%3C/svg%3E"); }
+[href$='/admin/collections/media'],
+[data-rubrique='media'],
+[href$='/admin/collections/photos-profil'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Ccircle cx='9' cy='9' r='2'/%3E%3Cpath d='m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21'/%3E%3C/svg%3E"); }
+[href$='/admin/globals/settings'],
+[data-rubrique='settings'],
+[href$='/admin/globals/reglages-boutique'],
+[data-rubrique='reglages-boutique'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6'/%3E%3C/svg%3E"); }
+[href$='/admin/collections/produits'],
+[data-rubrique='produits'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z'/%3E%3Cpath d='M3 6h18M16 10a4 4 0 0 1-8 0'/%3E%3C/svg%3E"); }
+[href$='/admin/collections/variantes'],
+[data-rubrique='variantes'],
+[href$='/admin/collections/categories'],
+[data-rubrique='categories'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2 2 7l10 5 10-5-10-5Z'/%3E%3Cpath d='m2 17 10 5 10-5M2 12l10 5 10-5'/%3E%3C/svg%3E"); }
+[href$='/admin/collections/plateformes'],
+[data-rubrique='plateformes'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6'/%3E%3C/svg%3E"); }
+[href$='/admin/collections/quotas'],
+[data-rubrique='quotas'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='9' cy='7' r='4'/%3E%3Cpath d='M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8'/%3E%3C/svg%3E"); }
+[href$='/admin/collections/commandes'],
+[data-rubrique='commandes'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='21' r='1'/%3E%3Ccircle cx='20' cy='21' r='1'/%3E%3Cpath d='M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6'/%3E%3C/svg%3E"); }
+[href$='/admin/collections/evenements-webhook'],
+[data-rubrique='evenements-webhook'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='5' width='20' height='14' rx='2'/%3E%3Cpath d='M2 10h20'/%3E%3C/svg%3E"); }
+[href$='/admin/collections/consentements'],
+[data-rubrique='consentements'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 11l3 3L22 4'/%3E%3Cpath d='M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'/%3E%3C/svg%3E"); }
+[href$='/admin/collections/retraits'],
+[data-rubrique='retraits'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 8 12 3 3 8v8l9 5 9-5Z'/%3E%3Cpath d='m3 8 9 5 9-5M12 13v8'/%3E%3C/svg%3E"); }
+[href$='/admin/collections/droits-acces'],
+[data-rubrique='droits-acces'],
+[href$='/admin/collections/scans'],
+[data-rubrique='scans'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10'/%3E%3C/svg%3E"); }
+[href$='/admin/collections/journal-actions'],
+[data-rubrique='journal-actions'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z'/%3E%3Cpath d='M14 2v6h6M16 13H8M16 17H8'/%3E%3C/svg%3E"); }
+[href$='/admin/collections/users'],
+[data-rubrique='users'] { --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E"); }
+
+/* Carte du compte connecté, en pied de menu. */
+.crn-menu-compte {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 8px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--crn-blanc);
+  text-decoration: none;
+}
+
+.crn-menu-compte:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.crn-menu-compte > span:last-child {
+  display: grid;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.crn-menu-compte strong,
+.crn-menu-compte > span:last-child > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crn-menu-compte > span:last-child > span {
+  color: var(--crn-gris-clair);
+  font-size: 16px;
+}
+
+/* Déconnexion, en pied de menu. */
+.nav__log-out,
+.nav .nav__controls a {
+  color: var(--crn-gris-clair);
+}
+
+.nav__log-out:hover {
+  color: var(--crn-blanc);
+}
+
+/* Avatar (initiales ou photo). */
+.crn-avatar {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--crn-bleu-nuit);
+  color: var(--crn-blanc);
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 0 0 2px var(--crn-or);
+}
+
+.crn-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ——— 4. Barre du haut ——— */
+.app-header {
+  background: var(--crn-blanc);
+  border-bottom: 1px solid var(--crn-gris-clair);
+}
+
+.app-header__step-nav-wrapper,
+.step-nav,
+.step-nav a {
+  font-size: 16px;
+}
+
+.step-nav a {
+  color: var(--crn-bleu-nuit);
+}
+
+/* ——— 5. Boutons ——— */
+.btn {
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.btn--style-primary {
+  background: var(--crn-bleu-nuit);
+  color: var(--crn-blanc);
+  border-color: var(--crn-bleu-nuit);
+}
+
+.btn--style-primary:hover,
+.btn--style-primary:focus-visible {
+  background: var(--crn-bleu-nuit-profond);
+  border-color: var(--crn-bleu-nuit-profond);
+}
+
+.btn--style-secondary {
+  background: var(--crn-blanc);
+  color: var(--crn-bleu-nuit);
+  box-shadow: inset 0 0 0 1.5px var(--crn-bleu-nuit);
+}
+
+.btn--style-secondary:hover {
+  background: var(--crn-creme);
+}
+
+/* ——— 6. Listes ——— */
+.collection-list__wrap,
+.list-header {
+  max-width: none;
+}
+
+.collection-list .table,
+.table {
+  background: var(--crn-blanc);
+  border: 1px solid var(--crn-gris-clair);
+  border-radius: var(--crn-rayon-carte-sm);
+  box-shadow: var(--crn-ombre-carte);
+  overflow: hidden;
+}
+
+.table table {
+  border-collapse: collapse;
+}
+
+.table thead th {
+  background: var(--crn-creme);
+  color: var(--crn-gris);
+  font-size: 16px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--crn-gris-clair);
+}
+
+.table tbody tr {
+  border-bottom: 1px solid var(--crn-gris-clair);
+}
+
+.table tbody tr:hover {
+  background: var(--crn-creme);
+}
+
+.table td,
+.table th {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.table td a {
+  color: var(--crn-bleu-nuit);
+  font-weight: 700;
+}
+
+/* Pastilles : bleu nuit, or ou gris — jamais de vert ni de rouge (charte). */
+.pill {
+  border-radius: 999px;
+}
+
+.pill--style-success {
+  background: var(--crn-bleu-nuit);
+  color: var(--crn-blanc);
+}
+
+.pill--style-warning {
+  background: var(--crn-or);
+  color: var(--crn-noir);
+}
+
+/* ——— 7. Fiches ——— */
+.doc-header__title {
+  font-family: var(--font-serif);
+  color: var(--crn-bleu-nuit);
+}
+
+.doc-controls {
+  background: var(--crn-blanc);
+  border-bottom: 1px solid var(--crn-gris-clair);
+}
+
+.collection-edit__main,
+.global-edit__main {
+  background: var(--crn-blanc);
+}
+
+.tabs-field__tab-button {
+  font-size: 16px;
+}
+
+.tabs-field__tab-button--active {
+  color: var(--crn-bleu-nuit);
+  box-shadow: inset 0 -3px 0 var(--crn-or);
 }
 
 /* Champs de saisie : Payload fixe leur marge interne et leur interligne en pixels (8 px / 20 px,
@@ -122,6 +534,7 @@ label.field-label:not(.unstyled),
   padding: 12px 16px;
   font-size: 16px;
   line-height: 24px;
+  border-radius: var(--crn-rayon-controle);
 }
 
 .field-type textarea {
@@ -129,26 +542,506 @@ label.field-label:not(.unstyled),
   padding: 12px 16px;
   font-size: 16px;
   line-height: 26px;
+  border-radius: var(--crn-rayon-controle);
 }
 
 .react-select .rs__control {
   min-height: 50px;
   font-size: 16px;
+  border-radius: var(--crn-rayon-controle);
 }
 
 .react-select .rs__value-container {
   padding: 6px 12px;
 }
 
-/* Libellés des champs un peu plus marqués, pour repérer chaque zone de saisie d'un coup d'œil. */
 label.field-label:not(.unstyled) {
   font-weight: 700;
   margin-bottom: 6px;
 }
 
-/* Titres en Source Serif 4, cohérent avec la typographie du site public. */
-h1,
-h2,
-h3 {
+/* ——— 8. Connexion ——— */
+.template-minimal {
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(184, 150, 62, 0.16), transparent 60%),
+    var(--crn-creme);
+}
+
+.template-minimal__wrap {
+  background: var(--crn-blanc);
+  border: 1px solid var(--crn-gris-clair);
+  border-top: 4px solid var(--crn-or);
+  border-radius: var(--crn-rayon-carte);
+  box-shadow: var(--crn-ombre-levee);
+  padding: 32px 28px;
+}
+
+/* Logo de la page de connexion. */
+.crn-admin-logo {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 4px;
+}
+
+.crn-admin-logo img {
+  width: min(220px, 60vw);
+  height: auto;
+}
+
+/* ——— 9. Tableau de bord (crn-tdb) ——— */
+.crn-tdb {
+  display: grid;
+  gap: 24px;
+  /* Jamais sous 16 px, même quand l'admin passe sa base à 15 px sur petit écran. */
+  font-size: 16px;
+  line-height: 1.5;
+  padding-top: 24px;
+  padding-bottom: 48px;
+}
+
+.crn-tdb-bienvenue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.crn-tdb-bienvenue h1 {
+  margin: 0;
+  font-size: 39px;
+  line-height: 1.15;
+}
+
+.crn-tdb-bienvenue__date {
+  margin: 0 0 4px;
+  color: var(--crn-gris);
+  font-size: 16px;
+}
+
+.crn-tdb-bienvenue__date::first-letter {
+  text-transform: uppercase;
+}
+
+.crn-tdb-bienvenue__role {
+  margin: 4px 0 0;
+  color: var(--crn-gris);
+  font-size: 18px;
+}
+
+.crn-tdb-actions-liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.crn-tdb-bouton {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  background: var(--crn-bleu-nuit);
+  color: var(--crn-blanc);
+  font-weight: 700;
+  font-size: 16px;
+  text-decoration: none;
+  transition: background var(--crn-transition);
+}
+
+.crn-tdb-bouton:hover {
+  background: var(--crn-bleu-nuit-profond);
+}
+
+.crn-tdb-bouton--secondaire {
+  background: var(--crn-blanc);
+  color: var(--crn-bleu-nuit);
+  box-shadow: inset 0 0 0 1.5px var(--crn-bleu-nuit);
+}
+
+.crn-tdb-bouton--secondaire:hover {
+  background: var(--crn-creme);
+}
+
+/* Indicateurs */
+.crn-tdb-indicateurs {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.crn-tdb-indicateur,
+.crn-tdb-carte {
+  background: var(--crn-blanc);
+  border: 1px solid var(--crn-gris-clair);
+  border-radius: var(--crn-rayon-carte);
+  box-shadow: var(--crn-ombre-carte);
+}
+
+.crn-tdb-indicateur {
+  height: 100%;
+  padding: 20px 22px;
+}
+
+.crn-tdb-indicateur p {
+  margin: 0;
+}
+
+.crn-tdb-indicateur__libelle {
+  color: var(--crn-gris);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.crn-tdb-indicateur__valeur {
+  margin-top: 8px !important;
   font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 34px;
+  line-height: 1.1;
+  color: var(--crn-bleu-nuit);
+}
+
+.crn-tdb-indicateur__detail {
+  margin-top: 8px !important;
+  color: var(--crn-gris);
+  font-size: 16px;
+}
+
+/* Indicateur principal : bleu nuit plein, filet or (comme la carte mise en avant des références). */
+.crn-tdb-indicateur--accent {
+  background: linear-gradient(140deg, var(--crn-bleu-nuit), var(--crn-bleu-nuit-profond));
+  border-color: var(--crn-bleu-nuit);
+  box-shadow: inset 0 -4px 0 var(--crn-or), var(--crn-ombre-carte);
+}
+
+.crn-tdb-indicateur--accent .crn-tdb-indicateur__libelle,
+.crn-tdb-indicateur--accent .crn-tdb-indicateur__detail,
+.crn-tdb-indicateur--accent .crn-tdb-indicateur__valeur {
+  color: var(--crn-blanc);
+}
+
+.crn-tdb-indicateur--accent .crn-tdb-indicateur__detail a {
+  color: var(--crn-blanc);
+}
+
+.crn-tdb-indicateur-lien {
+  color: inherit;
+  text-decoration: none;
+}
+
+.crn-tdb-indicateur-lien .crn-tdb-indicateur {
+  transition: transform var(--crn-transition), box-shadow var(--crn-transition);
+}
+
+.crn-tdb-indicateur-lien:hover .crn-tdb-indicateur {
+  transform: translateY(-2px);
+  box-shadow: var(--crn-ombre-levee);
+}
+
+/* Cartes */
+.crn-tdb-grille {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  align-items: start;
+}
+
+@media (min-width: 1200px) {
+  .crn-tdb-grille {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .crn-tdb-carte--large {
+    grid-column: span 2;
+  }
+}
+
+.crn-tdb-carte {
+  min-width: 0;
+  padding: 20px 22px;
+}
+
+.crn-tdb-carte__entete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.crn-tdb-carte__entete h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.crn-tdb-carte__entete a {
+  color: var(--crn-bleu-nuit);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.crn-tdb-vide,
+.crn-tdb-texte {
+  margin: 0;
+  color: var(--crn-gris);
+}
+
+/* Listes */
+.crn-tdb-liste {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crn-tdb-liste li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--crn-gris-clair);
+}
+
+.crn-tdb-liste li:last-child {
+  border-bottom: 0;
+}
+
+.crn-tdb-liste a {
+  color: var(--crn-bleu-nuit);
+  font-weight: 700;
+}
+
+.crn-tdb-liste li > span:last-child {
+  color: var(--crn-gris);
+}
+
+/* Tableau (dernières commandes) */
+.crn-tdb-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.crn-tdb-table th {
+  padding: 10px 8px;
+  background: var(--crn-creme);
+  color: var(--crn-gris);
+  font-size: 16px;
+  text-align: left;
+}
+
+.crn-tdb-table td {
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--crn-gris-clair);
+}
+
+.crn-tdb-table a {
+  color: var(--crn-bleu-nuit);
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .crn-tdb-table thead {
+    display: none;
+  }
+
+  .crn-tdb-table tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--crn-gris-clair);
+  }
+
+  .crn-tdb-table td {
+    padding: 2px 0;
+    border: 0;
+  }
+}
+
+/* Statuts : bleu nuit (positif), or (à suivre), gris (neutre) — jamais de vert ni de rouge. */
+.crn-tdb-statut {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--crn-creme);
+  border: 1px solid var(--crn-gris-clair);
+  color: var(--crn-gris);
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.crn-tdb-statut--payee,
+.crn-tdb-statut--accepte,
+.crn-tdb-statut--actif {
+  background: var(--crn-bleu-nuit);
+  border-color: var(--crn-bleu-nuit);
+  color: var(--crn-blanc);
+}
+
+.crn-tdb-statut--en_attente,
+.crn-tdb-statut--a_verifier,
+.crn-tdb-statut--suspendu {
+  background: var(--crn-or);
+  border-color: var(--crn-or);
+  color: var(--crn-noir);
+}
+
+/* Classement (ventes par produit) */
+.crn-tdb-classement {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crn-tdb-classement li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+}
+
+.crn-tdb-classement__nom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.crn-tdb-classement__valeur {
+  color: var(--crn-gris);
+}
+
+.crn-tdb-classement__barre {
+  grid-column: 1 / -1;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--crn-bleu-nuit) var(--part), var(--crn-creme) var(--part));
+}
+
+/* Graphique en barres */
+.crn-tdb-barres {
+  margin: 0;
+}
+
+.crn-tdb-barres svg {
+  display: block;
+  width: 100%;
+  height: 240px;
+}
+
+.crn-tdb-barres__grille {
+  stroke: var(--crn-gris-clair);
+  stroke-dasharray: 4 6;
+}
+
+.crn-tdb-barres__barre {
+  fill: var(--crn-bleu-nuit);
+}
+
+.crn-tdb-barres__barre--max {
+  fill: var(--crn-or);
+}
+
+.crn-tdb-barres__libelle {
+  fill: var(--crn-gris);
+  font-size: 16px;
+}
+
+/* Jauges (présences) */
+.crn-tdb-jauges {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crn-tdb-jauges__entete {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.crn-tdb-jauges__entete span:first-child {
+  font-weight: 700;
+}
+
+.crn-tdb-jauges__entete span:last-child {
+  color: var(--crn-gris);
+  white-space: nowrap;
+}
+
+.crn-tdb-jauges__piste {
+  height: 12px;
+  border-radius: 999px;
+  background: var(--crn-creme);
+  border: 1px solid var(--crn-gris-clair);
+  overflow: hidden;
+}
+
+.crn-tdb-jauges__piste span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--crn-bleu-nuit);
+}
+
+/* Accès rapides */
+.crn-tdb-acces h2 {
+  margin: 8px 0 12px;
+  font-size: 22px;
+}
+
+.crn-tdb-acces ul {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crn-tdb-acces a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 12px 16px 12px 52px;
+  border-radius: var(--crn-rayon-carte-sm);
+  background: var(--crn-blanc);
+  border: 1px solid var(--crn-gris-clair);
+  color: var(--crn-bleu-nuit);
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color var(--crn-transition), box-shadow var(--crn-transition);
+}
+
+.crn-tdb-acces a:hover {
+  border-color: var(--crn-or);
+  box-shadow: var(--crn-ombre-carte);
+}
+
+.crn-tdb-acces a::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  transform: translateY(-50%);
+  background: var(--crn-or);
+  -webkit-mask: var(--crn-icone) center / contain no-repeat;
+  mask: var(--crn-icone) center / contain no-repeat;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crn-tdb-indicateur-lien:hover .crn-tdb-indicateur {
+    transform: none;
+  }
 }

@@ -5,6 +5,7 @@ import * as migration_20261102_083128 from './20261102_083128';
 import * as migration_20261104_172946_boutique from './20261104_172946_boutique';
 import * as migration_20261105_203919_orateurs_ordre from './20261105_203919_orateurs_ordre';
 import * as migration_20261106_120512_produits_reserve_tests from './20261106_120512_produits_reserve_tests';
+import * as migration_20261107_075155_profils_utilisateurs from './20261107_075155_profils_utilisateurs';
 
 export const migrations = [
   {
@@ -40,6 +41,11 @@ export const migrations = [
   {
     up: migration_20261106_120512_produits_reserve_tests.up,
     down: migration_20261106_120512_produits_reserve_tests.down,
-    name: '20261106_120512_produits_reserve_tests'
+    name: '20261106_120512_produits_reserve_tests',
+  },
+  {
+    up: migration_20261107_075155_profils_utilisateurs.up,
+    down: migration_20261107_075155_profils_utilisateurs.down,
+    name: '20261107_075155_profils_utilisateurs'
   },
 ];

@@ -6,7 +6,9 @@ import { fileURLToPath } from 'node:url';
 import { buildConfig, type CollectionConfig, type GlobalConfig } from 'payload';
 import sharp from 'sharp';
 
+import { PhotosProfil } from './src/collections/PhotosProfil';
 import { Users } from './src/collections/Users';
+import { avecRoles, avecRolesGlobal } from './src/lib/roles';
 import { Media } from './src/collections/Media';
 import { Venues } from './src/collections/Venues';
 import { Artists } from './src/collections/Artists';
@@ -78,13 +80,21 @@ export default buildConfig({
       titleSuffix: ' — CRN Convention 2026',
       icons: [{ url: '/brand/favicon.png', type: 'image/png' }],
     },
+    // Charte du site (GBIS v2.1) : thème clair seul, le thème sombre de Payload sortirait de la
+    // palette. Habillage dans src/app/(payload)/crn-admin-theme.css.
+    theme: 'light',
+    avatar: { Component: '/components/admin/Avatar#Avatar' },
     components: {
       graphics: {
         Logo: '/components/admin/Logo#Logo',
         Icon: '/components/admin/Icon#Icon',
       },
-      header: ['/components/admin/Header#Header'],
-      beforeDashboard: ['/components/admin/TableauVentes#TableauVentes'],
+      beforeNavLinks: ['/components/admin/Menu#MarqueMenu'],
+      afterNavLinks: ['/components/admin/Menu#CompteMenu'],
+      // Tableau de bord par rôle (7 novembre 2026), à la place de l'accueil par défaut.
+      views: {
+        dashboard: { Component: '/components/admin/TableauDeBord#TableauDeBord' },
+      },
     },
   },
   // Back-office réservé à l'équipe francophone du Commanditaire : français seul, pas de
@@ -102,8 +112,8 @@ export default buildConfig({
       },
     },
   },
+  // Menu et droits par rôle (src/lib/roles.ts) : chaque profil ne voit que ses rubriques.
   collections: [
-    Users,
     ...[Media, Venues, Artists, Faq, Speakers, Products, Announcements, ProgramDays].map(withSiteRebuild),
     // Catalogue de la boutique : journalisé, et republié sur le site (pages /boutique statiques).
     ...[Categories, Plateformes, Quotas, Produits, Variantes].map(journaliser).map(withSiteRebuild),
@@ -117,8 +127,11 @@ export default buildConfig({
     PointsLivraison,
     Consentements,
     JournalActions,
-  ],
-  globals: [withGlobalSiteRebuild(Settings), withGlobalSiteRebuild(ReglagesBoutique)],
+    // Comptes en fin de menu (groupe « Administration »).
+    Users,
+    PhotosProfil,
+  ].map(avecRoles),
+  globals: [withGlobalSiteRebuild(Settings), withGlobalSiteRebuild(ReglagesBoutique)].map(avecRolesGlobal),
   endpoints: endpointsBoutique,
   // Import initial du contenu du site, une seule fois (src/seed). Un échec ne doit pas empêcher
   // le back-office de démarrer : il est journalisé et retenté au démarrage suivant.
