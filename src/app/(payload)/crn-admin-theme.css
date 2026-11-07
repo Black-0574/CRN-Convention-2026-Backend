@@ -212,6 +212,58 @@ textarea:focus-visible {
   font-size: 16px;
 }
 
+/* Tête du menu : marque, recherche, lien « Tableau de bord ». */
+.crn-menu-tete {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.crn-menu-tete .crn-menu-marque {
+  margin-bottom: 4px;
+}
+
+.crn-menu-recherche input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px 0 42px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23D8D4CB' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") 14px 50% / 18px no-repeat,
+    rgba(255, 255, 255, 0.1);
+  color: var(--crn-blanc);
+  font: inherit;
+  font-size: 16px;
+}
+
+.crn-menu-recherche input::placeholder {
+  color: var(--crn-gris-clair);
+}
+
+/* Bouton d'effacement natif (bleu, hors charte) masqué : Échap vide le champ. */
+.crn-menu-recherche input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Menu en tiroir (petits écrans) : la croix de fermeture de Payload occupe le coin haut gauche. */
+@media (max-width: 1024px) {
+  .crn-menu-tete {
+    padding-top: 44px;
+  }
+}
+
+.crn-menu-recherche input:focus {
+  outline: 3px solid var(--crn-or);
+  outline-offset: 1px;
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
+.crn-menu-tableau {
+  --crn-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='7' height='9' rx='1'/%3E%3Crect x='14' y='3' width='7' height='5' rx='1'/%3E%3Crect x='14' y='12' width='7' height='9' rx='1'/%3E%3Crect x='3' y='16' width='7' height='5' rx='1'/%3E%3C/svg%3E");
+}
+
 /* Groupes : intitulé discret en petites capitales, sans fond. */
 .nav-group__toggle {
   color: var(--crn-gris-clair);
