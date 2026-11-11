@@ -119,7 +119,7 @@
       "id": "horaires-et-lieux",
       "data": {
         "question": "Où se déroule la Convention et selon quels horaires ?",
-        "reponse": "L’essentiel du programme se tient à l’Église Centrale, à Libreville, du 5 au 12 décembre. Le 13 décembre, la Convention se conclut au Nomad : culte unique de toutes les églises, ordination et Concert pour la vie. Consultez la page Programme pour le détail jour par jour.",
+        "reponse": "L’essentiel du programme se tient à l’Église Centrale, à Libreville, du 5 au 12 décembre. Le 13 décembre, la Convention se conclut dans un lieu à déterminer : culte unique de toutes les églises, ordination et Concert pour la vie. Consultez la page Programme pour le détail jour par jour.",
         "etats": [
           "campagne",
           "evenement"
@@ -196,7 +196,7 @@
         "nom": "Concert pour la vie — Standard",
         "categorie": "concert",
         "prixFCFA": 5000,
-        "description": "Dimanche 13 décembre, 17h, Nomad.",
+        "description": "Dimanche 13 décembre, 17h, lieu à déterminer.",
         "lienAchat": "#billetterie-a-configurer",
         "statut": "disponible",
         "ordre": 6
@@ -208,7 +208,7 @@
         "nom": "Concert pour la vie — VIP",
         "categorie": "concert",
         "prixFCFA": 25000,
-        "description": "Dimanche 13 décembre, 17h, Nomad.",
+        "description": "Dimanche 13 décembre, 17h, lieu à déterminer.",
         "lienAchat": "#billetterie-a-configurer",
         "statut": "disponible",
         "ordre": 7
@@ -731,14 +731,14 @@
       "id": "2026-12-13",
       "data": {
         "date": "2026-12-13",
-        "label": "Dimanche 13 décembre — Nomad",
+        "label": "Dimanche 13 décembre — Lieu à déterminer",
         "ordre": 9,
         "sessions": [
           {
             "heureDebut": "09:00",
             "heureFin": "12:00",
             "titre": "Culte unique de toutes les églises",
-            "lieu": "Nomad",
+            "lieu": "Lieu à déterminer",
             "intervenants": [],
             "noteIntervenant": "Orateur à annoncer",
             "diffusion": "a_arbitrer",
@@ -748,7 +748,7 @@
             "heureDebut": "13:00",
             "heureFin": "14:30",
             "titre": "Cérémonie d’ordination",
-            "lieu": "Nomad",
+            "lieu": "Lieu à déterminer",
             "intervenants": [],
             "noteIntervenant": "Responsables : Alphonsine Ambouroué, Marie-Paule Asseh",
             "diffusion": "a_arbitrer",
@@ -758,7 +758,7 @@
             "heureDebut": "17:00",
             "heureFin": "20:00",
             "titre": "Concert pour la vie",
-            "lieu": "Nomad",
+            "lieu": "Lieu à déterminer",
             "intervenants": [],
             "diffusion": "a_arbitrer",
             "visible": true
@@ -916,8 +916,8 @@
     {
       "id": "nomad",
       "data": {
-        "nom": "Nomad",
-        "adresse": "Libreville, Gabon"
+        "nom": "Lieu à déterminer",
+        "adresse": "À annoncer"
       }
     }
   ]

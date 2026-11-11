@@ -18,7 +18,7 @@ const CONNAISSANCE = `
 ## Thème et dates
 Thème : « Du Trône à l'autel, de l'autel à la cité ». Convention du dimanche 6 au dimanche 13
 décembre 2026, à Libreville. Pré-convention sociale le samedi 5 décembre 2026. Hôte : Dr. Mike
-Jocktane, Évêque Général. Lieu principal : Église Centrale. Le 13 décembre : Nomad (culte unique,
+Jocktane, Évêque Général. Lieu principal : Église Centrale. Le 13 décembre : lieu à déterminer, annoncé prochainement (le Nomad n’accueille plus cette journée ; culte unique,
 ordination, Concert pour la vie). Le lieu du Dîner des Élites est encore à annoncer.
 
 ## Billetterie (F CFA) — ouverte depuis le 25 octobre 2026
@@ -68,7 +68,7 @@ Aucun accès verbal n'est accepté.
   17h–21h Soirée africaine et prophétique (Nadia Jocktane, Wilson Ndi, Jek Kalombo)
 - Sam. 12 déc. : 9h–12h Femme de Foi — Live (Patricia Piebi) ; 14h–17h30 J'ai soif (Jek Kalombo,
   Carelle Ambouroué) ; 19h–22h Dîner des Élites (lieu à annoncer)
-- Dim. 13 déc., au Nomad : 9h–12h Culte unique de toutes les églises (orateur à annoncer) ;
+- Dim. 13 déc., lieu à déterminer (annoncé prochainement) : 9h–12h Culte unique de toutes les églises (orateur à annoncer) ;
   13h–14h30 Cérémonie d'ordination ; 17h Concert pour la vie
 
 ## Académie des Sciences Divines (mêmes horaires les 8, 9 et 10 décembre)

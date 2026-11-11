@@ -12,7 +12,25 @@ export const Announcements: CollectionConfig = {
   defaultSort: 'ordre',
   fields: [
     { name: 'titre', type: 'text', required: true },
-    { name: 'texte', type: 'textarea', required: true },
+    { name: 'texte', type: 'textarea', required: true, label: 'Résumé (carte)', admin: { description: 'Deux ou trois phrases, affichées sur la carte de l’actualité.' } },
+    // Article complet et visuel (demande du 11 novembre 2026, communiqué du changement de lieu du
+    // 13 décembre) : une page /actualites/<adresse> est publiée dès que l'article est rempli.
+    {
+      name: 'article',
+      type: 'textarea',
+      label: 'Article complet',
+      admin: {
+        rows: 14,
+        description: 'Facultatif. Un paragraphe par bloc, séparés par une ligne vide ; « ## » en début de bloc = intertitre ; « > » = citation. Rempli : la carte mène à la page de l’article.',
+      },
+    },
+    {
+      name: 'image',
+      type: 'upload',
+      relationTo: 'media',
+      label: 'Visuel (vignette)',
+      admin: { description: 'Facultatif. Vignette de la carte (recadrée en 16:9) et visuel entier en tête de l’article. Renseigner le texte alternatif du média.' },
+    },
     { name: 'date', type: 'date', required: true },
     { name: 'ordre', type: 'number', required: true },
     { name: 'categorie', type: 'text', label: 'Catégorie', required: true, admin: { description: 'Ex. Billetterie, Orateurs, Action sociale.' } },
@@ -45,5 +63,13 @@ export const Announcements: CollectionConfig = {
     { name: 'lienHref', type: 'text', label: 'Lien (URL)', admin: { description: 'Ex. /billetterie — laisser vide si aucune page associée.' } },
     { name: 'lienLabel', type: 'text', label: 'Libellé du lien', admin: { description: 'Ex. "Voir la billetterie" — par défaut "En savoir plus".' } },
     { name: 'actif', type: 'checkbox', defaultValue: true, admin: { position: 'sidebar' } },
+    {
+      name: 'slug',
+      type: 'text',
+      label: 'Adresse de l’article',
+      unique: true,
+      index: true,
+      admin: { position: 'sidebar', description: 'Ex. changement-lieu-13-decembre → /actualites/changement-lieu-13-decembre. Vide : numéro de l’annonce.' },
+    },
   ],
 };

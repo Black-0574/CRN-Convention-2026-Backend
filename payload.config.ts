@@ -21,6 +21,7 @@ import { Settings } from './src/globals/Settings';
 import { migrations } from './src/migrations';
 import { allowedOrigins } from './src/lib/allowed-origins';
 import { rebuildAfterChange, rebuildAfterDelete, rebuildAfterGlobalChange } from './src/lib/site-rebuild';
+import { appliquerLieuDu13Decembre } from './src/seed/lieu-13-decembre';
 import { completerProfilsOrateurs, organiserOrateurs, seedFromContent } from './src/seed/seed-from-content';
 // CRN Boutique, intégrée au back-office : catalogue, ventes, billets, contrôle d'accès (le site
 // l'affiche sous /boutique). Plan : C:UsersMael.claudeplansjaunty-cuddling-kahn.md.
@@ -154,6 +155,12 @@ export default buildConfig({
       await installerProduitsTest(payload);
     } catch (err) {
       payload.logger.error(`Import initial du catalogue de la boutique échoué : ${(err as Error).message}`);
+    }
+    try {
+      // Changement de lieu du 13 décembre (11 novembre 2026) : « Lieu à déterminer » et communiqué.
+      await appliquerLieuDu13Decembre(payload);
+    } catch (err) {
+      payload.logger.error(`Changement de lieu du 13 décembre non appliqué : ${(err as Error).message}`);
     }
     demarrerTachesPlanifiees(payload);
   },

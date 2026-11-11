@@ -25,7 +25,8 @@ export async function seedBoutique(payload: Payload): Promise<void> {
 
   const L = (jour: string, heure: string) => new Date(`${jour}T${heure}:00+01:00`).toISOString();
   const EGLISE = 'Église Centrale';
-  const NOMAD = 'Nomad';
+  // Le Nomad n'accueille plus le 13 décembre (11 novembre 2026) : nouveau lieu à annoncer.
+  const LIEU_13 = 'Lieu à déterminer';
 
   const creerUtilisateur = async (email: string | undefined, motDePasse: string | undefined, nomComplet: string, role: string) => {
     if (!email || !motDePasse) return payload.logger.warn(`${nomComplet} : identifiants absents de .env, compte non créé.`);
@@ -80,8 +81,8 @@ export async function seedBoutique(payload: Payload): Promise<void> {
   const femmeDeFoi = await plateforme('femme-de-foi-live', 'Femme de Foi — Live', L('2026-12-12', '09:00'), L('2026-12-12', '12:00'), EGLISE);
   const jaiSoif = await plateforme('jai-soif', 'J’ai soif', L('2026-12-12', '14:00'), L('2026-12-12', '17:30'), EGLISE);
   const diner = await plateforme('diner-des-elites', 'Dîner des Élites', L('2026-12-12', '19:00'), L('2026-12-12', '22:00'), null);
-  const concertStandard = await plateforme('concert-standard', 'Concert pour la vie — Standard', L('2026-12-13', '17:00'), null, NOMAD);
-  const concertVip = await plateforme('concert-vip', 'Concert pour la vie — VIP', L('2026-12-13', '17:00'), null, NOMAD);
+  const concertStandard = await plateforme('concert-standard', 'Concert pour la vie — Standard', L('2026-12-13', '17:00'), null, LIEU_13);
+  const concertVip = await plateforme('concert-vip', 'Concert pour la vie — VIP', L('2026-12-13', '17:00'), null, LIEU_13);
   const plenieresReservees = [];
   for (const j of JOURS_ACADEMIE) plenieresReservees.push(await plateforme(`pleniere-placement-reserve-${j}`, `Plénière — placement réservé (${jourCourt(j)})`, L(j, '17:00'), L(j, '21:00'), EGLISE));
   // Jamais affiché au public (règle permanente du site) : n'apparaît que sur le billet du titulaire.
@@ -138,8 +139,8 @@ export async function seedBoutique(payload: Payload): Promise<void> {
   await produit({ nom: 'Femme de Foi — Live', slug: 'femme-de-foi-live', type: 'ticket', categorie: catTickets, resume: 'Samedi 12 décembre, 9h–12h, Église Centrale.', description: 'Samedi 12 décembre, 9h–12h, Église Centrale.', paliers: prix(10_000), plateformes: [femmeDeFoi], ...valide, misEnAvant: true, ordreMiseEnAvant: 11, ordre: 22 });
   await produit({ nom: 'J’ai soif', slug: 'jai-soif', type: 'ticket', categorie: catTickets, resume: 'Samedi 12 décembre, 14h–17h30, Église Centrale.', description: 'Samedi 12 décembre, 14h–17h30, Église Centrale.', paliers: prix(5_000), plateformes: [jaiSoif], ...valide, ordre: 23 });
   await produit({ nom: 'Dîner des Élites', slug: 'diner-des-elites', type: 'ticket', categorie: catTickets, resume: 'Samedi 12 décembre, 19h–22h. Lieu à annoncer.', description: 'Samedi 12 décembre, 19h–22h. Lieu à annoncer.', badge: 'Places limitées', paliers: prix(100_000), plateformes: [diner], quotas: [quotaDiner], ...valide, misEnAvant: true, ordreMiseEnAvant: 10, ordre: 24 });
-  await produit({ nom: 'Concert pour la vie — Standard', slug: 'concert-standard', type: 'ticket', categorie: catTickets, resume: 'Dimanche 13 décembre, 17h, Nomad.', description: 'Dimanche 13 décembre, 17h, Nomad.', paliers: prix(5_000), plateformes: [concertStandard], ...valide, ordre: 25 });
-  await produit({ nom: 'Concert pour la vie — VIP', slug: 'concert-vip', type: 'ticket', categorie: catTickets, resume: 'Dimanche 13 décembre, 17h, Nomad.', description: 'Dimanche 13 décembre, 17h, Nomad.', paliers: prix(25_000), plateformes: [concertVip], ...valide, misEnAvant: true, ordreMiseEnAvant: 9, ordre: 26 });
+  await produit({ nom: 'Concert pour la vie — Standard', slug: 'concert-standard', type: 'ticket', categorie: catTickets, resume: 'Dimanche 13 décembre, 17h, lieu à déterminer.', description: 'Dimanche 13 décembre, 17h, lieu à déterminer.', paliers: prix(5_000), plateformes: [concertStandard], ...valide, ordre: 25 });
+  await produit({ nom: 'Concert pour la vie — VIP', slug: 'concert-vip', type: 'ticket', categorie: catTickets, resume: 'Dimanche 13 décembre, 17h, lieu à déterminer.', description: 'Dimanche 13 décembre, 17h, lieu à déterminer.', paliers: prix(25_000), plateformes: [concertVip], ...valide, misEnAvant: true, ordreMiseEnAvant: 9, ordre: 26 });
 
   // Pass au prix NON validé (prompt maître) : « Prix à valider », jamais en vente en production.
   const accesIntegral = [...toutesClasses, femmeDeFoi, jaiSoif, diner, concertStandard];

@@ -25,7 +25,7 @@ const TITRES: Record<string, string> = {
 
 const quand = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Libreville' });
 
-/** « Concert VIP — Nomad, dim. 13 déc., 17:00 » : la séance, son site et son heure (Libreville). */
+/** « Concert VIP — Église Centrale, dim. 13 déc., 17:00 » : la séance, son site et son heure (Libreville). */
 const libellePlateforme = (p: Plateforme) =>
   [p.nom, [p.lieu ?? 'lieu à annoncer', p.debut ? quand.format(new Date(p.debut)) : null].filter(Boolean).join(', ')].join(' — ');
 
