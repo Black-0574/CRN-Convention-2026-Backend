@@ -21,7 +21,7 @@ export const Announcements: CollectionConfig = {
       label: 'Article complet',
       admin: {
         rows: 14,
-        description: 'Facultatif. Un paragraphe par bloc, séparés par une ligne vide ; « ## » en début de bloc = intertitre ; « > » = citation. Rempli : la carte mène à la page de l’article.',
+        description: 'Facultatif. Un paragraphe par bloc, séparés par une ligne vide. En début de bloc : « ## » intertitre, « ### » sous-titre, « > » citation, « - » à chaque ligne = liste à puces ; un bloc « [Texte](/lien) » seul = bouton. Rempli : la carte mène à la page de l’article.',
       },
     },
     {

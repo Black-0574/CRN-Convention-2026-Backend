@@ -21,6 +21,7 @@ import { Settings } from './src/globals/Settings';
 import { migrations } from './src/migrations';
 import { allowedOrigins } from './src/lib/allowed-origins';
 import { rebuildAfterChange, rebuildAfterDelete, rebuildAfterGlobalChange } from './src/lib/site-rebuild';
+import { publierAppelCandidatures } from './src/seed/appel-candidatures';
 import { appliquerLieuDu13Decembre } from './src/seed/lieu-13-decembre';
 import { completerProfilsOrateurs, organiserOrateurs, seedFromContent } from './src/seed/seed-from-content';
 // CRN Boutique, intégrée au back-office : catalogue, ventes, billets, contrôle d'accès (le site
@@ -163,6 +164,12 @@ export default buildConfig({
       await appliquerLieuDu13Decembre(payload);
     } catch (err) {
       payload.logger.error(`Changement de lieu du 13 décembre non appliqué : ${(err as Error).message}`);
+    }
+    try {
+      // Appel à candidatures de l'équipe médias (13 novembre 2026), publié une seule fois.
+      await publierAppelCandidatures(payload);
+    } catch (err) {
+      payload.logger.error(`Appel à candidatures non publié : ${(err as Error).message}`);
     }
     demarrerTachesPlanifiees(payload);
   },

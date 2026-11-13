@@ -1,6 +1,6 @@
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
 import type { Payload } from 'payload';
+
+import { publierAnnonceUneFois, typo } from './annonces';
 
 /**
  * Changement de lieu du dimanche 13 décembre (Commanditaire, 11 novembre 2026) : les activités
@@ -13,9 +13,6 @@ import type { Payload } from 'payload';
  * une saisie ultérieure dans l'admin n'est jamais écrasée.
  */
 export const LIEU_A_DETERMINER = 'Lieu à déterminer';
-
-// Typographie française : espace insécable avant « : ; ! ? » et à l'intérieur des guillemets.
-const typo = (t: string) => t.replace(/ ([:;!?»])/g, ' $1').replace(/« /g, '« ');
 
 /** Ancienne mention du Nomad → nouvelle formulation ; null si le texte ne contient pas l'ancienne valeur. */
 export function sansNomad(t?: string | null): string | null {
@@ -53,32 +50,6 @@ export const COMMUNIQUE = {
     .map(typo)
     .join('\n\n'),
 };
-
-async function publierCommunique(payload: Payload): Promise<boolean> {
-  const existe = await payload.count({ collection: 'announcements', where: { slug: { equals: SLUG_COMMUNIQUE } } });
-  if (existe.totalDocs) return false;
-  let image: number | undefined;
-  try {
-    // Visuel livré avec le back-office (public/ est déployé avec l'application).
-    const data = await readFile(path.join(process.cwd(), 'public', 'actualites', VISUEL));
-    const media = await payload.create({
-      collection: 'media',
-      data: { alt: COMMUNIQUE.imageAlt },
-      file: { data, mimetype: 'image/webp', name: VISUEL, size: data.byteLength },
-    });
-    image = media.id as number;
-  } catch (err) {
-    payload.logger.warn(`Communiqué du 13 décembre : visuel non importé (${(err as Error).message}).`);
-  }
-  // En tête des actualités : avant la plus petite valeur d'ordre existante.
-  const premier = (await payload.find({ collection: 'announcements', sort: 'ordre', limit: 1, depth: 0 })).docs[0];
-  const { imageAlt: _alt, ...champs } = COMMUNIQUE;
-  await payload.create({
-    collection: 'announcements',
-    data: { ...champs, slug: SLUG_COMMUNIQUE, ordre: premier ? Number(premier.ordre) - 1 : 0, image, actif: true } as never,
-  });
-  return true;
-}
 
 export async function appliquerLieuDu13Decembre(payload: Payload): Promise<void> {
   let n = 0;
@@ -120,5 +91,5 @@ export async function appliquerLieuDu13Decembre(payload: Payload): Promise<void>
   await majTextes('produits', ['resume', 'description']);
   await majTextes('plateformes', ['lieu']);
   if (n) payload.logger.info(`Lieu du 13 décembre : « ${LIEU_A_DETERMINER} » (${n} fiche(s) mises à jour).`);
-  if (await publierCommunique(payload)) payload.logger.info('Communiqué du changement de lieu du 13 décembre publié dans les Actualités.');
+  await publierAnnonceUneFois(payload, { ...COMMUNIQUE, slug: SLUG_COMMUNIQUE, visuel: VISUEL });
 }
