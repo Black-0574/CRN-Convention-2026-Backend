@@ -17,6 +17,9 @@ export interface Courriel {
   html: string;
   /** Sert à classer les e-mails locaux par commande. */
   reference: string;
+  /** Réponse adressée à une autre adresse que l'expéditeur (ex. le candidat). */
+  repondreA?: string;
+  pieces?: { nom: string; type: string; contenu: Buffer }[];
 }
 
 export interface Messagerie {
@@ -29,7 +32,8 @@ export class MessagerieLocale implements Messagerie {
   async envoyer(c: Courriel) {
     await mkdir(DOSSIER_COURRIELS, { recursive: true });
     const nom = `${c.reference}--${c.a.replace(/[^\w.@-]/g, '_')}--${Date.now()}.html`;
-    const entete = `<!-- À : ${c.a} | Sujet : ${c.sujet} -->\n`;
+    const pieces = (c.pieces ?? []).map((p) => `${p.nom} (${p.type}, ${p.contenu.byteLength} o)`).join(' ; ');
+    const entete = `<!-- À : ${c.a} | Sujet : ${c.sujet}${c.repondreA ? ` | Répondre à : ${c.repondreA}` : ''}${pieces ? ` | Pièces : ${pieces}` : ''} -->\n`;
     await writeFile(path.join(DOSSIER_COURRIELS, nom), entete + c.html, 'utf8');
     console.info(`[e-mail local] ${c.sujet} → ${c.a} (${nom})`);
   }
@@ -67,7 +71,14 @@ export class MessagerieSmtp implements Messagerie {
   }
 
   async envoyer(c: Courriel) {
-    await this.transport.sendMail({ from: this.expediteur, to: c.a, subject: c.sujet, html: c.html });
+    await this.transport.sendMail({
+      from: this.expediteur,
+      to: c.a,
+      subject: c.sujet,
+      html: c.html,
+      ...(c.repondreA ? { replyTo: c.repondreA } : {}),
+      ...(c.pieces?.length ? { attachments: c.pieces.map((p) => ({ filename: p.nom, contentType: p.type, content: p.contenu })) } : {}),
+    });
     console.info(`[e-mail] ${c.sujet} → ${c.a}`);
   }
 

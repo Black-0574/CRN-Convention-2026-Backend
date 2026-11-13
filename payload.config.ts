@@ -40,6 +40,7 @@ import {
   Titulaires,
 } from './src/boutique/collections/ventes';
 import { endpoints as endpointsBoutique } from './src/boutique/endpoints';
+import { endpoints as endpointsCandidatures } from './src/candidatures/endpoints';
 import { journaliser } from './src/boutique/lib/journal';
 import { demarrerTachesPlanifiees } from './src/boutique/lib/taches';
 import { installerProduitsTest } from './src/boutique/produits-test';
@@ -133,7 +134,8 @@ export default buildConfig({
     PhotosProfil,
   ].map(avecRoles),
   globals: [withGlobalSiteRebuild(Settings), withGlobalSiteRebuild(ReglagesBoutique)].map(avecRolesGlobal),
-  endpoints: endpointsBoutique,
+  // Boutique ; dépôt de candidature de la page Contact (13 novembre 2026).
+  endpoints: [...endpointsBoutique, ...endpointsCandidatures],
   // Import initial du contenu du site, une seule fois (src/seed). Un échec ne doit pas empêcher
   // le back-office de démarrer : il est journalisé et retenté au démarrage suivant.
   onInit: async (payload) => {
