@@ -228,7 +228,7 @@ async function envoyerCourriels(
     html: gabarit(
       `Commande ${commande.numero}`,
       `<p>Bonjour ${echapper(commande.prenom)},</p>
-${rattrapage ? '<p>Un incident technique a empêché l’envoi d’une partie de vos billets. Les voici, avec toutes nos excuses&nbsp;; vos autres billets restent valables.</p>' : `<p>Votre paiement de <strong>${formaterXAF(commande.totalXAF)}</strong> est confirmé. Merci&nbsp;!</p>`}
+${rattrapage ? '<p>Un incident technique a empêché l’envoi d’une partie de vos billets. Les voici, avec toutes nos excuses&nbsp;; vos autres billets restent valables.</p>' : `<p>Votre paiement ${commande.paiement?.prestataire === 'especes' ? 'en espèces ' : ''}de <strong>${formaterXAF(commande.totalXAF)}</strong>${commande.paiement?.prestataire === 'especes' ? ' à la COM Boutique' : ''} est confirmé. Merci&nbsp;!</p>`}
 ${billets.length ? `<h2 style="font-family:'Source Serif 4',Georgia,serif;color:#1A2C5B;font-size:20px">Vos billets</h2><ul style="padding-left:20px">${listeBillets}</ul><p style="color:#6B6B6B">Chaque billet est nominatif : présentez-le avec une pièce d’identité. Le QR code est scanné à chaque entrée.</p>` : ''}
 ${articles.length ? `<h2 style="font-family:'Source Serif 4',Georgia,serif;color:#1A2C5B;font-size:20px">Vos articles</h2><ul style="padding-left:20px">${listeArticles}</ul><p>${echapper(livraison)}${commande.livraison?.fraisXAF ? ` Frais de livraison : ${formaterXAF(commande.livraison.fraisXAF)}.` : ''}</p>` : ''}
 <p><a href="${suivi}" style="color:#1A2C5B;font-weight:700">Suivre ma commande</a></p>`,

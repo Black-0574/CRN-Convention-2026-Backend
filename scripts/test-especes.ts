@@ -3,7 +3,9 @@
  * commande avec billets envoyés par WhatsApp seulement (sans e-mail), choix des espèces
  * (réservation de 5 jours), encaissement par un caissier (montant exact, une seule fois, même
  * sous des validations simultanées), billets émis et message WhatsApp prêt, délai dépassé refusé.
- * Données de test supprimées à la fin.
+ * Validation par l'administrateur (statut « Payée » dans Commandes) et rattrapage au démarrage
+ * (17 novembre 2026) : mêmes billets, événement « Payé en espèces à la COM Boutique ».
+ * Données de test supprimées à la fin. Lancer avec `SMTP_HOST=` (vide) : aucun e-mail réel.
  *
  *   npm run test:especes
  */
@@ -16,7 +18,7 @@ import config from '../payload.config';
 import { DOSSIER_BILLETS } from '../src/boutique/lib/billets';
 import { rattraperBilletsManquants } from '../src/boutique/lib/emission';
 import { lignes, sql } from '../src/boutique/lib/db';
-import { choisirEspeces, encaisserEspeces, journeeDuCaissier } from '../src/boutique/lib/especes';
+import { choisirEspeces, encaisserEspeces, journeeDuCaissier, rattraperEncaissementsManuels, STATUT_EVENEMENT_ESPECES } from '../src/boutique/lib/especes';
 import { creerCommande, ErreurVente, type EntreeCommande } from '../src/boutique/lib/ventes';
 import type { Commande } from '../src/payload-types';
 
@@ -43,6 +45,9 @@ const variante = await payload.create({ collection: 'variantes', data: { produit
 await payload.update({ collection: 'produits', id: produit.id, data: { actif: true } });
 const caissier = await payload.create({ collection: 'users', data: { email: `caisse-${s}@exemple.org`, password: `Caisse-${s}-x!`, nom: 'Caisse', prenom: 'Test', role: 'com_boutique' } as never });
 const agent = { id: Number(caissier.id), nom: 'Test Caisse' };
+const admin = await payload.create({ collection: 'users', data: { email: `admin-especes-${s}@exemple.org`, password: `Admin-${s}-x!`, nom: 'Admin', prenom: 'Test', role: 'admin' } as never });
+const evenement = async (numero: string) =>
+  (await payload.find({ collection: 'evenements-webhook', where: { referenceCommande: { equals: numero } }, limit: 10, depth: 0 })).docs;
 
 const entree = (canal: EntreeCommande['canalBillets'], email = '', whatsapp = '077 12 34 56'): EntreeCommande => ({
   client: { prenom: 'Awa', nom: 'Essono', email, telephone: '+241 77 12 34 56' },
@@ -86,6 +91,8 @@ verifs.push(['2 billets émis, sans e-mail des titulaires', titulaires.totalDocs
 verifs.push(['lien WhatsApp vers +241 77 12 34 56, avec les 2 billets', r1.whatsapp.lien.startsWith('https://wa.me/24177123456?text=') && r1.billets.every((b) => r1.message.includes(b.lien))]);
 const journal = await payload.count({ collection: 'journal-actions', where: { and: [{ utilisateur: { equals: agent.id } }, { action: { equals: 'encaissement en espèces' } }] } });
 verifs.push(['encaissement inscrit au journal des actions', journal.totalDocs === 1]);
+const evt1 = await evenement(c1.numero);
+verifs.push(['événement « Payé en espèces à la COM Boutique » inscrit, au montant encaissé', evt1.length === 1 && evt1[0]!.statut === STATUT_EVENEMENT_ESPECES && evt1[0]!.montantXAF === 20_000 && /^2 billet\(s\) émis/.test(evt1[0]!.resultat ?? '')]);
 verifs.push(['second encaissement refusé', await echoue(() => encaisserEspeces(payload, c1.numero, 20_000, agent), /déjà encaissée/)]);
 
 // 4. Validations simultanées de la même commande : un seul encaissement.
@@ -143,7 +150,34 @@ await rattraperBilletsManquants(payload);
 const apresRattrapage = (await payload.find({ collection: 'titulaires', where: { commande: { equals: mixte.id } }, limit: 10, depth: 0, sort: 'numeroBillet' })).docs;
 verifs.push(['rattrapage : billet manquant réémis une seule fois', apresRattrapage.map((t) => `${t.numeroBillet.slice(-2)} ${t.prenom}`).join(', ') === '01 Awa, 02 Paul']);
 
-// 8. Caisse du jour du caissier.
+// 8. Validation par l'administrateur : statut « Payée » saisi dans Commandes.
+const c4 = await nouvelle('email_whatsapp', 'awa@exemple.org');
+await choisirEspeces(payload, c4);
+await payload.update({ collection: 'commandes', id: c4.id, data: { statut: 'payee' }, user: admin, overrideAccess: false });
+const c4apres = (await payload.findByID({ collection: 'commandes', id: c4.id, depth: 0 })) as Commande;
+const billets4 = await payload.count({ collection: 'titulaires', where: { commande: { equals: c4.id } } });
+const evt4 = await evenement(c4.numero);
+verifs.push(['admin : « Payée » dans Commandes émet les 2 billets', c4apres.statut === 'payee' && billets4.totalDocs === 2]);
+verifs.push(['admin : paiement en espèces à son nom, événement inscrit', c4apres.paiement?.encaissePar === 'Test Admin' && Boolean(c4apres.paiement?.payeeA) && evt4.length === 1 && evt4[0]!.statut === STATUT_EVENEMENT_ESPECES]);
+let refusAdmin = false;
+try {
+  await payload.update({ collection: 'commandes', id: c3.id, data: { statut: 'payee' }, user: admin, overrideAccess: false });
+} catch (e) {
+  refusAdmin = /Seule une commande en attente/.test((e as Error).message);
+}
+verifs.push(['admin : commande expirée non encaissable', refusAdmin && (await payload.count({ collection: 'titulaires', where: { commande: { equals: c3.id } } })).totalDocs === 0]);
+
+// 9. Rattrapage : commande en espèces passée « payée » à la main avant la correction, sans billet.
+const c5 = await nouvelle();
+await choisirEspeces(payload, c5);
+await lignes(payload, sql`UPDATE commandes SET statut = 'payee' WHERE id = ${c5.id}`);
+await rattraperEncaissementsManuels(payload);
+await rattraperEncaissementsManuels(payload);
+const billets5 = await payload.count({ collection: 'titulaires', where: { commande: { equals: c5.id } } });
+const evt5 = await evenement(c5.numero);
+verifs.push(['rattrapage : billets émis une seule fois, événement inscrit', billets5.totalDocs === 2 && evt5.length === 1 && evt5[0]!.statut === STATUT_EVENEMENT_ESPECES]);
+
+// 10. Caisse du jour du caissier.
 const journee = await journeeDuCaissier(payload, agent.id);
 verifs.push(['caisse du jour : 3 encaissements, 100 000 F CFA', journee.nombre === 3 && journee.totalXAF === 100_000]);
 
@@ -157,10 +191,12 @@ await payload.delete({ collection: 'droits-acces', where: { titulaire: { in: bil
 await payload.delete({ collection: 'titulaires', where: { commande: { in: creees } } });
 await payload.delete({ collection: 'retraits', where: { commande: { in: creees } } });
 await payload.delete({ collection: 'reservations', where: { commande: { in: creees } } });
-await payload.delete({ collection: 'journal-actions', where: { utilisateur: { equals: agent.id } } });
+await payload.delete({ collection: 'journal-actions', where: { utilisateur: { in: [agent.id, admin.id] } } });
+await payload.delete({ collection: 'evenements-webhook', where: { referenceCommande: { in: tous.map((c) => c.numero) } } });
 await payload.delete({ collection: 'commandes', where: { id: { in: tous.map((c) => c.id) } } });
 for (const v of [variante, variantePass, varianteArticle]) await payload.delete({ collection: 'variantes', id: v.id });
 for (const p of [pass, produit, article]) await payload.delete({ collection: 'produits', id: p.id });
 await payload.delete({ collection: 'plateformes', id: seance.id });
 await payload.delete({ collection: 'users', id: caissier.id });
+await payload.delete({ collection: 'users', id: admin.id });
 process.exit(verifs.every(([, ok]) => ok) ? 0 : 1);

@@ -1096,3 +1096,24 @@ label.field-label:not(.unstyled) {
     transform: none;
   }
 }
+
+/* Fiche Commande : billets émis et envoi WhatsApp (src/components/admin/EnvoiBillets.tsx). */
+.envoi-billets {
+  margin: 8px 0 24px;
+  padding: 20px 24px;
+  background: #F7F5F0;
+  border: 1px solid #D8D4CB;
+  border-radius: 14px;
+  font-size: 16px;
+}
+.envoi-billets__titre {
+  margin: 0 0 8px;
+  color: #1A2C5B;
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 20px;
+}
+.envoi-billets__liste { margin: 8px 0 16px; padding-left: 20px; }
+.envoi-billets__liste a { color: #1A2C5B; font-weight: 700; }
+.envoi-billets__champ { display: flex; flex-direction: column; gap: 6px; max-width: 320px; margin-bottom: 12px; font-weight: 700; }
+.envoi-billets__champ input { min-height: 44px; padding: 8px 12px; font-size: 16px; border: 1px solid #D8D4CB; border-radius: 10px; background: #FFFFFF; }
+.envoi-billets__whatsapp { display: inline-block; text-decoration: none; }

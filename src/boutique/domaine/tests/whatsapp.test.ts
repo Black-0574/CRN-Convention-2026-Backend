@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { formaterXAF } from '../src/montants.ts';
 import { lienWhatsApp, messageBillets, numeroWhatsApp } from '../src/whatsapp.ts';
 
 // Billets envoyés par WhatsApp (Commanditaire, 16 novembre 2026).
@@ -34,6 +35,11 @@ describe('message et lien WhatsApp', () => {
     expect(message).toContain('Awa Essono — Pass Convention Intégral : https://admin.exemple/billet?sig=1');
     expect(message).toContain('Merci !');
     expect(message).not.toMatch(/ [:;!?]/);
+  });
+
+  it('mentionne le paiement en espèces à la COM Boutique', () => {
+    const especes = messageBillets({ prenom: 'Awa', numero: 'CRN-ABC1234', totalXAF: 50_000, billets: [], suivi: 'https://site.exemple/suivi', especes: true });
+    expect(especes).toContain(`Votre paiement en espèces de ${formaterXAF(50_000)} à la COM Boutique pour la commande CRN-ABC1234 est confirmé.`);
   });
 
   it('ouvre WhatsApp vers le numéro, avec le message encodé', () => {

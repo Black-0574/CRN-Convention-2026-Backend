@@ -138,7 +138,15 @@ E2E_BOUTIQUE=1 npx playwright test tests/e2e/boutique-achat.spec.ts   # achats c
   modifiable). Total encaissé du jour affiché. Encaissement au nom du caissier, journal des actions.
 - **Billets par WhatsApp** : le client choisit e-mail, WhatsApp ou les deux (e-mail facultatif si
   WhatsApp seul) ; lien `wa.me` d'un toucher, sans service tiers (`domaine/src/whatsapp.ts`).
-- **Test** : `npm run test:especes` (17 vérifications sur la base locale, données supprimées) ;
+- **Administrateur** (17 novembre 2026) : passer une commande en espèces à « Payée » dans
+  Boutique · Ventes → Commandes fait la même chose qu'à la caisse (billets émis et envoyés par
+  e-mail, encaissement à son nom). La fiche affiche « Billets émis » (liens et QR code) et le
+  bouton « Envoyer les billets par WhatsApp ». Commande expirée ou délai dépassé : refusé.
+- **Événements de paiement** : chaque encaissement (caisse, administrateur, rattrapage) y est
+  inscrit avec le statut « Payé en espèces à la COM Boutique », le montant et l'envoi des billets.
+- **Rattrapage au démarrage** : une commande en espèces passée « Payée » à la main avant cette
+  correction, sans billet ni article, reçoit ses billets (e-mail) et son événement de paiement.
+- **Test** : `npm run test:especes` (22 vérifications sur la base locale, données supprimées) ;
   lancer avec `SMTP_HOST=` vide si le `.env` local contient le SMTP réel (sinon des e-mails partent).
 
 ## Reste à raccorder avant d'ouvrir les ventes

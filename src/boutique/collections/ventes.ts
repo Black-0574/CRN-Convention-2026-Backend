@@ -7,6 +7,7 @@
 import type { CollectionConfig } from 'payload';
 
 import { personne, reserveA } from '../lib/acces';
+import { apresValidationManuelle, avantValidationManuelle } from '../lib/especes';
 import { MODES_LIVRAISON } from '../lib/livraison';
 import { creeLe, dateHeure } from './dates';
 
@@ -50,9 +51,19 @@ export const Commandes: CollectionConfig = {
     group: 'Boutique · Ventes',
   },
   access: { read: lectureVentes, ...serveurSeulement, update: reserveA() },
+  // Commande en espèces passée à « Payée » ici : billets émis et envoyés, comme à la caisse.
+  hooks: { beforeChange: [avantValidationManuelle], afterChange: [apresValidationManuelle] },
   fields: [
     { name: 'numero', type: 'text', required: true, unique: true, index: true, admin: { readOnly: true } },
-    { name: 'statut', type: 'select', options: STATUTS_COMMANDE, required: true, defaultValue: 'en_attente', index: true },
+    {
+      name: 'statut',
+      type: 'select',
+      options: STATUTS_COMMANDE,
+      required: true,
+      defaultValue: 'en_attente',
+      index: true,
+      admin: { description: 'Commande en espèces : la passer à « Payée » une fois l’argent reçu émet les billets et les envoie au client.' },
+    },
     {
       type: 'row',
       fields: [
@@ -69,6 +80,8 @@ export const Commandes: CollectionConfig = {
         { name: 'whatsapp', type: 'text', label: 'Numéro WhatsApp', admin: { width: '50%' } },
       ],
     },
+    // Billets d'une commande payée : liens (QR code) et envoi WhatsApp d'un toucher.
+    { name: 'envoiBillets', type: 'ui', admin: { components: { Field: '/components/admin/EnvoiBillets#EnvoiBillets' } } },
     {
       name: 'lignes',
       type: 'array',

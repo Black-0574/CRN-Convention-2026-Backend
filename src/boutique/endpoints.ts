@@ -320,6 +320,19 @@ export const endpoints: Endpoint[] = [
     },
   },
   {
+    // Billets d'une commande en espèces payée et message WhatsApp (fiche Commande, caisse).
+    path: '/boutique/caisse/commandes/:numero/billets',
+    method: 'get',
+    handler: async (req) => {
+      if (!autorise(req, 'com_boutique')) return erreur('Accès réservé à la COM Boutique.', 401);
+      const { docs } = await req.payload.find({ collection: 'commandes', where: { numero: { equals: param(req, 'numero') } }, limit: 1, depth: 0 });
+      const c = docs[0];
+      if (!c) return erreur('Commande introuvable.', 404);
+      if (c.statut !== 'payee') return json({ statut: c.statut, billets: [], message: null, whatsapp: null });
+      return json({ statut: c.statut, canalBillets: c.canalBillets ?? 'email', email: c.email || null, ...(await envoiBillets(req.payload, c)) });
+    },
+  },
+  {
     path: '/boutique/caisse/commandes/:numero/encaisser',
     method: 'post',
     handler: async (req) => {

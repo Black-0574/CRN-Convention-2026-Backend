@@ -8,10 +8,12 @@
  *    la commande sur la page « Caisse » et valide l'encaissement du montant exact.
  * 3. La commande passe « payée » : billets émis, envoyés par e-mail et/ou par WhatsApp selon le
  *    choix du client (WhatsApp : un toucher du caissier, message déjà rédigé).
- * Chaque encaissement est enregistré au nom du caissier (commande et journal des actions).
+ * Chaque encaissement est enregistré au nom du caissier (commande, journal des actions et
+ * « Événements de paiement »). L'administrateur peut aussi passer une commande en espèces à
+ * « Payée » dans Commandes : même suite (billets émis et envoyés), à son nom (17 novembre 2026).
  */
 import { formaterXAF, jourLibreville, lienWhatsApp, messageBillets, minuitLibreville, numeroWhatsApp } from '../domaine/src/index.ts';
-import type { Payload } from 'payload';
+import { APIError, type CollectionAfterChangeHook, type CollectionBeforeChangeHook, type Payload } from 'payload';
 
 import type { Commande } from '../../payload-types';
 import { lienBillet } from './billets';
@@ -22,6 +24,8 @@ import { urlBackOffice, urlSuivi } from './urls';
 import { ErreurVente, expirerReservations, transition } from './ventes';
 
 export const PRESTATAIRE_ESPECES = 'especes';
+/** Statut inscrit dans « Événements de paiement » pour un encaissement en espèces. */
+export const STATUT_EVENEMENT_ESPECES = 'Payé en espèces à la COM Boutique';
 
 const jourHeure = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Libreville' });
 
@@ -88,7 +92,7 @@ export async function envoiBillets(payload: Payload, c: Commande) {
     produit: typeof t.produit === 'object' ? t.produit.nom : '',
     lien: lienBillet(urlBackOffice(), t.numeroBillet),
   }));
-  const message = messageBillets({ prenom: c.prenom, numero: c.numero, totalXAF: c.totalXAF, billets, suivi: urlSuivi(c.numero, c.jetonSuivi) });
+  const message = messageBillets({ prenom: c.prenom, numero: c.numero, totalXAF: c.totalXAF, billets, suivi: urlSuivi(c.numero, c.jetonSuivi), especes: estEnEspeces(c) });
   const numero = numeroWhatsApp(c.whatsapp || c.telephone);
   return { billets, message, whatsapp: { numero, lien: lienWhatsApp(numero, message) } };
 }
@@ -181,18 +185,110 @@ export async function encaisserEspeces(payload: Payload, numero: string, montant
   if (c.statut !== 'en_attente') throw new ErreurVente('Cette commande n’est plus en attente de paiement.', 409);
   if (montantXAF !== c.totalXAF) throw new ErreurVente(`Montant à encaisser : ${formaterXAF(c.totalXAF)}.`, 400);
   if (!(await transition(payload, c.id, 'payee'))) throw new ErreurVente('Cette commande vient d’être traitée : actualisez.', 409);
+  return finaliserEncaissement(payload, c, { id: agentId, nom: agent.nom }, 'caisse');
+}
 
+type Origine = 'caisse' | 'back-office' | 'rattrapage';
+
+const ENVOI: Record<string, string> = {
+  email: 'par e-mail',
+  whatsapp: 'par WhatsApp (envoi d’un toucher depuis la caisse ou la commande)',
+  email_whatsapp: 'par e-mail et par WhatsApp (envoi d’un toucher depuis la caisse ou la commande)',
+};
+
+/**
+ * Suite commune d'une commande en espèces passée « payée » (caisse, admin ou rattrapage) :
+ * paiement au nom du caissier, journal des actions, billets émis et envoyés par e-mail, événement
+ * « Payé en espèces à la COM Boutique ». Billets jamais émis deux fois (`emettre` le vérifie).
+ */
+async function finaliserEncaissement(payload: Payload, c: Commande, agent: { id: number | null; nom: string }, origine: Origine) {
   const reglages = await reglagesEspeces(payload);
+  const payeeA = c.paiement?.payeeA ?? new Date().toISOString();
   await payload.update({
     collection: 'commandes',
     id: c.id,
-    data: { paiement: { prestataire: PRESTATAIRE_ESPECES, moyen: 'especes', detail: `Espèces — ${reglages.lieu}`, payeeA: new Date().toISOString(), encaissePar: agent.nom, encaisseParId: agentId } },
+    data: { paiement: { prestataire: PRESTATAIRE_ESPECES, moyen: 'especes', detail: `Espèces — ${reglages.lieu}`, payeeA, encaissePar: agent.nom, encaisseParId: agent.id } },
   });
-  await payload.create({
-    collection: 'journal-actions',
-    data: { utilisateur: agentId, action: 'encaissement en espèces', collection: 'commandes', document: String(c.id), details: { numero: c.numero, montantXAF: c.totalXAF } },
-  });
+  if (agent.id !== null) {
+    await payload.create({
+      collection: 'journal-actions',
+      data: { utilisateur: agent.id, action: 'encaissement en espèces', collection: 'commandes', document: String(c.id), details: { numero: c.numero, montantXAF: c.totalXAF, origine } },
+    });
+  }
   await emettre(payload, c.id);
-  const payee = (await commandeParNumero(payload, numero))!;
-  return { commande: enCaisse(payee), ...(await envoiBillets(payload, payee)) };
+  const payee = (await commandeParNumero(payload, c.numero))!;
+  const envoi = await envoiBillets(payload, payee);
+  try {
+    await payload.create({
+      collection: 'evenements-webhook',
+      data: {
+        cle: `${PRESTATAIRE_ESPECES}:${payee.numero}`,
+        referenceCommande: payee.numero,
+        statut: STATUT_EVENEMENT_ESPECES,
+        montantXAF: payee.totalXAF,
+        resultat: `${envoi.billets.length} billet(s) émis, envoyés ${ENVOI[payee.canalBillets ?? 'email']}${payee.email ? ` — ${payee.email}` : ''} · encaissé par ${agent.nom}`,
+        brut: { moyen: 'especes', lieu: reglages.lieu, encaissePar: agent.nom, origine, canalBillets: payee.canalBillets ?? 'email', payeeA, billets: envoi.billets.map((b) => b.numero) },
+      },
+    });
+  } catch {
+    // Déjà enregistré (clé unique) : rien à faire.
+  }
+  return { commande: enCaisse(payee), ...envoi };
+}
+
+const nomUtilisateur = (u: unknown) => {
+  const x = u as { prenom?: string | null; nom?: string | null; email?: string };
+  return [x.prenom, x.nom].filter(Boolean).join(' ') || x.email || 'Back-office';
+};
+
+/**
+ * Commande en espèces passée à « Payée » par l'administrateur dans Commandes : mêmes règles qu'à la
+ * caisse (commande encore en attente, délai non dépassé), puis même suite (`finaliserEncaissement`).
+ */
+export const avantValidationManuelle: CollectionBeforeChangeHook<Commande> = ({ req, data, originalDoc, operation, context }) => {
+  if (operation !== 'update' || !req.user || !originalDoc || data.statut !== 'payee' || originalDoc.statut === 'payee' || !estEnEspeces(originalDoc)) return data;
+  if (originalDoc.statut !== 'en_attente') {
+    throw new APIError('Seule une commande en attente de paiement peut être encaissée : celle-ci ne l’est plus (places rendues à la vente). Refaites la commande avec le client.', 400, null, true);
+  }
+  if (originalDoc.reservationExpireA && new Date(originalDoc.reservationExpireA) < new Date()) {
+    throw new APIError('Délai de paiement dépassé : la commande est annulée et ses places sont rendues à la vente. Refaites la commande avec le client.', 400, null, true);
+  }
+  context.encaissementManuel = true;
+  return data;
+};
+
+export const apresValidationManuelle: CollectionAfterChangeHook<Commande> = async ({ req, doc, context }) => {
+  if (!context.encaissementManuel) return doc;
+  delete context.encaissementManuel;
+  try {
+    const { billets } = await finaliserEncaissement(req.payload, doc, { id: Number(req.user!.id), nom: nomUtilisateur(req.user) }, 'back-office');
+    req.payload.logger.info(`Commande ${doc.numero} encaissée en espèces depuis le back-office : ${billets.length} billet(s) émis.`);
+  } catch (e) {
+    // Statut déjà enregistré : le rattrapage au démarrage reprendra l'émission.
+    req.payload.logger.error(`Commande ${doc.numero} payée en espèces, émission des billets échouée : ${(e as Error).message}`);
+  }
+  return (await commandeParNumero(req.payload, doc.numero)) ?? doc;
+};
+
+/**
+ * Rattrapage au démarrage (17 novembre 2026) : une commande en espèces passée « payée » à la main
+ * avant cette correction n'a ni billet, ni article à remettre, ni événement de paiement. Elle
+ * reçoit la suite complète : billets émis et envoyés, événement « Payé en espèces ».
+ */
+export async function rattraperEncaissementsManuels(payload: Payload): Promise<void> {
+  const { docs } = await payload.find({
+    collection: 'commandes',
+    where: { and: [{ statut: { equals: 'payee' } }, { 'paiement.prestataire': { equals: PRESTATAIRE_ESPECES } }] },
+    limit: 1000,
+    depth: 0,
+    pagination: false,
+  });
+  for (const c of docs as Commande[]) {
+    const billets = await payload.count({ collection: 'titulaires', where: { commande: { equals: c.id } } });
+    const articles = await payload.count({ collection: 'retraits', where: { commande: { equals: c.id } } });
+    if (billets.totalDocs || articles.totalDocs) continue;
+    const encaissePar = c.paiement?.encaissePar || 'Back-office (statut « Payée » saisi à la main)';
+    const { billets: emis } = await finaliserEncaissement(payload, { ...c, paiement: { ...c.paiement, payeeA: c.paiement?.payeeA ?? c.updatedAt } }, { id: null, nom: encaissePar }, 'rattrapage');
+    payload.logger.warn(`Commande ${c.numero} : payée en espèces à la main sans billet, ${emis.length} billet(s) émis et envoyés.`);
+  }
 }

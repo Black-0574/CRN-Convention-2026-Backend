@@ -37,11 +37,12 @@ export interface BilletAEnvoyer {
 }
 
 /** Message des billets (typographie française : espaces insécables avant « : ; ! ? »). */
-export function messageBillets(c: { prenom: string; numero: string; totalXAF: number; billets: BilletAEnvoyer[]; suivi: string }): string {
+/** `especes` : paiement reçu en espèces à la caisse de la COM Boutique (mentionné dans le message). */
+export function messageBillets(c: { prenom: string; numero: string; totalXAF: number; billets: BilletAEnvoyer[]; suivi: string; especes?: boolean }): string {
   const lignes = [
     `Bonjour ${c.prenom},`,
     '',
-    `Votre paiement de ${formaterXAF(c.totalXAF)} pour la commande ${c.numero} est confirmé. Merci${NBSP}!`,
+    `Votre paiement ${c.especes ? 'en espèces ' : ''}de ${formaterXAF(c.totalXAF)}${c.especes ? ' à la COM Boutique' : ''} pour la commande ${c.numero} est confirmé. Merci${NBSP}!`,
     '',
   ];
   if (c.billets.length) {
