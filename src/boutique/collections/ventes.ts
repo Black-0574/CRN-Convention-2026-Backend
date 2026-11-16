@@ -13,6 +13,25 @@ import { creeLe, dateHeure } from './dates';
 const lectureVentes = reserveA('comptabilite', 'com_boutique');
 const serveurSeulement = { create: personne, update: personne, delete: personne };
 
+/** Envoi des billets choisi par le client : e-mail, WhatsApp (envoyé d'un toucher), ou les deux. */
+export const CANAUX_BILLETS = [
+  { label: 'Par e-mail', value: 'email' },
+  { label: 'Par WhatsApp', value: 'whatsapp' },
+  { label: 'Par e-mail et WhatsApp', value: 'email_whatsapp' },
+];
+
+/**
+ * E-mail facultatif quand les billets partent par WhatsApp (16 novembre 2026). La colonne reste
+ * NOT NULL en base (une chaîne vide signifie « aucun ») : rendre la colonne facultative obligerait
+ * à reconstruire les tables commandes et titulaires, ce que SQLite ne peut faire sans casser les
+ * références (clés étrangères actives pendant la migration).
+ */
+const emailFacultatif = {
+  type: 'email' as const,
+  required: true,
+  validate: (v: unknown) => v === '' || (typeof v === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) || 'Adresse e-mail invalide.',
+};
+
 const STATUTS_COMMANDE = [
   { label: 'En attente de paiement', value: 'en_attente' },
   { label: 'Payée', value: 'payee' },
@@ -39,8 +58,15 @@ export const Commandes: CollectionConfig = {
       fields: [
         { name: 'prenom', type: 'text', label: 'Prénom', required: true, admin: { width: '25%' } },
         { name: 'nom', type: 'text', required: true, admin: { width: '25%' } },
-        { name: 'email', type: 'email', required: true, admin: { width: '25%' } },
+        { name: 'email', ...emailFacultatif, admin: { width: '25%', description: 'Vide si les billets partent par WhatsApp seulement.' } },
         { name: 'telephone', type: 'text', label: 'Téléphone', required: true, admin: { width: '25%' } },
+      ],
+    },
+    {
+      type: 'row',
+      fields: [
+        { name: 'canalBillets', type: 'select', label: 'Envoi des billets', options: CANAUX_BILLETS, defaultValue: 'email', admin: { width: '50%' } },
+        { name: 'whatsapp', type: 'text', label: 'Numéro WhatsApp', admin: { width: '50%' } },
       ],
     },
     {
@@ -97,10 +123,14 @@ export const Commandes: CollectionConfig = {
           options: [
             { label: 'Mobile Money', value: 'mobile_money' },
             { label: 'Carte bancaire', value: 'carte' },
+            { label: 'Espèces (COM Boutique)', value: 'especes' },
           ],
         },
         { name: 'detail', type: 'text', label: 'Détail (opérateur, pays, carte)', admin: { description: 'Tel que transmis par l’agrégateur de paiement.' } },
         dateHeure('payeeA', 'Payée le'),
+        // Caissier (nom et identifiant du compte) : sans clé étrangère, ajout de colonnes seulement.
+        { name: 'encaissePar', type: 'text', label: 'Encaissé par (espèces)' },
+        { name: 'encaisseParId', type: 'number', admin: { hidden: true } },
       ],
     },
     {
@@ -185,7 +215,7 @@ export const Titulaires: CollectionConfig = {
       type: 'row',
       fields: [
         { name: 'telephone', type: 'text', label: 'Téléphone', required: true },
-        { name: 'email', type: 'email', required: true },
+        { name: 'email', ...emailFacultatif },
       ],
     },
     { name: 'dateNaissance', type: 'text', label: 'Date de naissance (déclarée)' },
@@ -284,7 +314,7 @@ export const Consentements: CollectionConfig = {
   access: { read: reserveA('comptabilite'), ...serveurSeulement },
   fields: [
     { name: 'commande', type: 'relationship', relationTo: 'commandes' },
-    { name: 'email', type: 'email', required: true },
+    { name: 'email', ...emailFacultatif },
     { name: 'telephone', type: 'text' },
     { name: 'finalite', type: 'text', required: true, defaultValue: 'etre_recontacte_par_le_crn' },
     { name: 'accepte', type: 'checkbox', required: true },

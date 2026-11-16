@@ -12,7 +12,7 @@
  * conditionnelle (« WHERE statut = 'en_attente' ») : une seule gagne si deux arrivent en même temps
  * (paiement confirmé et expiration, par exemple).
  */
-import { finReservation, palierEnVigueur } from '../domaine/src/index.ts';
+import { finReservation, numeroWhatsApp, palierEnVigueur } from '../domaine/src/index.ts';
 import { randomBytes } from 'node:crypto';
 import type { Payload } from 'payload';
 
@@ -31,7 +31,7 @@ export class ErreurVente extends Error {
 }
 
 export interface SaisieTitulaire {
-  /** Index de la ligne de panier concernée. */
+  /** Rang de la ligne dans le panier (lignes hors kit de la commande, dans le même ordre). */
   ligne: number;
   prenom: string;
   nom: string;
@@ -41,8 +41,14 @@ export interface SaisieTitulaire {
   tailleTeeShirt?: string;
 }
 
+export type CanalBillets = 'email' | 'whatsapp' | 'email_whatsapp';
+
 export interface EntreeCommande {
   client: { prenom: string; nom: string; email: string; telephone: string };
+  /** Envoi des billets (e-mail par défaut) ; l'e-mail n'est exigé que s'il est choisi. */
+  canalBillets?: CanalBillets;
+  /** Numéro WhatsApp du client (son téléphone par défaut). */
+  whatsapp?: string;
   lignes: { varianteId: number; quantite: number }[];
   titulaires: SaisieTitulaire[];
   /** Obligatoire dès que la commande contient un article physique (article ou kit d'un pass). */
@@ -59,9 +65,10 @@ const MAX_PAR_LIGNE = 20;
 
 const texte = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
 
-function verifierPersonne(p: { prenom?: unknown; nom?: unknown; email?: unknown; telephone?: unknown }, qui: string) {
+/** `emailExige` faux (billets envoyés par WhatsApp seulement) : l'e-mail, s'il est saisi, reste vérifié. */
+function verifierPersonne(p: { prenom?: unknown; nom?: unknown; email?: unknown; telephone?: unknown }, qui: string, emailExige = true) {
   if (!texte(p.prenom) || !texte(p.nom)) throw new ErreurVente(`${qui} : prénom et nom obligatoires.`);
-  if (!EMAIL.test(texte(p.email))) throw new ErreurVente(`${qui} : adresse e-mail invalide.`);
+  if ((emailExige || texte(p.email)) && !EMAIL.test(texte(p.email))) throw new ErreurVente(`${qui} : adresse e-mail invalide.`);
   if (!TELEPHONE.test(texte(p.telephone))) throw new ErreurVente(`${qui} : numéro de téléphone invalide.`);
 }
 
@@ -106,7 +113,12 @@ export async function creerCommande(payload: Payload, entree: EntreeCommande, ma
   // Ventes fermées : seuls les produits réservés aux tests restent achetables (tests des équipes).
   const fermees = new ErreurVente('Les ventes sont momentanément fermées.', 503);
   if (!entree.cgvAcceptees) throw new ErreurVente('Veuillez accepter les conditions générales de vente.');
-  verifierPersonne(entree.client, 'Acheteur');
+  const canal: CanalBillets = entree.canalBillets ?? 'email';
+  if (!['email', 'whatsapp', 'email_whatsapp'].includes(canal)) throw new ErreurVente('Mode d’envoi des billets invalide.');
+  const emailExige = canal !== 'whatsapp';
+  verifierPersonne(entree.client ?? {}, 'Acheteur', emailExige);
+  const whatsapp = canal === 'email' ? '' : texte(entree.whatsapp) || texte(entree.client.telephone);
+  if (canal !== 'email' && !numeroWhatsApp(whatsapp)) throw new ErreurVente('Numéro WhatsApp invalide : indiquez-le avec l’indicatif du pays (ex. +241 …).');
   if (!Array.isArray(entree.lignes) || entree.lignes.length === 0) throw new ErreurVente('Votre panier est vide.');
 
   const preparees: LignePreparee[] = [];
@@ -129,14 +141,13 @@ export async function creerCommande(payload: Payload, entree: EntreeCommande, ma
       quantite,
       prixUnitaireXAF: palier.prixXAF,
     });
-
     if (produit.type === 'pass' || produit.type === 'ticket') {
       // F02 : un titulaire nominatif par exemplaire.
       const saisis = (entree.titulaires ?? []).filter((t) => t.ligne === index);
       if (saisis.length !== quantite) throw new ErreurVente(`${produit.nom} : un titulaire par billet est requis (${quantite}).`);
       for (const [n, t] of saisis.entries()) {
         const qui = `${produit.nom}, titulaire ${n + 1}`;
-        verifierPersonne(t, qui);
+        verifierPersonne(t, qui, emailExige);
         if (produit.ageMin || produit.ageMax) {
           const age = t.dateNaissance ? ageALaConvention(t.dateNaissance) : null;
           if (age === null) throw new ErreurVente(`${qui} : date de naissance requise.`);
@@ -190,6 +201,8 @@ export async function creerCommande(payload: Payload, entree: EntreeCommande, ma
       nom: texte(entree.client.nom),
       email: texte(entree.client.email).toLowerCase(),
       telephone: texte(entree.client.telephone),
+      canalBillets: canal,
+      ...(whatsapp ? { whatsapp } : {}),
       lignes: preparees.map((l) => ({
         produit: l.produit.id,
         variante: l.variante.id,

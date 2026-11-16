@@ -12,6 +12,7 @@ import { roleDe, type Role } from './lib/acces';
 import { lienBillet, lienValide, lireBillet } from './lib/billets';
 import { catalogue, DEMO, estVisible, vueProduit } from './lib/catalogue';
 import { optionsLivraison, texteLivraison } from './lib/livraison';
+import { chercherEnCaisse, choisirEspeces, encaisserEspeces, envoiBillets, estEnEspeces, journeeDuCaissier, reglagesEspeces } from './lib/especes';
 import { courrielsDe, lireCourriel } from './lib/messagerie';
 import { bacASableActif, depot, prestataire } from './lib/paiement';
 import { scanner } from './lib/scan';
@@ -102,6 +103,7 @@ export const endpoints: Endpoint[] = [
         ventesOuvertes: r.ventesOuvertes,
         consentement: r.consentement,
         legal: { cgvVersion: r.legal?.cgvVersion || null, cgv: r.legal?.cgv || null },
+        especes: await reglagesEspeces(req.payload),
         demo: DEMO,
       });
     },
@@ -146,6 +148,7 @@ export const endpoints: Endpoint[] = [
       }
       const titulaires = c.statut === 'payee' ? (await req.payload.find({ collection: 'titulaires', where: { commande: { equals: c.id } }, limit: 200, depth: 0, sort: 'numeroBillet' })).docs : [];
       const reglages = await req.payload.findGlobal({ slug: 'reglages-boutique' });
+      const especes = estEnEspeces(c) ? await reglagesEspeces(req.payload) : null;
       return json({
         numero: c.numero,
         statut: c.statut,
@@ -160,6 +163,11 @@ export const endpoints: Endpoint[] = [
           aLivrer: Boolean(l.kitDe) || (typeof l.produit === 'object' && l.produit.type === 'physique'),
         })),
         paiement: { moyen: c.paiement?.moyen ?? null, detail: c.paiement?.detail ?? null, enCours: Boolean(c.paiement?.referenceExterne) },
+        // Paiement en espèces : caisse, horaires et échéance à rappeler au client.
+        especes: especes && { lieu: especes.lieu, horaires: especes.horaires, echeance: c.reservationExpireA ?? null },
+        canalBillets: c.canalBillets ?? 'email',
+        // Commande payée : envoi des billets sur WhatsApp, d'un toucher (message déjà rédigé).
+        whatsapp: c.statut === 'payee' && titulaires.length ? (await envoiBillets(req.payload, c)).whatsapp.lien : null,
         billets: titulaires.map((t) => ({ numero: t.numeroBillet, titulaire: `${t.prenom} ${t.nom}`, lien: lienBillet(urlBackOffice(), t.numeroBillet) })),
         livraison: c.livraison?.mode
           ? { mode: c.livraison.mode, destination: c.livraison.destination ?? null, fraisXAF: c.livraison.fraisXAF ?? 0, texte: texteLivraison(c.livraison, reglages.livraison?.horairesRetrait) }
@@ -175,7 +183,16 @@ export const endpoints: Endpoint[] = [
       const c = await commandeSuivie(req);
       if (!c) return erreur('Commande introuvable.', 404);
       if (c.statut !== 'en_attente') return erreur('Cette commande n’est plus en attente de paiement.', 409);
+      if (estEnEspeces(c)) return erreur('Cette commande est à régler en espèces à la caisse de la COM Boutique.', 409);
       if (c.reservationExpireA && new Date(c.reservationExpireA) < new Date()) return erreur('Le délai de réservation est dépassé : recommencez votre commande.', 409);
+      // L'agrégateur exige un e-mail (customer_email, spécification SasPay) : un client qui reçoit
+      // ses billets par WhatsApp seulement le donne à cette étape.
+      if (!c.email) {
+        const email = String((await corpsJson<{ email?: string }>(req))?.email ?? '').trim().toLowerCase();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return erreur('Indiquez une adresse e-mail : notre partenaire de paiement l’exige pour un paiement Mobile Money.', 400);
+        c.email = email;
+        await req.payload.update({ collection: 'commandes', id: c.id, data: { email } });
+      }
       // Le client choisit son moyen (Mobile Money de son pays ou carte bancaire) sur la page
       // sécurisée de l'agrégateur, qui le renvoie ensuite vers le suivi de sa commande.
       let p;
@@ -202,6 +219,23 @@ export const endpoints: Endpoint[] = [
       if (!redirection) return erreur('Le prestataire de paiement n’a pas répondu : réessayez dans un instant.', 502);
       await req.payload.update({ collection: 'commandes', id: c.id, data: { paiement: { prestataire: p.nom, referenceExterne } } });
       return json({ referenceExterne, redirection, simulation: p.nom === 'bac-a-sable' });
+    },
+  },
+  // Paiement en espèces à la caisse de la COM Boutique : réservation prolongée jusqu'à l'échéance.
+  {
+    path: '/boutique/commandes/:numero/especes',
+    method: 'post',
+    handler: async (req) => {
+      const c = await commandeSuivie(req);
+      if (!c) return erreur('Commande introuvable.', 404);
+      try {
+        const maj = await choisirEspeces(req.payload, c);
+        return json({ numero: maj.numero, echeance: maj.reservationExpireA });
+      } catch (e) {
+        if (e instanceof ErreurVente) return erreur(e.message, e.code);
+        req.payload.logger.error(e);
+        return erreur('Erreur inattendue, veuillez réessayer.', 500);
+      }
     },
   },
   {
@@ -273,6 +307,36 @@ export const endpoints: Endpoint[] = [
     },
   },
 
+  // ——— Caisse de la COM Boutique (paiements en espèces) ———
+  {
+    path: '/boutique/caisse/commandes',
+    method: 'get',
+    handler: async (req) => {
+      if (!autorise(req, 'com_boutique')) return erreur('Accès réservé à la COM Boutique.', 401);
+      return json({
+        commandes: await chercherEnCaisse(req.payload, query(req, 'q') ?? ''),
+        journee: await journeeDuCaissier(req.payload, Number(req.user!.id)),
+      });
+    },
+  },
+  {
+    path: '/boutique/caisse/commandes/:numero/encaisser',
+    method: 'post',
+    handler: async (req) => {
+      if (!autorise(req, 'com_boutique')) return erreur('Accès réservé à la COM Boutique.', 401);
+      const corps = await corpsJson<{ montantXAF?: number }>(req);
+      try {
+        const u = req.user as unknown as { id: number; prenom?: string | null; nom?: string | null; email: string };
+        const nom = [u.prenom, u.nom].filter(Boolean).join(' ') || u.email;
+        return json(await encaisserEspeces(req.payload, param(req, 'numero'), Number(corps?.montantXAF), { id: Number(u.id), nom }));
+      } catch (e) {
+        if (e instanceof ErreurVente) return erreur(e.message, e.code);
+        req.payload.logger.error(e);
+        return erreur('Erreur inattendue : l’encaissement n’est pas enregistré, réessayez.', 500);
+      }
+    },
+  },
+
   // ——— Pilotage ———
   {
     path: '/boutique/tableau',
@@ -289,20 +353,20 @@ export const endpoints: Endpoint[] = [
       if (type === 'ventes.csv') {
         const { docs } = await req.payload.find({ collection: 'commandes', where: { statut: { equals: 'payee' } }, limit: 10000, depth: 0, pagination: false });
         contenu = csv(
-          ['Commande', 'Payée le', 'Acheteur', 'E-mail', 'Téléphone', 'Article', 'Quantité', 'Prix unitaire (F CFA)', 'Montant (F CFA)', 'Source', 'Emplacement'],
+          ['Commande', 'Payée le', 'Moyen', 'Acheteur', 'E-mail', 'Téléphone', 'Article', 'Quantité', 'Prix unitaire (F CFA)', 'Montant (F CFA)', 'Source', 'Emplacement'],
           docs.flatMap((c) =>
-            (c.lignes ?? []).map((l) => [c.numero, c.paiement?.payeeA ?? '', `${c.prenom} ${c.nom}`, c.email, c.telephone, l.libelle, l.quantite, l.prixUnitaireXAF, l.quantite * l.prixUnitaireXAF, c.provenance?.source ?? '', c.provenance?.emplacement ?? '']),
+            (c.lignes ?? []).map((l) => [c.numero, c.paiement?.payeeA ?? '', c.paiement?.moyen === 'especes' ? 'Espèces' : c.paiement?.moyen === 'carte' ? 'Carte' : 'Mobile Money', `${c.prenom} ${c.nom}`, c.email ?? '', c.telephone, l.libelle, l.quantite, l.prixUnitaireXAF, l.quantite * l.prixUnitaireXAF, c.provenance?.source ?? '', c.provenance?.emplacement ?? '']),
           ),
         );
       } else if (type === 'titulaires.csv') {
         const { docs } = await req.payload.find({ collection: 'titulaires', limit: 10000, depth: 1, pagination: false, sort: 'numeroBillet' });
         contenu = csv(
           ['Billet', 'Prénom', 'Nom', 'Téléphone', 'E-mail', 'Produit', 'Taille tee-shirt', 'Émis le'],
-          docs.map((t) => [t.numeroBillet, t.prenom, t.nom, t.telephone, t.email, typeof t.produit === 'object' ? t.produit.nom : '', t.tailleTeeShirt ?? '', t.emisA ?? '']),
+          docs.map((t) => [t.numeroBillet, t.prenom, t.nom, t.telephone, t.email ?? '', typeof t.produit === 'object' ? t.produit.nom : '', t.tailleTeeShirt ?? '', t.emisA ?? '']),
         );
       } else if (type === 'consentements.csv') {
         const { docs } = await req.payload.find({ collection: 'consentements', limit: 10000, depth: 0, pagination: false });
-        contenu = csv(['E-mail', 'Téléphone', 'Finalité', 'Accepté', 'Version', 'Horodatage'], docs.map((c) => [c.email, c.telephone ?? '', c.finalite, c.accepte ? 'oui' : 'non', c.version, c.createdAt]));
+        contenu = csv(['E-mail', 'Téléphone', 'Finalité', 'Accepté', 'Version', 'Horodatage'], docs.map((c) => [c.email ?? '', c.telephone ?? '', c.finalite, c.accepte ? 'oui' : 'non', c.version, c.createdAt]));
       } else return erreur('Export inconnu.', 404);
       return new Response(contenu, { headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="${type}"` } });
     },

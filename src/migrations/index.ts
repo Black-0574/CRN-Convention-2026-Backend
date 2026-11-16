@@ -7,6 +7,7 @@ import * as migration_20261105_203919_orateurs_ordre from './20261105_203919_ora
 import * as migration_20261106_120512_produits_reserve_tests from './20261106_120512_produits_reserve_tests';
 import * as migration_20261107_075155_profils_utilisateurs from './20261107_075155_profils_utilisateurs';
 import * as migration_20261111_125443_actualites_article_visuel from './20261111_125443_actualites_article_visuel';
+import * as migration_20261116_140909_caisse_especes from './20261116_140909_caisse_especes';
 
 export const migrations = [
   {
@@ -52,6 +53,11 @@ export const migrations = [
   {
     up: migration_20261111_125443_actualites_article_visuel.up,
     down: migration_20261111_125443_actualites_article_visuel.down,
-    name: '20261111_125443_actualites_article_visuel'
+    name: '20261111_125443_actualites_article_visuel',
+  },
+  {
+    up: migration_20261116_140909_caisse_especes.up,
+    down: migration_20261116_140909_caisse_especes.down,
+    name: '20261116_140909_caisse_especes'
   },
 ];

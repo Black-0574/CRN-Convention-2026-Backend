@@ -12,6 +12,7 @@ Plan validé : `C:\Users\Mael\.claude\plans\jaunty-cuddling-kahn.md`. Règles : 
 | `backend/src/boutique/lib/` | Réservations atomiques (SQL), émission des billets (PDF, QR signé), e-mails, paiement, scan, tableau de bord |
 | `backend/src/boutique/endpoints.ts` | API `/api/boutique/…` et `/api/mis-en-avant` |
 | `backend/src/app/(agents)/scan/` | Contrôle d’accès des agents COM Boutique : `admin…/scan` (séance, site et heure) |
+| `backend/src/app/(agents)/caisse/` | Caisse de la COM Boutique : encaissement des commandes payées en espèces, `admin…/caisse` |
 | `backend/src/app/(agents)/paiement-simule/` | Page de paiement simulée de l’agrégateur (local uniquement) |
 | `src/pages/boutique/` (site) | Catalogue, fiches produits, commande en 3 étapes, suivi, CGV |
 
@@ -125,6 +126,20 @@ E2E_BOUTIQUE=1 npx playwright test tests/e2e/boutique-achat.spec.ts   # achats c
   production : produits de test à 200 F CFA, session créée, paiement Mobile Money
   réussi, commande payée à la relecture suivante, billet PDF et e-mail générés, webhook livré au
   back-office en ligne (signature acceptée).
+
+## Paiement en espèces à la COM Boutique (16 novembre 2026)
+
+- **Client** : à l'étape 3 de la commande, « Espèces — à la caisse de la COM Boutique ». Places,
+  articles et prix réservés 5 jours (Boutique · Réglages), instructions et échéance sur la page de
+  suivi (et par e-mail si le client en a donné un).
+- **Caissier** : `admin…/caisse` (compte nominatif, rôle COM Boutique). Recherche par numéro de
+  commande, téléphone ou nom ; « Encaisser », confirmation du montant exact ; billets émis aussitôt,
+  e-mail envoyé si choisi, bouton « Envoyer les billets par WhatsApp » (message déjà rédigé, numéro
+  modifiable). Total encaissé du jour affiché. Encaissement au nom du caissier, journal des actions.
+- **Billets par WhatsApp** : le client choisit e-mail, WhatsApp ou les deux (e-mail facultatif si
+  WhatsApp seul) ; lien `wa.me` d'un toucher, sans service tiers (`domaine/src/whatsapp.ts`).
+- **Test** : `npm run test:especes` (17 vérifications sur la base locale, données supprimées) ;
+  lancer avec `SMTP_HOST=` vide si le `.env` local contient le SMTP réel (sinon des e-mails partent).
 
 ## Reste à raccorder avant d'ouvrir les ventes
 

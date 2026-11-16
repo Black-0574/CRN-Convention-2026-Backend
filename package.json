@@ -20,6 +20,7 @@
     "test:scan": "payload run scripts/test-scan.ts",
     "ajouter-articles": "payload run scripts/ajouter-articles.ts",
     "test:saspay": "payload run scripts/test-saspay.ts",
+    "test:especes": "payload run scripts/test-especes.ts",
     "saspay:verifier": "payload run scripts/saspay-verifier.ts",
     "produits-test": "payload run scripts/produits-test.ts",
     "courriel:test": "payload run scripts/courriel-test.ts"

@@ -9,7 +9,7 @@ export const ROLES = [
   { label: 'Administrateur', value: 'admin' },
   { label: 'Éditeur (contenu du site)', value: 'editeur' },
   { label: 'Gestionnaire de catalogue (boutique)', value: 'catalogue' },
-  { label: 'COM Boutique (retraits et contrôle d’accès)', value: 'com_boutique' },
+  { label: 'COM Boutique (caisse, retraits et contrôle d’accès)', value: 'com_boutique' },
   { label: 'Comptabilité (boutique)', value: 'comptabilite' },
 ] as const;
 

@@ -32,6 +32,53 @@ async function plateformesDe(payload: Payload, produitId: number, varianteId: nu
   return (p.plateformes ?? []).filter((x): x is Plateforme => typeof x === 'object');
 }
 
+type BilletEmis = { numero: string; titulaire: string; email: string; produit: string; lien: string };
+
+/** Un billet : jeton signé, PDF, titulaire et droits d'accès à chaque séance. */
+async function emettreBillet(
+  payload: Payload,
+  commande: Commande,
+  libelle: string,
+  produitId: number,
+  varianteId: number,
+  plateformes: Plateforme[],
+  t: SaisieTitulaire,
+  numeroBillet: string,
+): Promise<BilletEmis> {
+  const jeton = creerJeton(secretBillets());
+  const pdf = await genererBilletPdf({
+    numeroBillet,
+    jeton,
+    titulaire: `${t.prenom} ${t.nom}`,
+    produit: libelle,
+    seances: plateformes.map((p) => ({ nom: p.nom, quand: p.debut ? quand.format(new Date(p.debut)) : 'date à annoncer', lieu: p.lieu || 'lieu à annoncer' })),
+    ...(t.tailleTeeShirt ? { tailleTeeShirt: t.tailleTeeShirt } : {}),
+  });
+  const fichier = await enregistrerBillet(numeroBillet, pdf);
+  const titulaire = await payload.create({
+    collection: 'titulaires',
+    data: {
+      numeroBillet,
+      commande: commande.id,
+      produit: produitId,
+      variante: varianteId,
+      prenom: t.prenom,
+      nom: t.nom,
+      telephone: t.telephone,
+      email: t.email ?? '',
+      ...(t.dateNaissance ? { dateNaissance: t.dateNaissance } : {}),
+      ...(t.tailleTeeShirt ? { tailleTeeShirt: t.tailleTeeShirt } : {}),
+      empreinteJeton: empreinteJeton(jeton),
+      fichierBillet: fichier,
+      emisA: new Date().toISOString(),
+    },
+  });
+  for (const d of genererDroits(plateformes.map((p) => String(p.id)))) {
+    await payload.create({ collection: 'droits-acces', data: { titulaire: titulaire.id, plateforme: Number(d.plateforme), statut: 'valide' } });
+  }
+  return { numero: numeroBillet, titulaire: `${t.prenom} ${t.nom}`, email: t.email, produit: libelle, lien: lienBillet(urlBackOffice(), numeroBillet) };
+}
+
 export async function emettre(payload: Payload, commandeId: number): Promise<void> {
   const deja = await payload.count({ collection: 'titulaires', where: { commande: { equals: commandeId } } });
   const dejaRetraits = await payload.count({ collection: 'retraits', where: { commande: { equals: commandeId } } });
@@ -40,7 +87,7 @@ export async function emettre(payload: Payload, commandeId: number): Promise<voi
   await convertir(payload, commandeId);
   const commande = (await payload.findByID({ collection: 'commandes', id: commandeId, depth: 1 })) as Commande;
   const saisis = (commande.titulairesSaisis ?? []) as SaisieTitulaire[];
-  const billets: { numero: string; titulaire: string; email: string; produit: string; lien: string }[] = [];
+  const billets: BilletEmis[] = [];
   let rang = 0;
   // Articles et kits : remis selon le mode de livraison choisi à la commande.
   const aRemettre = {
@@ -49,55 +96,34 @@ export async function emettre(payload: Payload, commandeId: number): Promise<voi
     statut: 'a_preparer' as const,
   };
 
-  for (const [index, ligne] of (commande.lignes ?? []).entries()) {
+  // Les titulaires saisis portent le rang de leur ligne dans le panier ; dans la commande, les
+  // articles du kit d'un pass s'insèrent après lui. Le rang du panier est donc celui de la ligne
+  // parmi les lignes hors kit (corrigé le 16 novembre 2026 : dans une commande « pass avec kit,
+  // puis autre billet », le second billet n'était pas émis).
+  let rangPanier = -1;
+  for (const ligne of commande.lignes ?? []) {
+    if (!ligne.kitDe) rangPanier += 1;
     const produit = ligne.produit as Produit;
     const varianteId = typeof ligne.variante === 'object' ? (ligne.variante as Variante).id : ligne.variante;
     const nominatif = !ligne.kitDe && (produit.type === 'pass' || produit.type === 'ticket');
 
     if (!nominatif) {
-      await payload.create({
-        collection: 'retraits',
-        data: { commande: commande.id, variante: varianteId, libelle: ligne.libelle, quantite: ligne.quantite, ...aRemettre },
-      });
+      // Articles achetés seuls ; les articles de kit sont inscrits plus bas, une seule fois
+      // (ils l'étaient aussi ici : chaque article de kit apparaissait deux fois à remettre).
+      if (!ligne.kitDe) {
+        await payload.create({
+          collection: 'retraits',
+          data: { commande: commande.id, variante: varianteId, libelle: ligne.libelle, quantite: ligne.quantite, ...aRemettre },
+        });
+      }
       continue;
     }
 
     const plateformes = await plateformesDe(payload, produit.id, varianteId);
-    for (const t of saisis.filter((s) => s.ligne === index)) {
+    const rangLigne = rangPanier;
+    for (const t of saisis.filter((s) => s.ligne === rangLigne)) {
       rang += 1;
-      const numeroBillet = `${commande.numero}-${String(rang).padStart(2, '0')}`;
-      const jeton = creerJeton(secretBillets());
-      const pdf = await genererBilletPdf({
-        numeroBillet,
-        jeton,
-        titulaire: `${t.prenom} ${t.nom}`,
-        produit: ligne.libelle,
-        seances: plateformes.map((p) => ({ nom: p.nom, quand: p.debut ? quand.format(new Date(p.debut)) : 'date à annoncer', lieu: p.lieu || 'lieu à annoncer' })),
-        ...(t.tailleTeeShirt ? { tailleTeeShirt: t.tailleTeeShirt } : {}),
-      });
-      const fichier = await enregistrerBillet(numeroBillet, pdf);
-      const titulaire = await payload.create({
-        collection: 'titulaires',
-        data: {
-          numeroBillet,
-          commande: commande.id,
-          produit: produit.id,
-          variante: varianteId,
-          prenom: t.prenom,
-          nom: t.nom,
-          telephone: t.telephone,
-          email: t.email,
-          ...(t.dateNaissance ? { dateNaissance: t.dateNaissance } : {}),
-          ...(t.tailleTeeShirt ? { tailleTeeShirt: t.tailleTeeShirt } : {}),
-          empreinteJeton: empreinteJeton(jeton),
-          fichierBillet: fichier,
-          emisA: new Date().toISOString(),
-        },
-      });
-      for (const d of genererDroits(plateformes.map((p) => String(p.id)))) {
-        await payload.create({ collection: 'droits-acces', data: { titulaire: titulaire.id, plateforme: Number(d.plateforme), statut: 'valide' } });
-      }
-      billets.push({ numero: numeroBillet, titulaire: `${t.prenom} ${t.nom}`, email: t.email, produit: ligne.libelle, lien: lienBillet(urlBackOffice(), numeroBillet) });
+      billets.push(await emettreBillet(payload, commande, ligne.libelle, produit.id, varianteId, plateformes, t, `${commande.numero}-${String(rang).padStart(2, '0')}`));
     }
   }
 
@@ -114,15 +140,75 @@ export async function emettre(payload: Payload, commandeId: number): Promise<voi
   await envoyerCourriels(payload, commande, billets);
 }
 
+/**
+ * Rattrapage (16 novembre 2026) : avant la correction ci-dessus, une commande « pass avec kit, puis
+ * autre billet » payée ne recevait pas le billet de la ligne suivante. Au démarrage, chaque
+ * commande payée est comparée à ses titulaires saisis : un billet attendu et absent (même ligne,
+ * même prénom et nom) est émis et envoyé, avec la numérotation qui suit. Ajouts seulement :
+ * un billet émis sur la mauvaise ligne, ou un article de kit inscrit deux fois à remettre, est
+ * signalé dans le journal du serveur pour vérification, jamais supprimé.
+ */
+export async function rattraperBilletsManquants(payload: Payload): Promise<void> {
+  const payees = (await payload.find({ collection: 'commandes', where: { statut: { equals: 'payee' } }, limit: 10000, depth: 1, pagination: false })).docs as Commande[];
+  for (const commande of payees) {
+    const saisis = (commande.titulairesSaisis ?? []) as SaisieTitulaire[];
+    if (!saisis.length) continue;
+    const existants = (await payload.find({ collection: 'titulaires', where: { commande: { equals: commande.id } }, limit: 500, depth: 0, pagination: false })).docs;
+    const varianteDe = (v: unknown) => (typeof v === 'object' && v ? (v as Variante).id : Number(v));
+    const libres = [...existants];
+    const nouveaux: BilletEmis[] = [];
+    // Payée sans aucun billet : statut changé à la main dans l'admin, pas le défaut corrigé ici.
+    // Signalée seulement : l'émission (et l'envoi au client) reste une décision de la boutique.
+    if (!existants.length) {
+      payload.logger.warn(`Commande ${commande.numero} : payée sans aucun billet émis (statut changé à la main ?) : à vérifier.`);
+      continue;
+    }
+    let rang = existants.reduce((max, t) => Math.max(max, Number(/-(\d+)$/.exec(t.numeroBillet)?.[1] ?? 0)), 0);
+    let rangPanier = -1;
+    for (const ligne of commande.lignes ?? []) {
+      if (!ligne.kitDe) rangPanier += 1;
+      const produit = ligne.produit as Produit;
+      if (ligne.kitDe || (produit.type !== 'pass' && produit.type !== 'ticket')) continue;
+      const varianteId = varianteDe(ligne.variante);
+      const rangLigne = rangPanier;
+      for (const t of saisis.filter((s) => s.ligne === rangLigne)) {
+        const i = libres.findIndex((x) => varianteDe(x.variante) === varianteId && x.prenom === t.prenom && x.nom === t.nom);
+        if (i >= 0) {
+          libres.splice(i, 1);
+          continue;
+        }
+        rang += 1;
+        nouveaux.push(await emettreBillet(payload, commande, ligne.libelle, produit.id, varianteId, await plateformesDe(payload, produit.id, varianteId), t, `${commande.numero}-${String(rang).padStart(2, '0')}`));
+      }
+    }
+    if (nouveaux.length) {
+      payload.logger.warn(`Commande ${commande.numero} : ${nouveaux.length} billet(s) manquant(s) émis (${nouveaux.map((b) => `${b.numero} ${b.titulaire}`).join(', ')}).`);
+      await envoyerCourriels(payload, commande, nouveaux, true);
+    }
+    if (libres.length) payload.logger.warn(`Commande ${commande.numero} : billet(s) à vérifier, ne correspondant à aucun titulaire saisi sur cette ligne : ${libres.map((t) => t.numeroBillet).join(', ')}.`);
+    const retraits = (await payload.find({ collection: 'retraits', where: { commande: { equals: commande.id } }, limit: 500, depth: 0, pagination: false })).docs;
+    const vus = new Set<string>();
+    const doublons = retraits.filter((r) => {
+      const cle = `${varianteDe(r.variante)}|${r.libelle}`;
+      if (vus.has(cle)) return true;
+      vus.add(cle);
+      return false;
+    });
+    if (doublons.length) payload.logger.warn(`Commande ${commande.numero} : ${doublons.length} article(s) de kit inscrit(s) deux fois à remettre (Livraisons et retraits) : remettre une seule fois.`);
+  }
+}
+
 async function envoyerCourriels(
   payload: Payload,
   commande: Commande,
-  billets: { numero: string; titulaire: string; email: string; produit: string; lien: string }[],
+  billets: BilletEmis[],
+  /** Billets émis en rattrapage : e-mail d'excuse avec ces seuls billets. */
+  rattrapage = false,
 ) {
   const reglages = await payload.findGlobal({ slug: 'reglages-boutique' });
   const livraison = texteLivraison(commande.livraison ?? {}, reglages.livraison?.horairesRetrait);
   const suivi = urlSuivi(commande.numero, commande.jetonSuivi);
-  const articles = (commande.lignes ?? []).filter((l) => !billets.some((b) => b.produit === l.libelle) && (l.kitDe || (l.produit as Produit).type === 'physique'));
+  const articles = rattrapage ? [] : (commande.lignes ?? []).filter((l) => !billets.some((b) => b.produit === l.libelle) && (l.kitDe || (l.produit as Produit).type === 'physique'));
 
   const listeBillets = billets
     .map((b) => `<li style="margin-bottom:8px"><strong>${echapper(b.titulaire)}</strong> — ${echapper(b.produit)}<br><a href="${b.lien}" style="color:#1A2C5B;font-weight:700">Télécharger le billet ${b.numero}</a></li>`)
@@ -134,21 +220,22 @@ async function envoyerCourriels(
   const envoyer = (c: Courriel) =>
     messagerie.envoyer(c).catch((e) => payload.logger.error(`E-mail « ${c.sujet} » → ${c.a} non envoyé : ${(e as Error).message}`));
 
-  await envoyer({
+  // Acheteur sans e-mail (billets envoyés par WhatsApp seulement) : rien à envoyer à l'acheteur.
+  if (commande.email) await envoyer({
     a: commande.email,
     reference: commande.numero,
-    sujet: `Votre commande ${commande.numero} — Convention CRN 2026`,
+    sujet: rattrapage ? `Billet(s) manquant(s) de votre commande ${commande.numero} — Convention CRN 2026` : `Votre commande ${commande.numero} — Convention CRN 2026`,
     html: gabarit(
       `Commande ${commande.numero}`,
       `<p>Bonjour ${echapper(commande.prenom)},</p>
-<p>Votre paiement de <strong>${formaterXAF(commande.totalXAF)}</strong> est confirmé. Merci !</p>
+${rattrapage ? '<p>Un incident technique a empêché l’envoi d’une partie de vos billets. Les voici, avec toutes nos excuses&nbsp;; vos autres billets restent valables.</p>' : `<p>Votre paiement de <strong>${formaterXAF(commande.totalXAF)}</strong> est confirmé. Merci&nbsp;!</p>`}
 ${billets.length ? `<h2 style="font-family:'Source Serif 4',Georgia,serif;color:#1A2C5B;font-size:20px">Vos billets</h2><ul style="padding-left:20px">${listeBillets}</ul><p style="color:#6B6B6B">Chaque billet est nominatif : présentez-le avec une pièce d’identité. Le QR code est scanné à chaque entrée.</p>` : ''}
 ${articles.length ? `<h2 style="font-family:'Source Serif 4',Georgia,serif;color:#1A2C5B;font-size:20px">Vos articles</h2><ul style="padding-left:20px">${listeArticles}</ul><p>${echapper(livraison)}${commande.livraison?.fraisXAF ? ` Frais de livraison : ${formaterXAF(commande.livraison.fraisXAF)}.` : ''}</p>` : ''}
 <p><a href="${suivi}" style="color:#1A2C5B;font-weight:700">Suivre ma commande</a></p>`,
     ),
   });
 
-  for (const b of billets.filter((x) => x.email !== commande.email)) {
+  for (const b of billets.filter((x) => x.email && x.email !== commande.email)) {
     await envoyer({
       a: b.email,
       reference: commande.numero,

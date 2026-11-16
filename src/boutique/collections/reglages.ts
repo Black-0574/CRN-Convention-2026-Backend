@@ -63,6 +63,34 @@ export const ReglagesBoutique: GlobalConfig = {
       ],
     },
     {
+      name: 'especes',
+      type: 'group',
+      label: 'Paiement en espèces à la COM Boutique',
+      admin: {
+        description:
+          'Le client commande en ligne (seul ou aidé par une hôtesse), choisit « Espèces » et paie à la caisse de la COM Boutique ; le caissier valide l’encaissement sur la page « Caisse » (/caisse) et les billets partent aussitôt.',
+      },
+      fields: [
+        { name: 'actif', type: 'checkbox', label: 'Proposer le paiement en espèces', defaultValue: true },
+        {
+          type: 'row',
+          fields: [
+            { name: 'lieu', type: 'text', label: 'Caisse', defaultValue: 'COM Boutique — Église Centrale, Libreville', admin: { width: '40%' } },
+            { name: 'horaires', type: 'text', label: 'Horaires de la caisse', admin: { width: '40%', description: 'Vide = « À annoncer ».' } },
+            {
+              name: 'delaiJours',
+              type: 'number',
+              label: 'Délai pour payer (jours)',
+              defaultValue: 5,
+              min: 1,
+              max: 15,
+              admin: { width: '20%', description: 'Places et prix réservés pendant ce délai.' },
+            },
+          ],
+        },
+      ],
+    },
+    {
       name: 'consentement',
       type: 'group',
       label: 'Consentement « être recontacté »',

@@ -7,3 +7,4 @@ export * from './jetons.ts';
 export * from './droits.ts';
 export * from './paiements.ts';
 export * from './saspay.ts';
+export * from './whatsapp.ts';
