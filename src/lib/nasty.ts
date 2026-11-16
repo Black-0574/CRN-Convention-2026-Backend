@@ -24,7 +24,7 @@ ordination, Concert pour la vie). Le lieu du Dîner des Élites est encore à an
 ## Billetterie (F CFA) — ouverte depuis le 25 octobre 2026
 - Une classe de l'Académie : 20 000 F CFA (classe complète sur trois jours)
 - Pass Académie Intégral : 50 000 F CFA (les trois classes)
-- Femme de Foi — Live : 10 000 F CFA
+- Femme 2 Fois — Live : 10 000 F CFA
 - J'ai soif : 5 000 F CFA
 - Dîner des Élites : 100 000 F CFA (lieu à annoncer)
 - Concert pour la vie — Standard : 5 000 F CFA
@@ -66,7 +66,7 @@ Aucun accès verbal n'est accepté.
   Silas Makangu et François Rabenkogo · jeu. Wilson Ndi et Silas Makangu)
 - Ven. 11 déc. : 6h–7h30 Matin de gloire spécial, Sainte Cène et prière pour les familles ;
   17h–21h Soirée africaine et prophétique (Nadia Jocktane, Wilson Ndi, Jek Kalombo)
-- Sam. 12 déc. : 9h–12h Femme de Foi — Live (Patricia Piebi) ; 14h–17h30 J'ai soif (Jek Kalombo,
+- Sam. 12 déc. : 9h–12h Femme 2 Fois — Live (Patricia Piebi) ; 14h–17h30 J'ai soif (Jek Kalombo,
   Carelle Ambouroué) ; 19h–22h Dîner des Élites (lieu à annoncer)
 - Dim. 13 déc., lieu à déterminer (annoncé prochainement) : 9h–12h Culte unique de toutes les églises (orateur à annoncer) ;
   13h–14h30 Cérémonie d'ordination ; 17h Concert pour la vie
@@ -79,7 +79,7 @@ Aucun accès verbal n'est accepté.
 ## Orateurs
 Dr. Mike Jocktane (Hôte) · Robert Ondoa, Silas Makangu, Wilson Ndi (International) · Michel
 Ambouroué, Nadia Jocktane, François Rabenkogo (National) · Jek Kalombo (Prophétique) · Patricia
-Piebi (Femme de Foi — Live) · Carelle Ambouroué (J'ai soif).
+Piebi (Femme 2 Fois — Live) · Carelle Ambouroué (J'ai soif).
 
 ## Artistes — Concert pour la vie (programmation nationale et locale)
 Grâce Jocktane, Diane Omega, Betty Onanga, Bienvenu Moussounda, Orphelia Njoya, Priscille Ngouwa,

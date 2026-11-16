@@ -23,6 +23,7 @@ import { allowedOrigins } from './src/lib/allowed-origins';
 import { rebuildAfterChange, rebuildAfterDelete, rebuildAfterGlobalChange } from './src/lib/site-rebuild';
 import { publierAppelCandidatures } from './src/seed/appel-candidatures';
 import { appliquerLieuDu13Decembre } from './src/seed/lieu-13-decembre';
+import { appliquerNomFemme2Fois } from './src/seed/nom-femme-2-fois';
 import { completerProfilsOrateurs, organiserOrateurs, seedFromContent } from './src/seed/seed-from-content';
 // CRN Boutique, intégrée au back-office : catalogue, ventes, billets, contrôle d'accès (le site
 // l'affiche sous /boutique). Plan : C:UsersMael.claudeplansjaunty-cuddling-kahn.md.
@@ -170,6 +171,12 @@ export default buildConfig({
       await publierAppelCandidatures(payload);
     } catch (err) {
       payload.logger.error(`Appel à candidatures non publié : ${(err as Error).message}`);
+    }
+    try {
+      // « Femme de Foi » devient « Femme 2 Fois » (16 novembre 2026), sur l'ancienne valeur seulement.
+      await appliquerNomFemme2Fois(payload);
+    } catch (err) {
+      payload.logger.error(`Nom « Femme 2 Fois » non appliqué : ${(err as Error).message}`);
     }
     demarrerTachesPlanifiees(payload);
   },

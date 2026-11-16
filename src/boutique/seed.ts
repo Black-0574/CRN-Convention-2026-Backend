@@ -78,7 +78,7 @@ export async function seedBoutique(payload: Payload): Promise<void> {
     }
   }
   const toutesClasses = Object.values(academie).flat();
-  const femmeDeFoi = await plateforme('femme-de-foi-live', 'Femme de Foi — Live', L('2026-12-12', '09:00'), L('2026-12-12', '12:00'), EGLISE);
+  const femmeDeFoi = await plateforme('femme-de-foi-live', 'Femme 2 Fois — Live', L('2026-12-12', '09:00'), L('2026-12-12', '12:00'), EGLISE);
   const jaiSoif = await plateforme('jai-soif', 'J’ai soif', L('2026-12-12', '14:00'), L('2026-12-12', '17:30'), EGLISE);
   const diner = await plateforme('diner-des-elites', 'Dîner des Élites', L('2026-12-12', '19:00'), L('2026-12-12', '22:00'), null);
   const concertStandard = await plateforme('concert-standard', 'Concert pour la vie — Standard', L('2026-12-13', '17:00'), null, LIEU_13);
@@ -136,7 +136,7 @@ export async function seedBoutique(payload: Payload): Promise<void> {
     CLASSES.map((c) => ({ libelle: `Classe ${c.n} — ${c.nom}`, plateformes: academie[c.n]! })),
   );
   await produit({ nom: 'Pass Académie Intégral', slug: 'pass-academie-integral', type: 'ticket', categorie: catTickets, resume: 'Les trois classes de l’Académie, du 8 au 10 décembre.', description: 'Les trois classes de l’Académie des Sciences Divines, du 8 au 10 décembre, Église Centrale.', badge: 'Les trois classes', paliers: prix(50_000), plateformes: toutesClasses, ...valide, misEnAvant: true, ordreMiseEnAvant: 8, ordre: 21 });
-  await produit({ nom: 'Femme de Foi — Live', slug: 'femme-de-foi-live', type: 'ticket', categorie: catTickets, resume: 'Samedi 12 décembre, 9h–12h, Église Centrale.', description: 'Samedi 12 décembre, 9h–12h, Église Centrale.', paliers: prix(10_000), plateformes: [femmeDeFoi], ...valide, misEnAvant: true, ordreMiseEnAvant: 11, ordre: 22 });
+  await produit({ nom: 'Femme 2 Fois — Live', slug: 'femme-de-foi-live', type: 'ticket', categorie: catTickets, resume: 'Samedi 12 décembre, 9h–12h, Église Centrale.', description: 'Samedi 12 décembre, 9h–12h, Église Centrale.', paliers: prix(10_000), plateformes: [femmeDeFoi], ...valide, misEnAvant: true, ordreMiseEnAvant: 11, ordre: 22 });
   await produit({ nom: 'J’ai soif', slug: 'jai-soif', type: 'ticket', categorie: catTickets, resume: 'Samedi 12 décembre, 14h–17h30, Église Centrale.', description: 'Samedi 12 décembre, 14h–17h30, Église Centrale.', paliers: prix(5_000), plateformes: [jaiSoif], ...valide, ordre: 23 });
   await produit({ nom: 'Dîner des Élites', slug: 'diner-des-elites', type: 'ticket', categorie: catTickets, resume: 'Samedi 12 décembre, 19h–22h. Lieu à annoncer.', description: 'Samedi 12 décembre, 19h–22h. Lieu à annoncer.', badge: 'Places limitées', paliers: prix(100_000), plateformes: [diner], quotas: [quotaDiner], ...valide, misEnAvant: true, ordreMiseEnAvant: 10, ordre: 24 });
   await produit({ nom: 'Concert pour la vie — Standard', slug: 'concert-standard', type: 'ticket', categorie: catTickets, resume: 'Dimanche 13 décembre, 17h, lieu à déterminer.', description: 'Dimanche 13 décembre, 17h, lieu à déterminer.', paliers: prix(5_000), plateformes: [concertStandard], ...valide, ordre: 25 });
@@ -146,8 +146,8 @@ export async function seedBoutique(payload: Payload): Promise<void> {
   const accesIntegral = [...toutesClasses, femmeDeFoi, jaiSoif, diner, concertStandard];
   await produit({
     nom: 'Pass Convention Intégral', slug: 'pass-convention-integral', type: 'pass', categorie: catPass,
-    resume: 'Académie (3 classes), Femme de Foi — Live, J’ai soif, Dîner des Élites, Concert Standard. Tee-shirt inclus.',
-    description: 'Académie des Sciences Divines (3 classes), Femme de Foi — Live, J’ai soif, Dîner des Élites, Concert pour la vie — Standard et plateformes générales. Tee-shirt officiel 2026 inclus (taille au choix, à retirer).',
+    resume: 'Académie (3 classes), Femme 2 Fois — Live, J’ai soif, Dîner des Élites, Concert Standard. Tee-shirt inclus.',
+    description: 'Académie des Sciences Divines (3 classes), Femme 2 Fois — Live, J’ai soif, Dîner des Élites, Concert pour la vie — Standard et plateformes générales. Tee-shirt officiel 2026 inclus (taille au choix, à retirer).',
     badge: 'Inclut le tee-shirt',
     paliers: [{ prixXAF: 120_000, du: '2026-10-25', au: '2026-10-31' }, { prixXAF: 150_000, du: '2026-11-01', au: '2026-11-30' }, { prixXAF: 180_000, du: '2026-12-01' }],
     plateformes: accesIntegral, quotas: [quotaDiner], kit: [{ produit: teeShirt, quantite: 1 }],
@@ -251,7 +251,7 @@ export async function installerPointsRelais(payload: Payload): Promise<void> {
 }
 
 /**
- * Nouveaux horaires du samedi 12 décembre (Commanditaire, 7 novembre 2026) : Femme de Foi — Live
+ * Nouveaux horaires du samedi 12 décembre (Commanditaire, 7 novembre 2026) : Femme 2 Fois — Live
  * 9h–12h (au lieu de 8h–11h), J'ai soif 14h–17h30 (au lieu de 13h–16h30). Appliqués au démarrage
  * sur une base déjà importée : programme, fiches Billetterie du site, produits et séances de la
  * boutique. Seules les anciennes valeurs exactes sont remplacées : une saisie ultérieure dans
@@ -311,5 +311,5 @@ export async function appliquerHorairesDu12Decembre(payload: Payload): Promise<v
       n++;
     }
   }
-  if (n) payload.logger.info(`Horaires du 12 décembre mis à jour (${n} fiche(s)) : Femme de Foi — Live 9h–12h, J’ai soif 14h–17h30.`);
+  if (n) payload.logger.info(`Horaires du 12 décembre mis à jour (${n} fiche(s)) : Femme 2 Fois — Live 9h–12h, J’ai soif 14h–17h30.`);
 }

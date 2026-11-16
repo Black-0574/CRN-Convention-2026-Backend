@@ -229,7 +229,7 @@
     {
       "id": "femme-de-foi-live",
       "data": {
-        "nom": "Femme de Foi — Live",
+        "nom": "Femme 2 Fois — Live",
         "categorie": "plateforme",
         "prixFCFA": 10000,
         "description": "Samedi 12 décembre, 9h–12h, Église Centrale.",
@@ -314,7 +314,7 @@
         "nom": "Pass Convention Intégral",
         "categorie": "pass",
         "prixFCFA": 150000,
-        "description": "Académie (3 classes), Femme de Foi — Live, J’ai soif, Dîner des Élites, Concert pour la vie — Standard. Tee-shirt inclus. 150 000 F CFA jusqu’au 30 novembre, puis 180 000 F CFA.",
+        "description": "Académie (3 classes), Femme 2 Fois — Live, J’ai soif, Dîner des Élites, Concert pour la vie — Standard. Tee-shirt inclus. 150 000 F CFA jusqu’au 30 novembre, puis 180 000 F CFA.",
         "statut": "disponible",
         "ordre": 10
       }
@@ -695,7 +695,7 @@
           {
             "heureDebut": "09:00",
             "heureFin": "12:00",
-            "titre": "Femme de Foi — Live",
+            "titre": "Femme 2 Fois — Live",
             "lieu": "Église Centrale",
             "intervenants": [
               "patricia-piebi"
