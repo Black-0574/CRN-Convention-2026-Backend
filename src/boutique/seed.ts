@@ -230,6 +230,94 @@ export async function appliquerPrixArticlesAnnonces(payload: Payload): Promise<v
 }
 
 /**
+ * Tee-shirts officiels, gammes 1 à 4 (Commanditaire, 23 novembre 2026) : créés en « Prix à
+ * valider », hors vente et sans variante, puis mis en vente par `mettreEnVenteTeeShirtsGammes`
+ * (prix, couleurs et tailles donnés le même jour). Ajoute seulement les slugs absents ; un
+ * tee-shirt modifié dans l'admin n'est jamais touché.
+ * À leur création, le « Tee-shirt officiel » unique est retiré de la vente et de la mise en avant
+ * (décision du Commanditaire, même jour), une seule fois. Il reste l'article du kit des pass :
+ * le kit suit ses variantes (tailles), pas sa mise en vente.
+ */
+const COULEURS_GAMMES: Record<number, string[]> = {
+  1: ['Marron', 'Noir', 'Blanc'],
+  2: ['Noir', 'Vert bouteille', 'Bleu nuit'],
+  3: ['Bleu nuit', 'Noir', 'Bordeaux', 'Blanc'],
+  4: ['Blanc', 'Bleu nuit', 'Bordeaux', 'Rose fuchsia', 'Noir', 'Vert bouteille'],
+};
+const TAILLES_TEE_SHIRTS = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
+const TEE_SHIRTS_GAMMES = [1, 2, 3, 4].map((n) => ({
+  n,
+  nom: `Tee-shirt officiel — Gamme ${n}`,
+  slug: `tee-shirt-officiel-gamme-${n}`,
+  resume: `Tee-shirt officiel de la Convention CRN 2026, gamme ${n}.`,
+  ordre: 35 + n,
+  couleurs: COULEURS_GAMMES[n]!,
+}));
+
+export async function ajouterTeeShirtsGammes(payload: Payload): Promise<void> {
+  const categorie = (await payload.find({ collection: 'categories', where: { slug: { equals: 'articles' } }, limit: 1 })).docs[0];
+  if (!categorie) return payload.logger.warn('Rayon « Articles officiels » introuvable : tee-shirts par gamme non ajoutés.');
+  let ajoutes = 0;
+  for (const t of TEE_SHIRTS_GAMMES) {
+    if ((await payload.count({ collection: 'produits', where: { slug: { equals: t.slug } } })).totalDocs) continue;
+    await payload.create({
+      collection: 'produits',
+      data: { nom: t.nom, slug: t.slug, type: 'physique', categorie: categorie.id, resume: t.resume, description: t.resume, actif: false, prixAValider: true, ordre: t.ordre } as never,
+    });
+    ajoutes++;
+    payload.logger.info(`Article ajouté hors vente (prix à valider) : ${t.nom}.`);
+  }
+  if (ajoutes) await retirerTeeShirtUnique(payload);
+}
+
+/**
+ * Mise en vente des gammes (Commanditaire, 23 novembre 2026) : 10 000 F CFA chacune, une variante
+ * « Couleur — Taille » par couleur de la gamme et par taille de S à 4XL. Seulement sur une gamme
+ * encore « Prix à valider » et sans prix : une gamme modifiée dans l'admin n'est jamais touchée.
+ * À la première mise en vente, le polo et la casquette sont retirés de la boutique (même décision).
+ */
+const PRIX_TEE_SHIRTS_GAMMES = 10_000;
+
+export async function mettreEnVenteTeeShirtsGammes(payload: Payload): Promise<void> {
+  let misEnVente = 0;
+  for (const t of TEE_SHIRTS_GAMMES) {
+    const doc = (await payload.find({ collection: 'produits', where: { slug: { equals: t.slug } }, limit: 1, depth: 0 })).docs[0];
+    if (!doc || !doc.prixAValider || (doc.paliers?.length ?? 0) > 0) continue;
+    let ordre = 0;
+    for (const couleur of t.couleurs) {
+      for (const taille of TAILLES_TEE_SHIRTS) {
+        const sku = `tee-shirt-gamme-${t.n}-${couleur}-${taille}`.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-');
+        ordre++;
+        if ((await payload.count({ collection: 'variantes', where: { sku: { equals: sku } } })).totalDocs) continue;
+        await payload.create({ collection: 'variantes', data: { produit: doc.id, libelle: `${couleur} — ${taille}`, sku, ordre } });
+      }
+    }
+    await payload.update({ collection: 'produits', id: doc.id, data: { paliers: [{ prixXAF: PRIX_TEE_SHIRTS_GAMMES, du: '2026-11-23' }], prixAValider: false, actif: true } as never });
+    misEnVente++;
+    payload.logger.info(`Mis en vente : ${t.nom} (${PRIX_TEE_SHIRTS_GAMMES} F CFA, ${t.couleurs.length} couleurs × ${TAILLES_TEE_SHIRTS.length} tailles).`);
+  }
+  if (misEnVente) await retirerPoloEtCasquette(payload);
+}
+
+/** Polo et casquette : hors vente et hors mise en avant (conservés en base pour les commandes passées). */
+export async function retirerPoloEtCasquette(payload: Payload): Promise<void> {
+  for (const slug of ['polo-officiel', 'casquette-officielle']) {
+    const doc = (await payload.find({ collection: 'produits', where: { slug: { equals: slug } }, limit: 1, depth: 0 })).docs[0];
+    if (!doc || (!doc.actif && !doc.misEnAvant)) continue;
+    await payload.update({ collection: 'produits', id: doc.id, data: { actif: false, misEnAvant: false } });
+    payload.logger.info(`Retiré de la boutique : ${doc.nom}.`);
+  }
+}
+
+/** « Tee-shirt officiel » unique : hors vente et hors mise en avant ; ses tailles restent pour les kits. */
+export async function retirerTeeShirtUnique(payload: Payload): Promise<void> {
+  const ancien = (await payload.find({ collection: 'produits', where: { slug: { equals: 'tee-shirt-officiel' } }, limit: 1, depth: 0 })).docs[0];
+  if (!ancien || (!ancien.actif && !ancien.misEnAvant)) return;
+  await payload.update({ collection: 'produits', id: ancien.id, data: { actif: false, misEnAvant: false } });
+  payload.logger.info('« Tee-shirt officiel » retiré de la vente (remplacé par les gammes 1 à 4) ; il reste dans le kit des pass.');
+}
+
+/**
  * Points relais du réseau pour la livraison des articles (liste et frais donnés par le
  * Commanditaire le 6 novembre 2026). Créés une seule fois, sur une liste encore vide : ensuite,
  * ajouts, modifications et retraits se font dans l'admin (Boutique · Logistique). Adresse, horaires
