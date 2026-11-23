@@ -81,7 +81,10 @@ E2E_BOUTIQUE=1 npx playwright test tests/e2e/boutique-achat.spec.ts   # achats c
   sécurisée de l’agrégateur (aucun opérateur codé en dur) ; moyen et détail enregistrés sur la
   commande ; webhooks signés, idempotents ; argent reçu après expiration → commande « à vérifier ».
 - **Back-office** : rôles nominatifs (administrateur, éditeur, catalogue, COM Boutique,
-  comptabilité), journal des actions, tableau des ventes, exports CSV.
+  responsable des opérations, comptabilité), journal des actions, tableau des ventes, exports CSV.
+  Le responsable des opérations (23 novembre 2026) a les accès de la COM Boutique (caisse, scan,
+  retraits), lit les événements de paiement et peut modifier une commande (par exemple « Payée »
+  pour un paiement en espèces) ; seul l'administrateur gère les comptes et les réglages.
 
 ## Paiement SasPay (agrégateur retenu le 6 novembre 2026)
 

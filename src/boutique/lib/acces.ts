@@ -10,6 +10,10 @@ export const ROLES = [
   { label: 'Éditeur (contenu du site)', value: 'editeur' },
   { label: 'Gestionnaire de catalogue (boutique)', value: 'catalogue' },
   { label: 'COM Boutique (caisse, retraits et contrôle d’accès)', value: 'com_boutique' },
+  // Responsable des opérations (23 novembre 2026) : tout ce que fait la COM Boutique, plus la
+  // modification des commandes (par exemple « Payée » pour un paiement en espèces) et les
+  // événements de paiement.
+  { label: 'Responsable des opérations (commandes, caisse, retraits et contrôle d’accès)', value: 'operations' },
   { label: 'Comptabilité (boutique)', value: 'comptabilite' },
 ] as const;
 

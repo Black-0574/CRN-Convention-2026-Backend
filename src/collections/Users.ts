@@ -21,6 +21,7 @@ export const SERVICES = [
   { label: 'Communication', value: 'communication' },
   { label: 'Boutique', value: 'boutique' },
   { label: 'COM Boutique (accueil et contrôle)', value: 'com_boutique' },
+  { label: 'Opérations', value: 'operations' },
   { label: 'Comptabilité', value: 'comptabilite' },
   { label: 'Technique', value: 'technique' },
   { label: 'Autre', value: 'autre' },

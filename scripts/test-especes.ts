@@ -4,7 +4,8 @@
  * (réservation de 5 jours), encaissement par un caissier (montant exact, une seule fois, même
  * sous des validations simultanées), billets émis et message WhatsApp prêt, délai dépassé refusé.
  * Validation par l'administrateur (statut « Payée » dans Commandes) et rattrapage au démarrage
- * (17 novembre 2026) : mêmes billets, événement « Payé en espèces à la COM Boutique ».
+ * (17 novembre 2026) : mêmes billets, événement « Payé en espèces à la COM Boutique ». Rôle
+ * « Responsable des opérations » (23 novembre 2026) : peut faire de même, la COM Boutique non.
  * Données de test supprimées à la fin. Lancer avec `SMTP_HOST=` (vide) : aucun e-mail réel.
  *
  *   npm run test:especes
@@ -46,6 +47,7 @@ await payload.update({ collection: 'produits', id: produit.id, data: { actif: tr
 const caissier = await payload.create({ collection: 'users', data: { email: `caisse-${s}@exemple.org`, password: `Caisse-${s}-x!`, nom: 'Caisse', prenom: 'Test', role: 'com_boutique' } as never });
 const agent = { id: Number(caissier.id), nom: 'Test Caisse' };
 const admin = await payload.create({ collection: 'users', data: { email: `admin-especes-${s}@exemple.org`, password: `Admin-${s}-x!`, nom: 'Admin', prenom: 'Test', role: 'admin' } as never });
+const responsable = await payload.create({ collection: 'users', data: { email: `ops-especes-${s}@exemple.org`, password: `Ops-${s}-x!`, nom: 'Ops', prenom: 'Test', role: 'operations' } as never });
 const evenement = async (numero: string) =>
   (await payload.find({ collection: 'evenements-webhook', where: { referenceCommande: { equals: numero } }, limit: 10, depth: 0 })).docs;
 
@@ -167,6 +169,30 @@ try {
 }
 verifs.push(['admin : commande expirée non encaissable', refusAdmin && (await payload.count({ collection: 'titulaires', where: { commande: { equals: c3.id } } })).totalDocs === 0]);
 
+// 8 bis. Responsable des opérations : peut passer une commande à « Payée » ; la COM Boutique non.
+const c6 = await nouvelle();
+await choisirEspeces(payload, c6);
+let refusCaissier = false;
+try {
+  await payload.update({ collection: 'commandes', id: c6.id, data: { statut: 'payee' }, user: caissier, overrideAccess: false });
+} catch (e) {
+  refusCaissier = (e as { status?: number }).status === 403;
+}
+verifs.push(['COM Boutique : modification d’une commande refusée', refusCaissier && ((await payload.findByID({ collection: 'commandes', id: c6.id, depth: 0 })) as Commande).statut === 'en_attente']);
+await payload.update({ collection: 'commandes', id: c6.id, data: { statut: 'payee' }, user: responsable, overrideAccess: false });
+const c6apres = (await payload.findByID({ collection: 'commandes', id: c6.id, depth: 0 })) as Commande;
+const billets6 = await payload.count({ collection: 'titulaires', where: { commande: { equals: c6.id } } });
+verifs.push(['responsable des opérations : « Payée » émet les billets, à son nom', c6apres.statut === 'payee' && billets6.totalDocs === 2 && c6apres.paiement?.encaissePar === 'Test Ops']);
+const evtVus = await payload.find({ collection: 'evenements-webhook', where: { referenceCommande: { equals: c6.numero } }, user: responsable, overrideAccess: false, depth: 0 });
+verifs.push(['responsable des opérations : lit les événements de paiement', evtVus.docs.length === 1 && evtVus.docs[0]!.statut === STATUT_EVENEMENT_ESPECES]);
+let refusComptes = false;
+try {
+  await payload.create({ collection: 'users', data: { email: `x-${s}@exemple.org`, password: `X-${s}-x!`, nom: 'X', role: 'admin' } as never, user: responsable, overrideAccess: false });
+} catch (e) {
+  refusComptes = (e as { status?: number }).status === 403;
+}
+verifs.push(['responsable des opérations : création de compte refusée', refusComptes]);
+
 // 9. Rattrapage : commande en espèces passée « payée » à la main avant la correction, sans billet.
 const c5 = await nouvelle();
 await choisirEspeces(payload, c5);
@@ -191,7 +217,7 @@ await payload.delete({ collection: 'droits-acces', where: { titulaire: { in: bil
 await payload.delete({ collection: 'titulaires', where: { commande: { in: creees } } });
 await payload.delete({ collection: 'retraits', where: { commande: { in: creees } } });
 await payload.delete({ collection: 'reservations', where: { commande: { in: creees } } });
-await payload.delete({ collection: 'journal-actions', where: { utilisateur: { in: [agent.id, admin.id] } } });
+await payload.delete({ collection: 'journal-actions', where: { utilisateur: { in: [agent.id, admin.id, responsable.id] } } });
 await payload.delete({ collection: 'evenements-webhook', where: { referenceCommande: { in: tous.map((c) => c.numero) } } });
 await payload.delete({ collection: 'commandes', where: { id: { in: tous.map((c) => c.id) } } });
 for (const v of [variante, variantePass, varianteArticle]) await payload.delete({ collection: 'variantes', id: v.id });
@@ -199,4 +225,5 @@ for (const p of [pass, produit, article]) await payload.delete({ collection: 'pr
 await payload.delete({ collection: 'plateformes', id: seance.id });
 await payload.delete({ collection: 'users', id: caissier.id });
 await payload.delete({ collection: 'users', id: admin.id });
+await payload.delete({ collection: 'users', id: responsable.id });
 process.exit(verifs.every(([, ok]) => ok) ? 0 : 1);

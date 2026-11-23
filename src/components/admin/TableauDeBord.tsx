@@ -213,6 +213,24 @@ function Ecran({ role, d, ventesOuvertes }: { role: Role; d: DonneesTableau; ven
         </>
       );
 
+    case 'operations':
+      return (
+        <>
+          <div className="crn-tdb-indicateurs">
+            {indicateursVentes}
+            <Indicateur libelle="Commandes à vérifier" valeur={d.ventes.commandes.a_verifier ?? 0} />
+            <Indicateur libelle="Retraits à remettre" valeur={d.retraitsARemettre} />
+            <Indicateur libelle="Entrées acceptées aujourd’hui" valeur={d.aujourdHui.acceptes} detail={`${d.aujourdHui.refuses} refus aujourd’hui`} />
+          </div>
+          <div className="crn-tdb-grille">
+            <Carte titre="Dernières commandes" large lien={{ href: '/admin/collections/commandes', texte: 'Toutes les commandes' }}><TableauCommandes lignes={d.dernieresCommandes} /></Carte>
+            <Carte titre="Points d’attention"><PointsAttention d={d} /></Carte>
+            <Carte titre="Ventes des 14 derniers jours" large><Barres titre="Montant encaissé par jour" elements={serieVentes(d)} /></Carte>
+            <Carte titre="Présences par séance"><Presences d={d} /></Carte>
+          </div>
+        </>
+      );
+
     case 'comptabilite':
       return (
         <>
@@ -278,6 +296,11 @@ const ACTIONS: Record<Role, { href: string; texte: string }[]> = {
   com_boutique: [
     { href: '/scan', texte: 'Ouvrir le contrôle d’accès' },
     { href: '/admin/collections/retraits', texte: 'Retraits' },
+  ],
+  operations: [
+    { href: '/caisse', texte: 'Ouvrir la caisse' },
+    { href: '/admin/collections/commandes', texte: 'Commandes' },
+    { href: '/scan', texte: 'Ouvrir le contrôle d’accès' },
   ],
   comptabilite: [{ href: '/api/boutique/exports/ventes.csv', texte: 'Exporter les ventes' }],
 };

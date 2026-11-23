@@ -287,7 +287,7 @@ export const endpoints: Endpoint[] = [
     path: '/boutique/scan/plateformes',
     method: 'get',
     handler: async (req) => {
-      if (!autorise(req, 'com_boutique')) return erreur('Accès réservé à la COM Boutique.', 401);
+      if (!autorise(req, 'com_boutique', 'operations')) return erreur('Accès réservé à la COM Boutique et au responsable des opérations.', 401);
       const { docs } = await req.payload.find({ collection: 'plateformes', limit: 500, depth: 0, sort: 'debut', pagination: false });
       return json(docs.map((p) => ({ code: p.code, nom: p.nom, lieu: p.lieu ?? null, debut: p.debut ?? null })));
     },
@@ -296,7 +296,7 @@ export const endpoints: Endpoint[] = [
     path: '/boutique/scan',
     method: 'post',
     handler: async (req) => {
-      if (!autorise(req, 'com_boutique')) return erreur('Accès réservé à la COM Boutique.', 401);
+      if (!autorise(req, 'com_boutique', 'operations')) return erreur('Accès réservé à la COM Boutique et au responsable des opérations.', 401);
       const corps = await corpsJson<{ jeton?: string; plateforme?: string; poste?: string }>(req);
       if (!corps?.jeton || !corps.plateforme || !corps.poste) return erreur('Jeton, plateforme et poste requis.');
       try {
@@ -312,7 +312,7 @@ export const endpoints: Endpoint[] = [
     path: '/boutique/caisse/commandes',
     method: 'get',
     handler: async (req) => {
-      if (!autorise(req, 'com_boutique')) return erreur('Accès réservé à la COM Boutique.', 401);
+      if (!autorise(req, 'com_boutique', 'operations')) return erreur('Accès réservé à la COM Boutique et au responsable des opérations.', 401);
       return json({
         commandes: await chercherEnCaisse(req.payload, query(req, 'q') ?? ''),
         journee: await journeeDuCaissier(req.payload, Number(req.user!.id)),
@@ -324,7 +324,7 @@ export const endpoints: Endpoint[] = [
     path: '/boutique/caisse/commandes/:numero/billets',
     method: 'get',
     handler: async (req) => {
-      if (!autorise(req, 'com_boutique')) return erreur('Accès réservé à la COM Boutique.', 401);
+      if (!autorise(req, 'com_boutique', 'operations')) return erreur('Accès réservé à la COM Boutique et au responsable des opérations.', 401);
       const { docs } = await req.payload.find({ collection: 'commandes', where: { numero: { equals: param(req, 'numero') } }, limit: 1, depth: 0 });
       const c = docs[0];
       if (!c) return erreur('Commande introuvable.', 404);
@@ -336,7 +336,7 @@ export const endpoints: Endpoint[] = [
     path: '/boutique/caisse/commandes/:numero/encaisser',
     method: 'post',
     handler: async (req) => {
-      if (!autorise(req, 'com_boutique')) return erreur('Accès réservé à la COM Boutique.', 401);
+      if (!autorise(req, 'com_boutique', 'operations')) return erreur('Accès réservé à la COM Boutique et au responsable des opérations.', 401);
       const corps = await corpsJson<{ montantXAF?: number }>(req);
       try {
         const u = req.user as unknown as { id: number; prenom?: string | null; nom?: string | null; email: string };
@@ -354,7 +354,7 @@ export const endpoints: Endpoint[] = [
   {
     path: '/boutique/tableau',
     method: 'get',
-    handler: async (req) => (autorise(req, 'comptabilite', 'com_boutique', 'catalogue') ? json(await tableau(req.payload)) : erreur('Non autorisé.', 401)),
+    handler: async (req) => (autorise(req, 'comptabilite', 'com_boutique', 'operations', 'catalogue') ? json(await tableau(req.payload)) : erreur('Non autorisé.', 401)),
   },
   {
     path: '/boutique/exports/:type',

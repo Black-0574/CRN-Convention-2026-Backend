@@ -71,7 +71,7 @@ export const Quotas: CollectionConfig = {
     group: 'Boutique · Catalogue',
     description: 'Places limitées partagées entre plusieurs produits (ex. Dîner des Élites vendu seul et dans des pass). Aucune survente : chaque réservation est vérifiée de façon atomique.',
   },
-  access: { read: reserveA('catalogue', 'comptabilite', 'com_boutique'), ...ecritureCatalogue },
+  access: { read: reserveA('catalogue', 'comptabilite', 'com_boutique', 'operations'), ...ecritureCatalogue },
   fields: [
     { name: 'nom', type: 'text', required: true },
     {

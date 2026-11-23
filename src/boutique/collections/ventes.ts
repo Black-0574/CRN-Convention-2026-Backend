@@ -11,7 +11,7 @@ import { apresValidationManuelle, avantValidationManuelle } from '../lib/especes
 import { MODES_LIVRAISON } from '../lib/livraison';
 import { creeLe, dateHeure } from './dates';
 
-const lectureVentes = reserveA('comptabilite', 'com_boutique');
+const lectureVentes = reserveA('comptabilite', 'com_boutique', 'operations');
 const serveurSeulement = { create: personne, update: personne, delete: personne };
 
 /** Envoi des billets choisi par le client : e-mail, WhatsApp (envoyé d'un toucher), ou les deux. */
@@ -50,8 +50,9 @@ export const Commandes: CollectionConfig = {
     defaultColumns: ['numero', 'statut', 'totalXAF', 'email', 'createdAt'],
     group: 'Boutique · Ventes',
   },
-  access: { read: lectureVentes, ...serveurSeulement, update: reserveA() },
-  // Commande en espèces passée à « Payée » ici : billets émis et envoyés, comme à la caisse.
+  // Modification : administrateur et responsable des opérations (23 novembre 2026). Commande en
+  // espèces passée à « Payée » ici : billets émis et envoyés, comme à la caisse.
+  access: { read: lectureVentes, ...serveurSeulement, update: reserveA('operations') },
   hooks: { beforeChange: [avantValidationManuelle], afterChange: [apresValidationManuelle] },
   fields: [
     { name: 'numero', type: 'text', required: true, unique: true, index: true, admin: { readOnly: true } },
@@ -195,7 +196,7 @@ export const EvenementsWebhook: CollectionConfig = {
   slug: 'evenements-webhook',
   labels: { singular: 'Événement de paiement', plural: 'Événements de paiement' },
   admin: { useAsTitle: 'cle', defaultColumns: ['cle', 'statut', 'resultat', 'createdAt'], group: 'Boutique · Ventes' },
-  access: { read: reserveA('comptabilite'), ...serveurSeulement },
+  access: { read: reserveA('comptabilite', 'operations'), ...serveurSeulement },
   fields: [
     { name: 'cle', type: 'text', required: true, unique: true, admin: { description: 'prestataire:identifiant — garantit un traitement unique.' } },
     { name: 'referenceCommande', type: 'text', index: true },
@@ -243,7 +244,7 @@ export const DroitsAcces: CollectionConfig = {
   slug: 'droits-acces',
   labels: { singular: 'Droit d’accès', plural: 'Droits d’accès' },
   admin: { defaultColumns: ['titulaire', 'plateforme', 'statut', 'consommeA', 'poste'], group: 'Boutique · Contrôle d’accès' },
-  access: { read: reserveA('com_boutique'), ...serveurSeulement },
+  access: { read: reserveA('com_boutique', 'operations'), ...serveurSeulement },
   fields: [
     { name: 'titulaire', type: 'relationship', relationTo: 'titulaires', required: true, index: true },
     { name: 'plateforme', type: 'relationship', relationTo: 'plateformes', required: true, index: true },
@@ -268,7 +269,7 @@ export const Scans: CollectionConfig = {
   slug: 'scans',
   labels: { singular: 'Scan', plural: 'Journal des scans' },
   admin: { defaultColumns: ['createdAt', 'plateforme', 'resultat', 'titulaire', 'poste', 'agent'], group: 'Boutique · Contrôle d’accès' },
-  access: { read: reserveA('com_boutique'), ...serveurSeulement },
+  access: { read: reserveA('com_boutique', 'operations'), ...serveurSeulement },
   fields: [
     { name: 'plateforme', type: 'relationship', relationTo: 'plateformes', required: true },
     { name: 'titulaire', type: 'relationship', relationTo: 'titulaires' },
@@ -296,7 +297,7 @@ export const Retraits: CollectionConfig = {
   slug: 'retraits',
   labels: { singular: 'Article à remettre', plural: 'Livraisons et retraits' },
   admin: { defaultColumns: ['commande', 'libelle', 'quantite', 'mode', 'destination', 'statut'], group: 'Boutique · Logistique' },
-  access: { read: reserveA('com_boutique'), ...serveurSeulement, update: reserveA('com_boutique') },
+  access: { read: reserveA('com_boutique', 'operations'), ...serveurSeulement, update: reserveA('com_boutique', 'operations') },
   fields: [
     { name: 'commande', type: 'relationship', relationTo: 'commandes', required: true, index: true },
     { name: 'titulaire', type: 'relationship', relationTo: 'titulaires' },

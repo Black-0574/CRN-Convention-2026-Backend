@@ -16,7 +16,7 @@ export const PointsLivraison: CollectionConfig = {
     group: 'Boutique · Logistique',
     description: 'Églises du réseau où les clients peuvent se faire livrer leurs articles et kits, au Gabon ou hors du Gabon.',
   },
-  access: { read: tout, create: reserveA('catalogue', 'com_boutique'), update: reserveA('catalogue', 'com_boutique'), delete: reserveA() },
+  access: { read: tout, create: reserveA('catalogue', 'com_boutique', 'operations'), update: reserveA('catalogue', 'com_boutique', 'operations'), delete: reserveA() },
   fields: [
     { name: 'nom', type: 'text', required: true, admin: { description: 'Ex. « CRN — Église de … ».' } },
     {

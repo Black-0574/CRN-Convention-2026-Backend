@@ -55,7 +55,7 @@ const montant = (detail: string | null | undefined, cle: string) => {
 };
 
 export async function donneesTableau(payload: Payload, role: Role): Promise<DonneesTableau> {
-  const voitVentes = role === 'admin' || role === 'comptabilite' || role === 'catalogue' || role === 'com_boutique';
+  const voitVentes = role === 'admin' || role === 'comptabilite' || role === 'catalogue' || role === 'com_boutique' || role === 'operations';
   const ventes = voitVentes
     ? await tableau(payload)
     : { chiffreAffairesXAF: 0, commandes: {}, ventes: [], presences: [], anomalies: { commandesAVerifier: 0, scansRefuses: 0, stocksNonSuivis: 0, quotasAParametrer: 0 } };
@@ -89,7 +89,7 @@ export async function donneesTableau(payload: Payload, role: Role): Promise<Donn
   }));
 
   // Billets, entrées, scans du jour, retraits.
-  const voitControle = role === 'admin' || role === 'com_boutique';
+  const voitControle = role === 'admin' || role === 'com_boutique' || role === 'operations';
   const compter = (collection: 'titulaires' | 'scans' | 'retraits', where?: object) =>
     payload.count({ collection, ...(where ? { where: where as never } : {}) }).then((r) => r.totalDocs);
   const debutJour = new Date(`${auj}T00:00:00+01:00`).toISOString();
