@@ -80,7 +80,7 @@ const restant = (q: Quota) => (q.capacite === null || q.capacite === undefined ?
 
 export async function vueProduit(payload: Payload, p: Produit, maintenant = new Date()): Promise<VueProduit> {
   const variantes = (
-    await payload.find({ collection: 'variantes', where: { produit: { equals: p.id }, actif: { equals: true } }, sort: 'ordre', limit: 50, depth: 1 })
+    await payload.find({ collection: 'variantes', where: { produit: { equals: p.id }, actif: { equals: true } }, sort: 'ordre', limit: 200, depth: 1 })
   ).docs as Variante[];
   const paliers = paliersDe(p);
   const enVigueur = palierEnVigueur(paliers, maintenant);
@@ -88,7 +88,8 @@ export async function vueProduit(payload: Payload, p: Produit, maintenant = new 
   const kit = await Promise.all(
     (p.kit ?? []).map(async (k) => {
       const kp = estObjet<Produit>(k.produit) ? k.produit : await payload.findByID({ collection: 'produits', id: k.produit, depth: 0 });
-      const variantesKit = (await payload.find({ collection: 'variantes', where: { produit: { equals: kp.id }, actif: { equals: true } }, sort: 'ordre', depth: 0 })).docs;
+      // Sans limite : un tee-shirt au choix compte 112 variantes (10 par défaut chez Payload).
+      const variantesKit = (await payload.find({ collection: 'variantes', where: { produit: { equals: kp.id }, actif: { equals: true } }, sort: 'ordre', depth: 0, limit: 1000, pagination: false })).docs;
       return { nom: kp.nom, quantite: k.quantite, tailles: variantesKit.length > 1 ? variantesKit.map((v) => v.libelle) : [] };
     }),
   );

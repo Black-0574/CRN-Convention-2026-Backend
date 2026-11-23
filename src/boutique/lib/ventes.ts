@@ -99,7 +99,7 @@ interface LignePreparee {
 /** Variante d'un article de kit : la taille choisie si l'article en a plusieurs. */
 async function varianteDeKit(payload: Payload, produitKit: Produit, taille: string | undefined, qui: string): Promise<Variante> {
   const variantes = (
-    await payload.find({ collection: 'variantes', where: { produit: { equals: produitKit.id }, actif: { equals: true } }, sort: 'ordre', depth: 0 })
+    await payload.find({ collection: 'variantes', where: { produit: { equals: produitKit.id }, actif: { equals: true } }, sort: 'ordre', depth: 0, limit: 1000, pagination: false })
   ).docs as Variante[];
   if (variantes.length === 0) throw new ErreurVente(`${produitKit.nom} (kit) : indisponible.`, 409);
   if (variantes.length === 1) return variantes[0]!;

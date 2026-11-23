@@ -49,7 +49,7 @@ import { journaliser } from './src/boutique/lib/journal';
 import { demarrerTachesPlanifiees } from './src/boutique/lib/taches';
 import { installerProduitsTest } from './src/boutique/produits-test';
 import { urlBackOffice } from './src/boutique/lib/urls';
-import { ajouterTeeShirtsGammes, appliquerHorairesDu12Decembre, mettreEnVenteTeeShirtsGammes, appliquerPrixArticlesAnnonces, installerPointsRelais, seedBoutique } from './src/boutique/seed';
+import { ajouterTeeShirtsGammes, appliquerHorairesDu12Decembre, kitTeeShirtAuChoix, mettreEnVenteTeeShirtsGammes, appliquerPrixArticlesAnnonces, installerPointsRelais, seedBoutique } from './src/boutique/seed';
 
 if (process.env.BOUTIQUE_DEMO === '1' && process.env.NODE_ENV === 'production') {
   throw new Error('BOUTIQUE_DEMO=1 est réservé au développement local : refusé en production.');
@@ -163,6 +163,8 @@ export default buildConfig({
       await ajouterTeeShirtsGammes(payload);
       // Gammes à 10 000 F CFA, couleurs × tailles S à 4XL ; polo et casquette retirés (même jour).
       await mettreEnVenteTeeShirtsGammes(payload);
+      // Kit des pass : tee-shirt au choix parmi les gammes ; gammes mises en avant (même jour).
+      await kitTeeShirtAuChoix(payload);
     } catch (err) {
       payload.logger.error(`Import initial du catalogue de la boutique échoué : ${(err as Error).message}`);
     }

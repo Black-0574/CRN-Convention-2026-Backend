@@ -299,6 +299,72 @@ export async function mettreEnVenteTeeShirtsGammes(payload: Payload): Promise<vo
   if (misEnVente) await retirerPoloEtCasquette(payload);
 }
 
+/**
+ * Kit des pass Intégral, Or et Diamant (Commanditaire, 23 novembre 2026) : l'ancien tee-shirt
+ * (tailles S à XXL) est remplacé par un tee-shirt au choix parmi les gammes 1 à 4. Article de kit
+ * seul (jamais vendu à part) dont chaque variante est « Gamme N — Couleur — Taille » : chaque
+ * titulaire choisit la gamme, la couleur et la taille à la commande. Remplacement fait une fois
+ * (kit qui contient encore l'ancien tee-shirt) ; descriptions des pass ajustées au passage.
+ * Les 4 gammes passent aussi « mises en avant » (accueil du site), une fois.
+ */
+const PASS_AVEC_TEE_SHIRT = ['pass-convention-integral', 'pass-or', 'pass-diamant'];
+const TEXTES_KIT: [string, string][] = [
+  ['Tee-shirt officiel 2026 inclus (taille au choix, à retirer)', 'Tee-shirt officiel 2026 inclus, au choix parmi les gammes 1 à 4 (gamme, couleur et taille au choix, à retirer)'],
+  ['tee-shirt 2026,', 'tee-shirt 2026 au choix (gammes 1 à 4),'],
+];
+
+export async function kitTeeShirtAuChoix(payload: Payload): Promise<void> {
+  const ancien = (await payload.find({ collection: 'produits', where: { slug: { equals: 'tee-shirt-officiel' } }, limit: 1, depth: 0 })).docs[0];
+  if (!ancien) return;
+  const categorie = (await payload.find({ collection: 'categories', where: { slug: { equals: 'articles' } }, limit: 1 })).docs[0];
+  let auChoix = (await payload.find({ collection: 'produits', where: { slug: { equals: 'tee-shirt-officiel-au-choix' } }, limit: 1, depth: 0 })).docs[0];
+  if (!auChoix) {
+    auChoix = await payload.create({
+      collection: 'produits',
+      data: {
+        nom: 'Tee-shirt officiel au choix',
+        slug: 'tee-shirt-officiel-au-choix',
+        type: 'physique',
+        categorie: categorie?.id,
+        resume: 'Tee-shirt officiel inclus dans le kit des pass, au choix parmi les gammes 1 à 4.',
+        actif: false,
+        prixAValider: true,
+        ordre: 90,
+      } as never,
+    });
+    let ordre = 0;
+    for (const t of TEE_SHIRTS_GAMMES) {
+      for (const couleur of t.couleurs) {
+        for (const taille of TAILLES_TEE_SHIRTS) {
+          ordre++;
+          const sku = `kit-tee-shirt-gamme-${t.n}-${couleur}-${taille}`.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          await payload.create({ collection: 'variantes', data: { produit: auChoix.id, libelle: `Gamme ${t.n} — ${couleur} — ${taille}`, sku, ordre } });
+        }
+      }
+    }
+    payload.logger.info(`Article de kit créé : Tee-shirt officiel au choix (${ordre} variantes).`);
+  }
+  for (const slug of PASS_AVEC_TEE_SHIRT) {
+    const pass = (await payload.find({ collection: 'produits', where: { slug: { equals: slug } }, limit: 1, depth: 0 })).docs[0];
+    const kit = pass?.kit ?? [];
+    const idDe = (p: unknown) => (typeof p === 'object' && p ? (p as { id: number }).id : Number(p));
+    if (!pass || !kit.some((k) => idDe(k.produit) === ancien.id)) continue;
+    let description = pass.description ?? '';
+    for (const [avant, apres] of TEXTES_KIT) description = description.replace(avant, apres);
+    await payload.update({
+      collection: 'produits',
+      id: pass.id,
+      data: { kit: kit.map((k) => ({ produit: idDe(k.produit) === ancien.id ? auChoix.id : idDe(k.produit), quantite: k.quantite })), description } as never,
+    });
+    payload.logger.info(`${pass.nom} : tee-shirt du kit au choix parmi les gammes 1 à 4.`);
+  }
+  for (const t of TEE_SHIRTS_GAMMES) {
+    const doc = (await payload.find({ collection: 'produits', where: { slug: { equals: t.slug } }, limit: 1, depth: 0 })).docs[0];
+    if (!doc || doc.misEnAvant || doc.ordreMiseEnAvant === 6) continue;
+    await payload.update({ collection: 'produits', id: doc.id, data: { misEnAvant: true, ordreMiseEnAvant: 6 } });
+  }
+}
+
 /** Polo et casquette : hors vente et hors mise en avant (conservés en base pour les commandes passées). */
 export async function retirerPoloEtCasquette(payload: Payload): Promise<void> {
   for (const slug of ['polo-officiel', 'casquette-officielle']) {

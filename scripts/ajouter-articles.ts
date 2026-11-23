@@ -9,10 +9,11 @@
 import { getPayload } from 'payload';
 
 import config from '../payload.config';
-import { ajouterArticlesAnnonces, ajouterTeeShirtsGammes, mettreEnVenteTeeShirtsGammes } from '../src/boutique/seed';
+import { ajouterArticlesAnnonces, ajouterTeeShirtsGammes, kitTeeShirtAuChoix, mettreEnVenteTeeShirtsGammes } from '../src/boutique/seed';
 
 const payload = await getPayload({ config });
 await ajouterArticlesAnnonces(payload);
 await ajouterTeeShirtsGammes(payload);
 await mettreEnVenteTeeShirtsGammes(payload);
+await kitTeeShirtAuChoix(payload);
 process.exit(0);
