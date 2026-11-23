@@ -230,3 +230,27 @@ export async function organiserOrateurs(payload: Payload): Promise<void> {
     payload.logger.info(`Orateur organisé : ${doc.nom} (${Object.keys(data).join(', ')}).`);
   }
 }
+
+/**
+ * Photos des artistes (fournies par le Commanditaire le 23 novembre 2026), pour une base déjà
+ * importée : un artiste encore sans photo reçoit celle de content.json, téléchargée depuis le site
+ * public ; retentée à chaque démarrage tant que le site qui la sert n'est pas en ligne. Une photo
+ * déjà en place (choisie dans l'admin) n'est jamais remplacée. Artiste retrouvé par son identifiant
+ * d'adresse, ou par son nom sans accents (identifiant encore vide sur les fiches importées).
+ */
+const identifiant = (nom: string) =>
+  nom.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+export async function completerPhotosArtistes(payload: Payload): Promise<void> {
+  const c = content as unknown as SeedContent;
+  const artistes = (await payload.find({ collection: 'artists', limit: 200, depth: 0, pagination: false })).docs;
+  for (const a of c.artists) {
+    if (!a.data.photo) continue;
+    const doc = artistes.find((d) => d.slug === a.id || identifiant(d.nom) === a.id);
+    if (!doc || doc.photo) continue;
+    const photo = await uploadPhoto(payload, a.data.photo, a.data.nom);
+    if (!photo) continue;
+    await payload.update({ collection: 'artists', id: doc.id, data: { photo } });
+    payload.logger.info(`Photo ajoutée : ${doc.nom}.`);
+  }
+}

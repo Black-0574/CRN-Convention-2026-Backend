@@ -32,7 +32,8 @@
     {
       "id": "annick-nzie",
       "data": {
-        "nom": "Annick Nzie"
+        "nom": "Annick Nzie",
+        "photo": "/images/artistes/annick-nzie.webp"
       }
     },
     {
@@ -44,43 +45,50 @@
     {
       "id": "bienvenu-moussounda",
       "data": {
-        "nom": "Bienvenu Moussounda"
+        "nom": "Bienvenu Moussounda",
+        "photo": "/images/artistes/bienvenu-moussounda.webp"
       }
     },
     {
       "id": "charlene-nzamba",
       "data": {
-        "nom": "Charlène Nzamba"
+        "nom": "Charlène Nzamba",
+        "photo": "/images/artistes/charlene-nzamba.webp"
       }
     },
     {
       "id": "diane-omega",
       "data": {
-        "nom": "Diane Omega"
+        "nom": "Diane Omega",
+        "photo": "/images/artistes/diane-omega.webp"
       }
     },
     {
       "id": "grace-jocktane",
       "data": {
-        "nom": "Grâce Jocktane"
+        "nom": "Grâce Jocktane",
+        "photo": "/images/artistes/grace-jocktane.webp"
       }
     },
     {
       "id": "lisa-kate",
       "data": {
-        "nom": "Lisa Kate"
+        "nom": "Lisa Kate",
+        "photo": "/images/artistes/lisa-kate.webp"
       }
     },
     {
       "id": "orphelia-njoya",
       "data": {
-        "nom": "Orphelia Njoya"
+        "nom": "Orphelia Njoya",
+        "photo": "/images/artistes/orphelia-njoya.webp"
       }
     },
     {
       "id": "priscille-ngouwa",
       "data": {
-        "nom": "Priscille Ngouwa"
+        "nom": "Priscille Ngouwa",
+        "photo": "/images/artistes/priscille-ngouwa.webp"
       }
     },
     {

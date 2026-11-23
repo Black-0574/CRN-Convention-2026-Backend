@@ -27,7 +27,7 @@ import { appliquerCorrectionsDu23Novembre } from './src/seed/programme-23-novemb
 import { appliquerNomFemme2Fois } from './src/seed/nom-femme-2-fois';
 import { rattraperBilletsManquants } from './src/boutique/lib/emission';
 import { rattraperEncaissementsManuels } from './src/boutique/lib/especes';
-import { completerProfilsOrateurs, organiserOrateurs, seedFromContent } from './src/seed/seed-from-content';
+import { completerPhotosArtistes, completerProfilsOrateurs, organiserOrateurs, seedFromContent } from './src/seed/seed-from-content';
 // CRN Boutique, intégrée au back-office : catalogue, ventes, billets, contrôle d'accès (le site
 // l'affiche sous /boutique). Plan : C:UsersMael.claudeplansjaunty-cuddling-kahn.md.
 import { Categories, Plateformes, Produits, Quotas, Variantes } from './src/boutique/collections/catalogue';
@@ -148,6 +148,8 @@ export default buildConfig({
       await seedFromContent(payload);
       await completerProfilsOrateurs(payload);
       await organiserOrateurs(payload);
+      // Photos des artistes (23 novembre 2026), sur les fiches encore sans photo.
+      await completerPhotosArtistes(payload);
     } catch (err) {
       payload.logger.error(`Import initial du contenu échoué : ${(err as Error).message}`);
     }
