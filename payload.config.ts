@@ -23,6 +23,7 @@ import { allowedOrigins } from './src/lib/allowed-origins';
 import { rebuildAfterChange, rebuildAfterDelete, rebuildAfterGlobalChange } from './src/lib/site-rebuild';
 import { publierAppelCandidatures } from './src/seed/appel-candidatures';
 import { appliquerLieuDu13Decembre } from './src/seed/lieu-13-decembre';
+import { appliquerCorrectionsDu23Novembre } from './src/seed/programme-23-novembre';
 import { appliquerNomFemme2Fois } from './src/seed/nom-femme-2-fois';
 import { rattraperBilletsManquants } from './src/boutique/lib/emission';
 import { rattraperEncaissementsManuels } from './src/boutique/lib/especes';
@@ -159,7 +160,7 @@ export default buildConfig({
       await appliquerHorairesDu12Decembre(payload);
       // Produits à 200 F CFA pour les tests des équipes (6 novembre 2026), créés une seule fois.
       await installerProduitsTest(payload);
-      // Tee-shirts officiels, gammes 1 à 4 (23 novembre 2026) : hors vente, prix et variantes à venir.
+      // Tee-shirts officiels, gammes 1 à 4 (23 novembre 2026) : créés hors vente, puis mis en vente ci-dessous.
       await ajouterTeeShirtsGammes(payload);
       // Gammes à 10 000 F CFA, couleurs × tailles S à 4XL ; polo et casquette retirés (même jour).
       await mettreEnVenteTeeShirtsGammes(payload);
@@ -197,6 +198,12 @@ export default buildConfig({
       await appliquerNomFemme2Fois(payload);
     } catch (err) {
       payload.logger.error(`Nom « Femme 2 Fois » non appliqué : ${(err as Error).message}`);
+    }
+    try {
+      // Matin de gloire 6h–8h, ordination sans responsables, Jek Kalombo orateur national (23 nov. 2026).
+      await appliquerCorrectionsDu23Novembre(payload);
+    } catch (err) {
+      payload.logger.error(`Corrections du 23 novembre non appliquées : ${(err as Error).message}`);
     }
     demarrerTachesPlanifiees(payload);
   },
