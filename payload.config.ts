@@ -51,6 +51,7 @@ import { demarrerTachesPlanifiees } from './src/boutique/lib/taches';
 import { installerProduitsTest } from './src/boutique/produits-test';
 import { urlBackOffice } from './src/boutique/lib/urls';
 import { ajouterTeeShirtsGammes, appliquerHorairesDu12Decembre, kitTeeShirtAuChoix, mettreEnVenteTeeShirtsGammes, appliquerPrixArticlesAnnonces, installerPointsRelais, seedBoutique } from './src/boutique/seed';
+import { purgerVentesDeTest } from './src/boutique/purge-ventes';
 
 if (process.env.BOUTIQUE_DEMO === '1' && process.env.NODE_ENV === 'production') {
   throw new Error('BOUTIQUE_DEMO=1 est réservé au développement local : refusé en production.');
@@ -170,6 +171,15 @@ export default buildConfig({
       await kitTeeShirtAuChoix(payload);
     } catch (err) {
       payload.logger.error(`Import initial du catalogue de la boutique échoué : ${(err as Error).message}`);
+    }
+    // Mise en production de la boutique (24 novembre 2026) : ventes de test purgées une seule fois,
+    // après sauvegarde de la base ; jamais en développement.
+    if (process.env.NODE_ENV === 'production') {
+      try {
+        await purgerVentesDeTest(payload);
+      } catch (err) {
+        payload.logger.error(`Purge des ventes de test interrompue : ${(err as Error).message}`);
+      }
     }
     try {
       // Changement de lieu du 13 décembre (11 novembre 2026) : « Lieu à déterminer » et communiqué.
