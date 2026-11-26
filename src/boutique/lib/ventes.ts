@@ -108,7 +108,12 @@ async function varianteDeKit(payload: Payload, produitKit: Produit, taille: stri
   return choisie;
 }
 
-export async function creerCommande(payload: Payload, entree: EntreeCommande, maintenant = new Date()) {
+/**
+ * `prixPrevente` (préventes enregistrées par l'équipe, 26 novembre 2026) : prix payé avant
+ * l'ouverture, qui doit être l'un des paliers du produit ; il remplace le palier en vigueur et la
+ * commande est acceptée même ventes fermées.
+ */
+export async function creerCommande(payload: Payload, entree: EntreeCommande, maintenant = new Date(), { prixPrevente }: { prixPrevente?: number } = {}) {
   const reglages = await payload.findGlobal({ slug: 'reglages-boutique' });
   // Ventes fermées : seuls les produits réservés aux tests restent achetables (tests des équipes).
   const fermees = new ErreurVente('Les ventes sont momentanément fermées.', 503);
@@ -130,9 +135,9 @@ export async function creerCommande(payload: Payload, entree: EntreeCommande, ma
     const variante = (await payload.findByID({ collection: 'variantes', id: l.varianteId, depth: 2 }).catch(() => null)) as Variante | null;
     const produit = variante && typeof variante.produit === 'object' ? (variante.produit as Produit) : null;
     if (!variante || !produit || !variante.actif || !estVisible(produit)) throw new ErreurVente('Un article de votre panier n’est plus disponible.', 409);
-    if (!reglages.ventesOuvertes && !produit.reserveTests) throw fermees;
-    const palier = palierEnVigueur(paliersDe(produit), maintenant);
-    if (!palier) throw new ErreurVente(`${produit.nom} : pas en vente à cette date.`, 409);
+    if (prixPrevente === undefined && !reglages.ventesOuvertes && !produit.reserveTests) throw fermees;
+    const palier = prixPrevente === undefined ? palierEnVigueur(paliersDe(produit), maintenant) : (paliersDe(produit).find((p) => p.prixXAF === prixPrevente) ?? null);
+    if (!palier) throw new ErreurVente(prixPrevente === undefined ? `${produit.nom} : pas en vente à cette date.` : `${produit.nom} : ce prix ne fait pas partie de ses tarifs.`, 409);
 
     preparees.push({
       produit,

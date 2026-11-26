@@ -14,6 +14,7 @@ import { catalogue, DEMO, estVisible, vueProduit } from './lib/catalogue';
 import { optionsLivraison, texteLivraison } from './lib/livraison';
 import { chercherEnCaisse, choisirEspeces, encaisserEspeces, envoiBillets, estEnEspeces, journeeDuCaissier, reglagesEspeces } from './lib/especes';
 import { courrielsDe, lireCourriel } from './lib/messagerie';
+import { enregistrerPrevente, optionsPreventes, type SaisiePrevente } from './lib/preventes';
 import { bacASableActif, depot, prestataire } from './lib/paiement';
 import { scanner } from './lib/scan';
 import { csv, tableau } from './lib/tableau';
@@ -346,6 +347,34 @@ export const endpoints: Endpoint[] = [
         if (e instanceof ErreurVente) return erreur(e.message, e.code);
         req.payload.logger.error(e);
         return erreur('Erreur inattendue : l’encaissement n’est pas enregistré, réessayez.', 500);
+      }
+    },
+  },
+
+  // ——— Préventes : pass et tickets payés avant l'ouverture (26 novembre 2026) ———
+  {
+    path: '/boutique/preventes/options',
+    method: 'get',
+    handler: async (req) => {
+      if (!autorise(req, 'com_boutique')) return erreur('Accès réservé à l’administrateur et à la COM Boutique.', 401);
+      return json(await optionsPreventes(req.payload));
+    },
+  },
+  {
+    path: '/boutique/preventes',
+    method: 'post',
+    handler: async (req) => {
+      if (!autorise(req, 'com_boutique')) return erreur('Accès réservé à l’administrateur et à la COM Boutique.', 401);
+      const corps = await corpsJson<SaisiePrevente>(req);
+      if (!corps) return erreur('Saisie invalide.');
+      try {
+        const u = req.user as unknown as { id: number; prenom?: string | null; nom?: string | null; email: string };
+        const nom = [u.prenom, u.nom].filter(Boolean).join(' ') || u.email;
+        return json(await enregistrerPrevente(req.payload, corps, { id: Number(u.id), nom }), 201);
+      } catch (e) {
+        if (e instanceof ErreurVente) return erreur(e.message, e.code);
+        req.payload.logger.error(e);
+        return erreur('Erreur inattendue : la prévente n’est pas enregistrée, réessayez.', 500);
       }
     },
   },

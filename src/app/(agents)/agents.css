@@ -502,3 +502,19 @@ a.bouton {
   font-weight: 700;
   color: var(--bleu-nuit);
 }
+
+/* Préventes : liste collée depuis un tableur (26 novembre 2026). */
+.preventes__import {
+  min-height: 160px;
+  border: 1.5px solid var(--gris-clair);
+  border-radius: 8px;
+  padding: 12px;
+  font: inherit;
+  font-weight: 400;
+  resize: vertical;
+}
+
+.preventes__import:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
