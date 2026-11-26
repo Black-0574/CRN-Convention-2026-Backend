@@ -285,6 +285,7 @@ const ACTIONS: Record<Role, { href: string; texte: string }[]> = {
     { href: '/admin/collections/users/create', texte: 'Nouveau compte' },
     { href: '/admin/globals/reglages-boutique', texte: 'Réglages de la boutique' },
     { href: '/preventes', texte: 'Enregistrer des préventes' },
+    { href: '/procedures/procedure-preventes-envoi-billets.docx', texte: 'Procédure préventes (Word)' },
   ],
   editeur: [
     { href: '/admin/collections/announcements/create', texte: 'Nouvelle annonce' },
@@ -298,6 +299,7 @@ const ACTIONS: Record<Role, { href: string; texte: string }[]> = {
     { href: '/scan', texte: 'Ouvrir le contrôle d’accès' },
     { href: '/admin/collections/retraits', texte: 'Retraits' },
     { href: '/preventes', texte: 'Enregistrer des préventes' },
+    { href: '/procedures/procedure-preventes-envoi-billets.docx', texte: 'Procédure préventes (Word)' },
   ],
   operations: [
     { href: '/caisse', texte: 'Ouvrir la caisse' },

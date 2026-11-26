@@ -246,7 +246,10 @@ export function Preventes() {
         {etat === 'pret' && !resultat && (
           <>
             <p className="caisse__journee">
-              Aucun paiement n’est demandé : la commande est créée au prix payé lors de la prévente, puis les billets sont émis et envoyés. Chaque enregistrement est inscrit à votre nom.
+              Aucun paiement n’est demandé : la commande est créée au prix payé lors de la prévente, puis les billets sont émis et envoyés. Chaque enregistrement est inscrit à votre nom.{' '}
+              <a href="/procedures/procedure-preventes-envoi-billets.docx" download>
+                Télécharger la procédure (Word)
+              </a>
             </p>
 
             <div className="carte-scan">
