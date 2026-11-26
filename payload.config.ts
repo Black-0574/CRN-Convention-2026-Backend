@@ -50,7 +50,7 @@ import { journaliser } from './src/boutique/lib/journal';
 import { demarrerTachesPlanifiees } from './src/boutique/lib/taches';
 import { installerProduitsTest } from './src/boutique/produits-test';
 import { urlBackOffice } from './src/boutique/lib/urls';
-import { ajouterTeeShirtsGammes, appliquerHorairesDu12Decembre, kitTeeShirtAuChoix, mettreEnVenteTeeShirtsGammes, appliquerPrixArticlesAnnonces, installerPointsRelais, seedBoutique } from './src/boutique/seed';
+import { ajouterTeeShirtsGammes, appliquerHorairesDu12Decembre, kitTeeShirtAuChoix, mettreEnVenteTeeShirtsGammes, retirerTailleSTeeShirts, appliquerPrixArticlesAnnonces, installerPointsRelais, seedBoutique } from './src/boutique/seed';
 import { purgerVentesDeTest } from './src/boutique/purge-ventes';
 
 if (process.env.BOUTIQUE_DEMO === '1' && process.env.NODE_ENV === 'production') {
@@ -169,6 +169,8 @@ export default buildConfig({
       await mettreEnVenteTeeShirtsGammes(payload);
       // Kit des pass : tee-shirt au choix parmi les gammes ; gammes mises en avant (même jour).
       await kitTeeShirtAuChoix(payload);
+      // Taille S retirée des tee-shirts (26 novembre 2026), une fois.
+      await retirerTailleSTeeShirts(payload);
     } catch (err) {
       payload.logger.error(`Import initial du catalogue de la boutique échoué : ${(err as Error).message}`);
     }

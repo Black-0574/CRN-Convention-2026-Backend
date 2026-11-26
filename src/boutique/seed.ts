@@ -244,7 +244,8 @@ const COULEURS_GAMMES: Record<number, string[]> = {
   3: ['Bleu nuit', 'Noir', 'Bordeaux', 'Blanc'],
   4: ['Blanc', 'Bleu nuit', 'Bordeaux', 'Rose fuchsia', 'Noir', 'Vert bouteille'],
 };
-const TAILLES_TEE_SHIRTS = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
+// Taille S retirée le 26 novembre 2026 (voir retirerTailleSTeeShirts).
+const TAILLES_TEE_SHIRTS = ['M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const TEE_SHIRTS_GAMMES = [1, 2, 3, 4].map((n) => ({
   n,
   nom: `Tee-shirt officiel — Gamme ${n}`,
@@ -272,7 +273,7 @@ export async function ajouterTeeShirtsGammes(payload: Payload): Promise<void> {
 
 /**
  * Mise en vente des gammes (Commanditaire, 23 novembre 2026) : 10 000 F CFA chacune, une variante
- * « Couleur — Taille » par couleur de la gamme et par taille de S à 4XL. Seulement sur une gamme
+ * « Couleur — Taille » par couleur de la gamme et par taille de M à 4XL (S retirée le 26 novembre 2026). Seulement sur une gamme
  * encore « Prix à valider » et sans prix : une gamme modifiée dans l'admin n'est jamais touchée.
  * À la première mise en vente, le polo et la casquette sont retirés de la boutique (même décision).
  */
@@ -466,4 +467,27 @@ export async function appliquerHorairesDu12Decembre(payload: Payload): Promise<v
     }
   }
   if (n) payload.logger.info(`Horaires du 12 décembre mis à jour (${n} fiche(s)) : Femme 2 Fois — Live 9h–12h, J’ai soif 14h–17h30.`);
+}
+
+/**
+ * Taille S retirée des tee-shirts (Commanditaire, 26 novembre 2026) : variantes « S » des tee-shirts
+ * officiels (gammes 1 à 4 et tee-shirt au choix du kit des pass) désactivées, jamais supprimées
+ * (commandes passées intactes). Une seule fois, inscrite au journal des actions : une taille S
+ * réactivée ensuite dans l'admin le reste.
+ */
+const RETRAIT_TAILLE_S = 'retrait de la taille S des tee-shirts';
+
+export async function retirerTailleSTeeShirts(payload: Payload): Promise<void> {
+  if ((await payload.count({ collection: 'journal-actions', where: { action: { equals: RETRAIT_TAILLE_S } } })).totalDocs) return;
+  const produits = (await payload.find({ collection: 'produits', where: { slug: { like: 'tee-shirt-officiel' } }, limit: 50, depth: 0, pagination: false })).docs;
+  let n = 0;
+  for (const p of produits.filter((x) => x.slug?.startsWith('tee-shirt-officiel'))) {
+    const variantes = (await payload.find({ collection: 'variantes', where: { produit: { equals: p.id }, actif: { equals: true } }, limit: 1000, depth: 0, pagination: false })).docs;
+    for (const v of variantes.filter((x) => x.libelle === 'S' || x.libelle.endsWith(' — S'))) {
+      await payload.update({ collection: 'variantes', id: v.id, data: { actif: false } });
+      n++;
+    }
+  }
+  await payload.create({ collection: 'journal-actions', data: { action: RETRAIT_TAILLE_S, collection: 'variantes', details: { desactivees: n } } });
+  if (n) payload.logger.info(`Taille S retirée des tee-shirts : ${n} variante(s) désactivée(s).`);
 }
