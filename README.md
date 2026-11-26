@@ -86,6 +86,8 @@ couvrirait pas ces routes. Adresse retenue : **`admin.crn-convention2026.events`
 - **Variables d'environnement** (hPanel → site → *Variables d'environnement*) :
   - `DATABASE_URI=file:/home/u227552786/domains/admin.crn-convention2026.events/crn-convention.db`
   - `MEDIA_DIR=/home/u227552786/domains/admin.crn-convention2026.events/media`
+  - `BILLETS_DIR` (facultatif) : dossier des billets PDF ; par défaut `billets` à côté de `MEDIA_DIR`
+    (`…/domains/admin.crn-convention2026.events/billets`), qui survit aux déploiements.
   - `PAYLOAD_SECRET` (saisi par le Commanditaire, jamais commité)
   - `SITE_URL=https://www.crn-convention2026.events`
   - `ANTHROPIC_API_KEY` (optionnelle, à ajouter quand NASTY doit répondre)

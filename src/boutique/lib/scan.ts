@@ -40,7 +40,14 @@ export async function scanner(
     await journaliser('refuse_invalide');
     return { resultat: 'refuse_invalide', message: 'Billet invalide ou falsifié.' };
   }
-  const { docs } = await payload.find({ collection: 'titulaires', where: { empreinteJeton: { equals: empreinteJeton(jeton) } }, limit: 1, depth: 1 });
+  // QR code actuel, ou celui d'un billet dont le PDF a été régénéré depuis (empreintes précédentes).
+  const empreinte = empreinteJeton(jeton);
+  const { docs } = await payload.find({
+    collection: 'titulaires',
+    where: { or: [{ empreinteJeton: { equals: empreinte } }, { empreintesPrecedentes: { like: empreinte } }] },
+    limit: 1,
+    depth: 1,
+  });
   const t = docs[0];
   if (!t) {
     await journaliser('refuse_invalide');

@@ -10,6 +10,7 @@ import type { Endpoint, PayloadRequest } from 'payload';
 
 import { roleDe, type Role } from './lib/acces';
 import { lienBillet, lienValide, lireBillet } from './lib/billets';
+import { regenererBillet } from './lib/emission';
 import { catalogue, DEMO, estVisible, vueProduit } from './lib/catalogue';
 import { optionsLivraison, texteLivraison } from './lib/livraison';
 import { chercherEnCaisse, choisirEspeces, encaisserEspeces, envoiBillets, estEnEspeces, journeeDuCaissier, reglagesEspeces } from './lib/especes';
@@ -276,7 +277,11 @@ export const endpoints: Endpoint[] = [
       const { docs } = await req.payload.find({ collection: 'titulaires', where: { numeroBillet: { equals: numero } }, limit: 1, depth: 0 });
       const t = docs[0];
       if (!t?.fichierBillet) return erreur('Billet introuvable.', 404);
-      const pdf = await lireBillet(t.fichierBillet);
+      // PDF perdu (déploiement) : régénéré, l'ancien QR code reste accepté.
+      const pdf = await lireBillet(t.fichierBillet).catch((e: NodeJS.ErrnoException) => {
+        if (e.code === 'ENOENT') return regenererBillet(req.payload, t.id);
+        throw e;
+      });
       return new Response(new Uint8Array(pdf), {
         headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="billet-${numero}.pdf"`, 'Cache-Control': 'private, no-store' },
       });

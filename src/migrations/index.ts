@@ -8,6 +8,7 @@ import * as migration_20261106_120512_produits_reserve_tests from './20261106_12
 import * as migration_20261107_075155_profils_utilisateurs from './20261107_075155_profils_utilisateurs';
 import * as migration_20261111_125443_actualites_article_visuel from './20261111_125443_actualites_article_visuel';
 import * as migration_20261116_140909_caisse_especes from './20261116_140909_caisse_especes';
+import * as migration_20261126_195023_billets_empreintes_precedentes from './20261126_195023_billets_empreintes_precedentes';
 
 export const migrations = [
   {
@@ -58,6 +59,11 @@ export const migrations = [
   {
     up: migration_20261116_140909_caisse_especes.up,
     down: migration_20261116_140909_caisse_especes.down,
-    name: '20261116_140909_caisse_especes'
+    name: '20261116_140909_caisse_especes',
+  },
+  {
+    up: migration_20261126_195023_billets_empreintes_precedentes.up,
+    down: migration_20261126_195023_billets_empreintes_precedentes.down,
+    name: '20261126_195023_billets_empreintes_precedentes'
   },
 ];

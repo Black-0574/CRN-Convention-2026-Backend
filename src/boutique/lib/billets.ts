@@ -19,7 +19,14 @@ const OR = rgb(0xb8 / 255, 0x96 / 255, 0x3e / 255);
 const NOIR = rgb(0x10 / 255, 0x10 / 255, 0x10 / 255);
 const GRIS = rgb(0x6b / 255, 0x6b / 255, 0x6b / 255);
 
-export const DOSSIER_BILLETS = process.env.BILLETS_DIR || path.resolve(process.cwd(), '.billets');
+/**
+ * Dossier des billets PDF. Chemin absolu obligatoire en production : Hostinger reconstruit
+ * l'application dans un nouveau dossier à chaque déploiement, qui perdait les billets (26 novembre
+ * 2026). Sans BILLETS_DIR, ils vont à côté du dossier des médias (MEDIA_DIR), déjà persistant.
+ */
+export const DOSSIER_BILLETS =
+  process.env.BILLETS_DIR ||
+  (process.env.MEDIA_DIR && path.isAbsolute(process.env.MEDIA_DIR) ? path.join(path.dirname(process.env.MEDIA_DIR), 'billets') : path.resolve(process.cwd(), '.billets'));
 
 /** Bandeau d'en-tête du billet (BQ-10), lu dans public/ du back-office. */
 let bandeauEnCache: Promise<Uint8Array | null> | undefined;

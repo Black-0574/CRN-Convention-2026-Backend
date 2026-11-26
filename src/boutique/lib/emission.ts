@@ -7,7 +7,7 @@
 import { creerJeton, empreinteJeton, formaterXAF, genererDroits } from '../domaine/src/index.ts';
 import type { Payload } from 'payload';
 
-import type { Commande, Plateforme, Produit, Variante } from '../../payload-types';
+import type { Commande, Plateforme, Produit, Titulaire, Variante } from '../../payload-types';
 import { enregistrerBillet, genererBilletPdf, lienBillet } from './billets';
 import { texteLivraison } from './livraison';
 import { urlBackOffice, urlSuivi } from './urls';
@@ -77,6 +77,35 @@ async function emettreBillet(
     await payload.create({ collection: 'droits-acces', data: { titulaire: titulaire.id, plateforme: Number(d.plateforme), statut: 'valide' } });
   }
   return { numero: numeroBillet, titulaire: `${t.prenom} ${t.nom}`, email: t.email, produit: libelle, lien: lienBillet(urlBackOffice(), numeroBillet) };
+}
+
+/**
+ * Billet PDF introuvable sur le disque (fichiers perdus à un déploiement, 26 novembre 2026) : le
+ * billet est régénéré avec un nouveau QR code. L'empreinte de l'ancien est conservée dans
+ * `empreintesPrecedentes` : un billet déjà téléchargé reste accepté au contrôle d'accès.
+ */
+export async function regenererBillet(payload: Payload, titulaireId: number): Promise<Uint8Array> {
+  const t = (await payload.findByID({ collection: 'titulaires', id: titulaireId, depth: 0 })) as Titulaire;
+  const produitId = Number(t.produit);
+  const varianteId = Number(t.variante);
+  const commande = (await payload.findByID({ collection: 'commandes', id: Number(t.commande), depth: 0 })) as Commande;
+  const ligne = (commande.lignes ?? []).find((l) => !l.kitDe && Number(l.variante) === varianteId);
+  const produit = ligne?.libelle ?? ((await payload.findByID({ collection: 'produits', id: produitId, depth: 0 })) as Produit).nom;
+  const plateformes = await plateformesDe(payload, produitId, varianteId);
+  const jeton = creerJeton(secretBillets());
+  const pdf = await genererBilletPdf({
+    numeroBillet: t.numeroBillet,
+    jeton,
+    titulaire: `${t.prenom} ${t.nom}`,
+    produit,
+    seances: plateformes.map((p) => ({ nom: p.nom, quand: p.debut ? quand.format(new Date(p.debut)) : 'date à annoncer', lieu: p.lieu || 'lieu à annoncer' })),
+    ...(t.tailleTeeShirt ? { tailleTeeShirt: t.tailleTeeShirt } : {}),
+  });
+  const fichier = await enregistrerBillet(t.numeroBillet, pdf);
+  const precedentes = [t.empreintesPrecedentes, t.empreinteJeton].filter(Boolean).join(',');
+  await payload.update({ collection: 'titulaires', id: t.id, data: { empreinteJeton: empreinteJeton(jeton), empreintesPrecedentes: precedentes, fichierBillet: fichier } });
+  payload.logger.warn(`Billet ${t.numeroBillet} : PDF introuvable, régénéré (QR code précédent toujours accepté).`);
+  return pdf;
 }
 
 export async function emettre(payload: Payload, commandeId: number): Promise<void> {

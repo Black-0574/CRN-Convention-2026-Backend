@@ -236,6 +236,9 @@ export const Titulaires: CollectionConfig = {
     { name: 'dateNaissance', type: 'text', label: 'Date de naissance (déclarée)' },
     { name: 'tailleTeeShirt', type: 'text', label: 'Taille du tee-shirt du kit' },
     { name: 'empreinteJeton', type: 'text', unique: true, index: true, admin: { hidden: true } },
+    // Billet PDF régénéré (fichier perdu, 26 novembre 2026) : empreintes des QR codes précédents,
+    // séparées par des virgules, toujours acceptées au contrôle d'accès.
+    { name: 'empreintesPrecedentes', type: 'text', admin: { hidden: true } },
     { name: 'fichierBillet', type: 'text', admin: { hidden: true } },
     dateHeure('emisA', 'Billet émis le'),
   ],
