@@ -518,3 +518,39 @@ a.bouton {
   outline: 3px solid var(--or);
   outline-offset: 2px;
 }
+
+/* Message des billets à copier pour WhatsApp (src/components/CopierMessage.tsx, 26 novembre 2026). */
+.copier-message {
+  display: grid;
+  gap: 12px;
+}
+
+.copier-message label {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.copier-message__zone {
+  min-height: 180px;
+  border: 1.5px solid var(--gris-clair);
+  border-radius: 8px;
+  padding: 12px;
+  font: inherit;
+  font-weight: 400;
+  background: var(--blanc);
+  resize: vertical;
+}
+
+.copier-message__zone:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
+
+/* Préventes importées : copier le message, ou l’envoyer par WhatsApp. */
+.preventes__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}

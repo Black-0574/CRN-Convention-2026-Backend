@@ -9,6 +9,7 @@ import { useDocumentInfo } from '@payloadcms/ui';
 import React, { useEffect, useState } from 'react';
 
 import { lienWhatsApp, numeroWhatsApp } from '../../boutique/domaine/src/whatsapp.ts';
+import { CopierMessage } from '../CopierMessage';
 
 interface Billets {
   statut: string;
@@ -75,6 +76,7 @@ export const EnvoiBillets: React.FC = () => {
       ) : (
         <p>Numéro WhatsApp à corriger (avec l’indicatif, ex. +241 …).</p>
       )}
+      {donnees.message && <CopierMessage message={donnees.message} classeBouton="btn btn--style-secondary btn--size-medium" classeZone="envoi-billets__message" />}
     </div>
   );
 };

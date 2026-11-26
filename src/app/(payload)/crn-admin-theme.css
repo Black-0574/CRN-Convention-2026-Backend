@@ -1117,3 +1117,7 @@ label.field-label:not(.unstyled) {
 .envoi-billets__champ { display: flex; flex-direction: column; gap: 6px; max-width: 320px; margin-bottom: 12px; font-weight: 700; }
 .envoi-billets__champ input { min-height: 44px; padding: 8px 12px; font-size: 16px; border: 1px solid #D8D4CB; border-radius: 10px; background: #FFFFFF; }
 .envoi-billets__whatsapp { display: inline-block; text-decoration: none; }
+.envoi-billets .copier-message { display: grid; gap: 8px; margin-top: 16px; }
+.envoi-billets .copier-message label { display: grid; gap: 6px; font-weight: 700; }
+.envoi-billets__message { min-height: 180px; padding: 12px; font: inherit; font-size: 16px; border: 1px solid #D8D4CB; border-radius: 10px; background: #FFFFFF; resize: vertical; }
+.envoi-billets .copier-message button { justify-self: start; }

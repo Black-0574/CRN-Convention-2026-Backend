@@ -12,6 +12,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { formaterXAF } from '../../../boutique/domaine/src/montants.ts';
 import { lienWhatsApp, numeroWhatsApp } from '../../../boutique/domaine/src/whatsapp.ts';
+import { CopierMessage } from '../../../components/CopierMessage';
 
 type Commande = {
   numero: string;
@@ -300,6 +301,7 @@ export function Caisse() {
             ) : (
               <p className="message">Numéro WhatsApp à corriger (avec l’indicatif, ex. +241 …).</p>
             )}
+            <CopierMessage message={resultat.message} classeBouton="bouton bouton--secondaire" classeZone="copier-message__zone" />
             <button className="bouton bouton--secondaire" type="button" onClick={suivant}>
               Encaissement suivant
             </button>

@@ -11,6 +11,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { formaterXAF } from '../../../boutique/domaine/src/montants.ts';
 import { lienWhatsApp, numeroWhatsApp } from '../../../boutique/domaine/src/whatsapp.ts';
+import { CopierMessage } from '../../../components/CopierMessage';
 
 type Produit = { id: number; nom: string; tarifs: { prixXAF: number; libelle: string }[]; kit: { article: string; choix: string[] }[] };
 type Canal = 'email' | 'whatsapp' | 'email_whatsapp';
@@ -58,6 +59,7 @@ export function Preventes() {
   const [texteImport, setTexteImport] = useState('');
   const [importEnCours, setImportEnCours] = useState(false);
   const [lignesImport, setLignesImport] = useState<LigneImport[] | null>(null);
+  const [copiee, setCopiee] = useState<number | null>(null);
 
   const produit = produits.find((p) => p.id === produitId) ?? null;
   const kit = produit?.kit[0] ?? null;
@@ -401,10 +403,27 @@ export function Preventes() {
                           <br />
                           <span className="caisse__detail">{l.probleme ? `À corriger : ${l.probleme}` : l.detail ? `${libelleEtat[l.etat]} — ${l.detail}` : libelleEtat[l.etat]}</span>
                         </span>
-                        {l.etat === 'ok' && l.resultat && l.saisie.canalBillets !== 'email' && numeroWhatsApp(l.saisie.telephone) && (
-                          <a className="bouton bouton--petit" href={lienWhatsApp(numeroWhatsApp(l.saisie.telephone), l.resultat.message)} target="_blank" rel="noopener noreferrer">
-                            WhatsApp
-                          </a>
+                        {l.etat === 'ok' && l.resultat && (
+                          <span className="preventes__actions">
+                            <button
+                              className="bouton bouton--petit bouton--secondaire"
+                              type="button"
+                              onClick={() => {
+                                const message = l.resultat!.message;
+                                navigator.clipboard?.writeText(message).then(
+                                  () => setCopiee(i),
+                                  () => window.prompt('Copiez le message :', message),
+                                );
+                              }}
+                            >
+                              {copiee === i ? 'Copié' : 'Copier'}
+                            </button>
+                            {l.saisie.canalBillets !== 'email' && numeroWhatsApp(l.saisie.telephone) && (
+                              <a className="bouton bouton--petit" href={lienWhatsApp(numeroWhatsApp(l.saisie.telephone), l.resultat.message)} target="_blank" rel="noopener noreferrer">
+                                WhatsApp
+                              </a>
+                            )}
+                          </span>
                         )}
                       </li>
                     ))}
@@ -460,6 +479,7 @@ export function Preventes() {
             ) : (
               <p className="message">Numéro WhatsApp à corriger (avec l’indicatif, ex. +241 …).</p>
             )}
+            <CopierMessage message={resultat.message} classeBouton="bouton bouton--secondaire" classeZone="copier-message__zone" />
             <button className="bouton bouton--secondaire" type="button" onClick={suivante}>
               Prévente suivante
             </button>
