@@ -26,6 +26,15 @@ import { creerCommande, ErreurVente, type EntreeCommande } from './lib/ventes';
 
 const DEV = process.env.NODE_ENV !== 'production';
 
+/** Libellés des moyens de paiement dans l'export comptable. */
+const MOYENS_EXPORT: Record<string, string> = {
+  mobile_money: 'Mobile Money en ligne (SasPay)',
+  carte: 'Carte bancaire (SasPay)',
+  especes: 'Espèces (COM Boutique)',
+  code_marchand: 'Mobile Money par code marchand',
+  prevente: 'Prévente (payée avant l’ouverture)',
+};
+
 const json = (donnees: unknown, status = 200) => Response.json(donnees, { status, headers: { 'Cache-Control': 'no-store' } });
 const erreur = (message: string, status = 400) => json({ erreur: message }, status);
 
@@ -487,9 +496,26 @@ export const endpoints: Endpoint[] = [
       if (type === 'ventes.csv') {
         const { docs } = await req.payload.find({ collection: 'commandes', where: { statut: { equals: 'payee' } }, limit: 10000, depth: 0, pagination: false });
         contenu = csv(
-          ['Commande', 'Payée le', 'Moyen', 'Acheteur', 'E-mail', 'Téléphone', 'Article', 'Quantité', 'Prix unitaire (F CFA)', 'Montant (F CFA)', 'Source', 'Emplacement'],
+          // Moyen, détail (opérateur, transaction, montant net SasPay) et auteur de l'encaissement :
+          // chaque moyen se rapproche d'un relevé différent (28 novembre 2026).
+          ['Commande', 'Payée le', 'Moyen', 'Détail du paiement', 'Encaissé ou validé par', 'Acheteur', 'E-mail', 'Téléphone', 'Article', 'Quantité', 'Prix unitaire (F CFA)', 'Montant (F CFA)', 'Source', 'Emplacement'],
           docs.flatMap((c) =>
-            (c.lignes ?? []).map((l) => [c.numero, c.paiement?.payeeA ?? '', c.paiement?.moyen === 'especes' ? 'Espèces' : c.paiement?.moyen === 'carte' ? 'Carte' : 'Mobile Money', `${c.prenom} ${c.nom}`, c.email ?? '', c.telephone, l.libelle, l.quantite, l.prixUnitaireXAF, l.quantite * l.prixUnitaireXAF, c.provenance?.source ?? '', c.provenance?.emplacement ?? '']),
+            (c.lignes ?? []).map((l) => [
+              c.numero,
+              c.paiement?.payeeA ?? '',
+              MOYENS_EXPORT[c.paiement?.moyen ?? ''] ?? 'Mobile Money en ligne (SasPay)',
+              c.paiement?.detail ?? '',
+              c.paiement?.encaissePar ?? '',
+              `${c.prenom} ${c.nom}`,
+              c.email ?? '',
+              c.telephone,
+              l.libelle,
+              l.quantite,
+              l.prixUnitaireXAF,
+              l.quantite * l.prixUnitaireXAF,
+              c.provenance?.source ?? '',
+              c.provenance?.emplacement ?? '',
+            ]),
           ),
         );
       } else if (type === 'titulaires.csv') {
