@@ -29,3 +29,6 @@ src/payload-types.ts
 # CRN Boutique : billets PDF et courriels capturés en local
 .billets/
 .courriels/
+
+# Preuves de paiement par code marchand (données clients, jamais dans Git)
+.preuves/

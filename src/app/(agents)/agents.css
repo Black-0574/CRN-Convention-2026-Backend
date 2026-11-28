@@ -554,3 +554,17 @@ a.bouton {
   gap: 8px;
   align-items: center;
 }
+
+/* Caisse : paiement par code marchand à vérifier (28 novembre 2026). */
+.caisse__code-marchand {
+  display: grid;
+  gap: 8px;
+  padding: 12px 16px;
+  border-left: 3px solid var(--or);
+  background: var(--ivoire);
+  border-radius: 0 8px 8px 0;
+}
+
+.caisse__code-marchand p {
+  margin: 0;
+}

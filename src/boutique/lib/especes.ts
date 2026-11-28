@@ -17,6 +17,7 @@ import { APIError, type CollectionAfterChangeHook, type CollectionBeforeChangeHo
 
 import type { Commande } from '../../payload-types';
 import { lienBillet } from './billets';
+import { estEnCodeMarchand, PRESTATAIRE_CODE_MARCHAND, procedure, STATUT_EVENEMENT_CODE_MARCHAND } from './code-marchand';
 import { emettre } from './emission';
 import { lignes, sql } from './db';
 import { echapper, gabarit, messagerie } from './messagerie';
@@ -41,6 +42,9 @@ export async function reglagesEspeces(payload: Payload) {
 }
 
 export const estEnEspeces = (c: Pick<Commande, 'paiement'>) => c.paiement?.prestataire === PRESTATAIRE_ESPECES;
+/** Commandes validées à la caisse : espèces, et code marchand depuis le 28 novembre 2026. */
+const A_LA_CAISSE = [PRESTATAIRE_ESPECES, PRESTATAIRE_CODE_MARCHAND];
+const estALaCaisse = (c: Pick<Commande, 'paiement'>) => estEnEspeces(c) || estEnCodeMarchand(c);
 
 async function commandeParNumero(payload: Payload, numero: string): Promise<Commande | null> {
   const { docs } = await payload.find({ collection: 'commandes', where: { numero: { equals: numero } }, limit: 1, depth: 0 });
@@ -101,8 +105,14 @@ export type CommandeEnCaisse = ReturnType<typeof enCaisse>;
 
 /** Vue d'une commande pour la caisse (aucune donnée de paiement en ligne). */
 export function enCaisse(c: Commande, maintenant = new Date()) {
+  const cm = estEnCodeMarchand(c) ? procedure(c) : null;
   return {
     numero: c.numero,
+    mode: cm ? ('code_marchand' as const) : ('especes' as const),
+    // Code marchand : opérateur, identifiant déclaré par le client et preuve (capture) reçue ou non.
+    codeMarchand: cm
+      ? { operateur: cm.nom, codeCommercant: cm.codeCommercant, idTransaction: c.codeMarchand?.idTransaction ?? null, preuve: Boolean(c.codeMarchand?.preuve), preuveRecueLe: c.codeMarchand?.preuveRecueLe ?? null }
+      : null,
     statut: c.statut,
     expiree: c.statut === 'en_attente' && Boolean(c.reservationExpireA && new Date(c.reservationExpireA) < maintenant),
     client: `${c.prenom} ${c.nom}`,
@@ -124,7 +134,7 @@ async function parTelephone(payload: Payload, chiffres: string): Promise<number[
     sql.raw(`REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(${colonne}, ''), ' ', ''), '.', ''), '-', ''), '+', ''), '(', ''), ')', '')`);
   const ids = await lignes<{ id: number }>(
     payload,
-    sql`SELECT id FROM commandes WHERE paiement_prestataire = ${PRESTATAIRE_ESPECES} AND (${chiffresDe('telephone')} LIKE ${motif} OR ${chiffresDe('whatsapp')} LIKE ${motif}) LIMIT 50`,
+    sql`SELECT id FROM commandes WHERE paiement_prestataire IN (${PRESTATAIRE_ESPECES}, ${PRESTATAIRE_CODE_MARCHAND}) AND (${chiffresDe('telephone')} LIKE ${motif} OR ${chiffresDe('whatsapp')} LIKE ${motif}) LIMIT 50`,
   );
   return ids.length ? ids.map((r) => Number(r.id)) : [0];
 }
@@ -136,7 +146,7 @@ async function parTelephone(payload: Payload, chiffres: string): Promise<number[
 export async function chercherEnCaisse(payload: Payload, q: string) {
   const terme = q.trim();
   const chiffres = terme.replace(/\D/g, '');
-  const enEspeces = { 'paiement.prestataire': { equals: PRESTATAIRE_ESPECES } };
+  const enEspeces = { 'paiement.prestataire': { in: A_LA_CAISSE } };
   const where = !terme
     ? { and: [enEspeces, { statut: { equals: 'en_attente' } }] }
     : {
@@ -188,6 +198,22 @@ export async function encaisserEspeces(payload: Payload, numero: string, montant
   return finaliserEncaissement(payload, c, { id: agentId, nom: agent.nom }, 'caisse');
 }
 
+/**
+ * Paiement par code marchand vérifié par la COM Boutique sur le compte marchand : commande payée,
+ * billets émis et envoyés. Une seule validation possible, comme pour les espèces.
+ */
+export async function validerCodeMarchand(payload: Payload, numero: string, agent: { id: number; nom: string }) {
+  let c = await commandeParNumero(payload, numero);
+  if (!c || !estEnCodeMarchand(c)) throw new ErreurVente('Commande introuvable parmi les paiements par code marchand.', 404);
+  if (c.statut === 'payee') throw new ErreurVente(`Paiement déjà validé${c.paiement?.payeeA ? ` le ${jourHeure.format(new Date(c.paiement.payeeA))}` : ''}.`, 409);
+  await expirerReservations(payload);
+  c = (await commandeParNumero(payload, numero))!;
+  if (c.statut === 'expiree') throw new ErreurVente('Délai dépassé : la commande est annulée et ses places ont été rendues à la vente. Si le client a bien payé, refaites la commande avec lui et validez la nouvelle.', 409);
+  if (c.statut !== 'en_attente') throw new ErreurVente('Cette commande n’est plus en attente de paiement.', 409);
+  if (!(await transition(payload, c.id, 'payee'))) throw new ErreurVente('Cette commande vient d’être traitée : actualisez.', 409);
+  return finaliserEncaissement(payload, c, agent, 'caisse');
+}
+
 type Origine = 'caisse' | 'back-office' | 'rattrapage';
 
 const ENVOI: Record<string, string> = {
@@ -204,15 +230,25 @@ const ENVOI: Record<string, string> = {
 async function finaliserEncaissement(payload: Payload, c: Commande, agent: { id: number | null; nom: string }, origine: Origine) {
   const reglages = await reglagesEspeces(payload);
   const payeeA = c.paiement?.payeeA ?? new Date().toISOString();
+  // Code marchand (28 novembre 2026) : même suite, avec l'opérateur et la transaction vérifiée.
+  const cm = estEnCodeMarchand(c) ? procedure(c) : null;
+  const prestataire = cm ? PRESTATAIRE_CODE_MARCHAND : PRESTATAIRE_ESPECES;
+  const detail = cm ? `${cm.nom} — code marchand ${cm.codeCommercant}${c.codeMarchand?.idTransaction ? ` — transaction ${c.codeMarchand.idTransaction}` : ''}` : `Espèces — ${reglages.lieu}`;
   await payload.update({
     collection: 'commandes',
     id: c.id,
-    data: { paiement: { prestataire: PRESTATAIRE_ESPECES, moyen: 'especes', detail: `Espèces — ${reglages.lieu}`, payeeA, encaissePar: agent.nom, encaisseParId: agent.id } },
+    data: { paiement: { prestataire, moyen: cm ? 'code_marchand' : 'especes', detail, payeeA, encaissePar: agent.nom, encaisseParId: agent.id } },
   });
   if (agent.id !== null) {
     await payload.create({
       collection: 'journal-actions',
-      data: { utilisateur: agent.id, action: 'encaissement en espèces', collection: 'commandes', document: String(c.id), details: { numero: c.numero, montantXAF: c.totalXAF, origine } },
+      data: {
+        utilisateur: agent.id,
+        action: cm ? 'validation d’un paiement par code marchand' : 'encaissement en espèces',
+        collection: 'commandes',
+        document: String(c.id),
+        details: { numero: c.numero, montantXAF: c.totalXAF, origine, ...(cm ? { operateur: cm.nom, transaction: c.codeMarchand?.idTransaction ?? null } : {}) },
+      },
     });
   }
   await emettre(payload, c.id);
@@ -222,12 +258,12 @@ async function finaliserEncaissement(payload: Payload, c: Commande, agent: { id:
     await payload.create({
       collection: 'evenements-webhook',
       data: {
-        cle: `${PRESTATAIRE_ESPECES}:${payee.numero}`,
+        cle: `${prestataire}:${payee.numero}`,
         referenceCommande: payee.numero,
-        statut: STATUT_EVENEMENT_ESPECES,
+        statut: cm ? STATUT_EVENEMENT_CODE_MARCHAND : STATUT_EVENEMENT_ESPECES,
         montantXAF: payee.totalXAF,
-        resultat: `${envoi.billets.length} billet(s) émis, envoyés ${ENVOI[payee.canalBillets ?? 'email']}${payee.email ? ` — ${payee.email}` : ''} · encaissé par ${agent.nom}`,
-        brut: { moyen: 'especes', lieu: reglages.lieu, encaissePar: agent.nom, origine, canalBillets: payee.canalBillets ?? 'email', payeeA, billets: envoi.billets.map((b) => b.numero) },
+        resultat: `${envoi.billets.length} billet(s) émis, envoyés ${ENVOI[payee.canalBillets ?? 'email']}${payee.email ? ` — ${payee.email}` : ''} · ${cm ? 'validé' : 'encaissé'} par ${agent.nom}`,
+        brut: { moyen: cm ? 'code_marchand' : 'especes', ...(cm ? { operateur: cm.nom, transaction: c.codeMarchand?.idTransaction ?? null } : { lieu: reglages.lieu }), encaissePar: agent.nom, origine, canalBillets: payee.canalBillets ?? 'email', payeeA, billets: envoi.billets.map((b) => b.numero) },
       },
     });
   } catch {
@@ -246,7 +282,7 @@ const nomUtilisateur = (u: unknown) => {
  * caisse (commande encore en attente, délai non dépassé), puis même suite (`finaliserEncaissement`).
  */
 export const avantValidationManuelle: CollectionBeforeChangeHook<Commande> = ({ req, data, originalDoc, operation, context }) => {
-  if (operation !== 'update' || !req.user || !originalDoc || data.statut !== 'payee' || originalDoc.statut === 'payee' || !estEnEspeces(originalDoc)) return data;
+  if (operation !== 'update' || !req.user || !originalDoc || data.statut !== 'payee' || originalDoc.statut === 'payee' || !estALaCaisse(originalDoc)) return data;
   if (originalDoc.statut !== 'en_attente') {
     throw new APIError('Seule une commande en attente de paiement peut être encaissée : celle-ci ne l’est plus (places rendues à la vente). Refaites la commande avec le client.', 400, null, true);
   }
@@ -278,7 +314,7 @@ export const apresValidationManuelle: CollectionAfterChangeHook<Commande> = asyn
 export async function rattraperEncaissementsManuels(payload: Payload): Promise<void> {
   const { docs } = await payload.find({
     collection: 'commandes',
-    where: { and: [{ statut: { equals: 'payee' } }, { 'paiement.prestataire': { equals: PRESTATAIRE_ESPECES } }] },
+    where: { and: [{ statut: { equals: 'payee' } }, { 'paiement.prestataire': { in: A_LA_CAISSE } }] },
     limit: 1000,
     depth: 0,
     pagination: false,

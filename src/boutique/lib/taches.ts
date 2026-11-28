@@ -127,6 +127,12 @@ export async function relireCommande(payload: Payload, c: CommandeARelire): Prom
   await relire(payload, c);
 }
 
+/** Relecture immédiate, sans l'intervalle minimal (changement de moyen de paiement par le client). */
+export async function relireSansDelai(payload: Payload, c: CommandeARelire): Promise<void> {
+  if (c.statut !== 'en_attente' || !c.paiement?.referenceExterne) return;
+  await relire(payload, c);
+}
+
 /**
  * Réconciliation déclenchée par une notification (webhook) : lancée en arrière-plan pour répondre
  * tout de suite au prestataire (SasPay coupe à 15 s), et en file — une rafale de notifications ne

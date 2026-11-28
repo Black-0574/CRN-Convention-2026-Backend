@@ -139,6 +139,7 @@ export const Commandes: CollectionConfig = {
             { label: 'Carte bancaire', value: 'carte' },
             { label: 'Espèces (COM Boutique)', value: 'especes' },
             { label: 'Prévente (payée avant l’ouverture)', value: 'prevente' },
+            { label: 'Mobile Money — code marchand (vérifié par la COM Boutique)', value: 'code_marchand' },
           ],
         },
         { name: 'detail', type: 'text', label: 'Détail (opérateur, pays, carte)', admin: { description: 'Tel que transmis par l’agrégateur de paiement.' } },
@@ -146,6 +147,28 @@ export const Commandes: CollectionConfig = {
         // Caissier (nom et identifiant du compte) : sans clé étrangère, ajout de colonnes seulement.
         { name: 'encaissePar', type: 'text', label: 'Encaissé par (espèces) ou enregistré par (prévente)' },
         { name: 'encaisseParId', type: 'number', admin: { hidden: true } },
+      ],
+    },
+    // Paiement Mobile Money par code marchand (28 novembre 2026) : opérateur choisi, preuve envoyée
+    // par le client, à vérifier sur le compte marchand avant validation à la caisse.
+    {
+      name: 'codeMarchand',
+      type: 'group',
+      label: 'Paiement par code marchand',
+      admin: { readOnly: true, description: 'Vérifier la réception sur le compte marchand avant de valider : une capture peut être falsifiée.' },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            { name: 'operateur', type: 'select', label: 'Opérateur', options: [{ label: 'Airtel Money', value: 'airtel' }, { label: 'Moov Money (Mobicash)', value: 'moov' }], admin: { width: '33%' } },
+            { name: 'idTransaction', type: 'text', label: 'Identifiant de transaction (déclaré)', admin: { width: '33%' } },
+            dateHeure('preuveRecueLe', 'Preuve reçue le', { admin: { width: '34%' } }),
+          ],
+        },
+        { name: 'preuveLien', type: 'ui', admin: { components: { Field: '/components/admin/PreuvePaiement#PreuvePaiement' } } },
+        { name: 'preuve', type: 'text', admin: { hidden: true } },
+        dateHeure('choisiLe', 'Choisi le', { admin: { hidden: true } }),
+        { name: 'sessionEnLigne', type: 'text', label: 'Paiement en ligne tenté avant', admin: { description: 'Session du paiement en ligne abandonnée au profit du code marchand.' } },
       ],
     },
     {

@@ -9,6 +9,7 @@ import * as migration_20261107_075155_profils_utilisateurs from './20261107_0751
 import * as migration_20261111_125443_actualites_article_visuel from './20261111_125443_actualites_article_visuel';
 import * as migration_20261116_140909_caisse_especes from './20261116_140909_caisse_especes';
 import * as migration_20261126_195023_billets_empreintes_precedentes from './20261126_195023_billets_empreintes_precedentes';
+import * as migration_20261128_103312_paiement_code_marchand from './20261128_103312_paiement_code_marchand';
 
 export const migrations = [
   {
@@ -64,6 +65,11 @@ export const migrations = [
   {
     up: migration_20261126_195023_billets_empreintes_precedentes.up,
     down: migration_20261126_195023_billets_empreintes_precedentes.down,
-    name: '20261126_195023_billets_empreintes_precedentes'
+    name: '20261126_195023_billets_empreintes_precedentes',
+  },
+  {
+    up: migration_20261128_103312_paiement_code_marchand.up,
+    down: migration_20261128_103312_paiement_code_marchand.down,
+    name: '20261128_103312_paiement_code_marchand'
   },
 ];

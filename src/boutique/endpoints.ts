@@ -13,7 +13,8 @@ import { lienBillet, lienValide, lireBillet } from './lib/billets';
 import { regenererBillet } from './lib/emission';
 import { catalogue, DEMO, estVisible, vueProduit } from './lib/catalogue';
 import { optionsLivraison, texteLivraison } from './lib/livraison';
-import { chercherEnCaisse, choisirEspeces, encaisserEspeces, envoiBillets, estEnEspeces, journeeDuCaissier, reglagesEspeces } from './lib/especes';
+import { chercherEnCaisse, choisirEspeces, encaisserEspeces, envoiBillets, estEnEspeces, journeeDuCaissier, reglagesEspeces, validerCodeMarchand } from './lib/especes';
+import { choisirCodeMarchand, DELAI_PAIEMENT_HEURES, estEnCodeMarchand, lirePreuve, OPERATEURS, procedure, recevoirPreuve } from './lib/code-marchand';
 import { courrielsDe, lireCourriel } from './lib/messagerie';
 import { enregistrerPrevente, optionsPreventes, type SaisiePrevente } from './lib/preventes';
 import { bacASableActif, depot, prestataire } from './lib/paiement';
@@ -106,6 +107,8 @@ export const endpoints: Endpoint[] = [
         consentement: r.consentement,
         legal: { cgvVersion: r.legal?.cgvVersion || null, cgv: r.legal?.cgv || null },
         especes: await reglagesEspeces(req.payload),
+        // Mobile Money par code marchand (28 novembre 2026) : opérateurs proposés au client.
+        codeMarchand: { actif: true, delaiHeures: DELAI_PAIEMENT_HEURES, operateurs: Object.entries(OPERATEURS).map(([id, o]) => ({ id, nom: o.nom })) },
         demo: DEMO,
       });
     },
@@ -167,6 +170,14 @@ export const endpoints: Endpoint[] = [
         paiement: { moyen: c.paiement?.moyen ?? null, detail: c.paiement?.detail ?? null, enCours: Boolean(c.paiement?.referenceExterne) },
         // Paiement en espèces : caisse, horaires et échéance à rappeler au client.
         especes: especes && { lieu: especes.lieu, horaires: especes.horaires, echeance: c.reservationExpireA ?? null },
+        // Code marchand : procédure USSD, échéance et preuve déjà envoyée ou non.
+        codeMarchand: estEnCodeMarchand(c)
+          ? { ...procedure(c), echeance: c.reservationExpireA ?? null, preuveRecue: Boolean(c.codeMarchand?.preuve), idTransaction: c.codeMarchand?.idTransaction ?? null }
+          : null,
+        // Paiement en ligne en attente : le code marchand est proposé en alternative.
+        alternativeCodeMarchand: c.statut === 'en_attente' && !estEnEspeces(c) && !estEnCodeMarchand(c)
+          ? Object.entries(OPERATEURS).map(([id, o]) => ({ id, nom: o.nom }))
+          : null,
         canalBillets: c.canalBillets ?? 'email',
         // Commande payée : envoi des billets sur WhatsApp, d'un toucher (message déjà rédigé).
         whatsapp: c.statut === 'payee' && titulaires.length ? (await envoiBillets(req.payload, c)).whatsapp.lien : null,
@@ -186,6 +197,7 @@ export const endpoints: Endpoint[] = [
       if (!c) return erreur('Commande introuvable.', 404);
       if (c.statut !== 'en_attente') return erreur('Cette commande n’est plus en attente de paiement.', 409);
       if (estEnEspeces(c)) return erreur('Cette commande est à régler en espèces à la caisse de la COM Boutique.', 409);
+      if (estEnCodeMarchand(c)) return erreur('Cette commande est à régler par code marchand : suivez la procédure affichée sur le suivi de votre commande.', 409);
       if (c.reservationExpireA && new Date(c.reservationExpireA) < new Date()) return erreur('Le délai de réservation est dépassé : recommencez votre commande.', 409);
       // L'agrégateur exige un e-mail (customer_email, spécification SasPay) : un client qui reçoit
       // ses billets par WhatsApp seulement le donne à cette étape.
@@ -221,6 +233,47 @@ export const endpoints: Endpoint[] = [
       if (!redirection) return erreur('Le prestataire de paiement n’a pas répondu : réessayez dans un instant.', 502);
       await req.payload.update({ collection: 'commandes', id: c.id, data: { paiement: { prestataire: p.nom, referenceExterne } } });
       return json({ referenceExterne, redirection, simulation: p.nom === 'bac-a-sable' });
+    },
+  },
+  // Mobile Money par code marchand (28 novembre 2026) : choix de l'opérateur, réservation de 48 h.
+  {
+    path: '/boutique/commandes/:numero/code-marchand',
+    method: 'post',
+    handler: async (req) => {
+      const c = await commandeSuivie(req);
+      if (!c) return erreur('Commande introuvable.', 404);
+      try {
+        const maj = await choisirCodeMarchand(req.payload, c, (await corpsJson<{ operateur?: string }>(req))?.operateur);
+        return json({ numero: maj.numero, echeance: maj.reservationExpireA, procedure: procedure(maj) });
+      } catch (e) {
+        if (e instanceof ErreurVente) return erreur(e.message, e.code);
+        req.payload.logger.error(e);
+        return erreur('Erreur inattendue, veuillez réessayer.', 500);
+      }
+    },
+  },
+  // Preuve de paiement (capture du SMS et identifiant de transaction), envoyée depuis le suivi.
+  {
+    path: '/boutique/commandes/:numero/preuve',
+    method: 'post',
+    handler: async (req) => {
+      const c = await commandeSuivie(req);
+      if (!c) return erreur('Commande introuvable.', 404);
+      let formulaire: FormData;
+      try {
+        formulaire = await (req as unknown as Request).formData();
+      } catch {
+        return erreur('Envoi illisible : réessayez avec une image.', 400);
+      }
+      const fichier = formulaire.get('capture');
+      try {
+        const maj = await recevoirPreuve(req.payload, c, fichier instanceof Blob ? fichier : null, formulaire.get('idTransaction'));
+        return json({ numero: maj.numero, preuveRecue: true, echeance: maj.reservationExpireA });
+      } catch (e) {
+        if (e instanceof ErreurVente) return erreur(e.message, e.code);
+        req.payload.logger.error(e);
+        return erreur('Erreur inattendue : la preuve n’est pas enregistrée, réessayez.', 500);
+      }
     },
   },
   // Paiement en espèces à la caisse de la COM Boutique : réservation prolongée jusqu'à l'échéance.
@@ -380,6 +433,40 @@ export const endpoints: Endpoint[] = [
         if (e instanceof ErreurVente) return erreur(e.message, e.code);
         req.payload.logger.error(e);
         return erreur('Erreur inattendue : la prévente n’est pas enregistrée, réessayez.', 500);
+      }
+    },
+  },
+
+  // Code marchand : capture envoyée par le client, et validation après vérification du compte marchand.
+  {
+    path: '/boutique/caisse/commandes/:numero/preuve',
+    method: 'get',
+    handler: async (req) => {
+      if (!autorise(req, 'com_boutique', 'operations', 'comptabilite')) return erreur('Accès réservé à la COM Boutique.', 401);
+      const { docs } = await req.payload.find({ collection: 'commandes', where: { numero: { equals: param(req, 'numero') } }, limit: 1, depth: 0 });
+      const preuve = docs[0]?.codeMarchand?.preuve;
+      if (!preuve) return erreur('Aucune preuve envoyée pour cette commande.', 404);
+      try {
+        const { donnees, type } = await lirePreuve(preuve);
+        return new Response(new Uint8Array(donnees), { headers: { 'Content-Type': type, 'Content-Disposition': 'inline', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
+      } catch {
+        return erreur('Fichier de la preuve introuvable.', 404);
+      }
+    },
+  },
+  {
+    path: '/boutique/caisse/commandes/:numero/valider-code-marchand',
+    method: 'post',
+    handler: async (req) => {
+      if (!autorise(req, 'com_boutique', 'operations')) return erreur('Accès réservé à la COM Boutique et au responsable des opérations.', 401);
+      try {
+        const u = req.user as unknown as { id: number; prenom?: string | null; nom?: string | null; email: string };
+        const nom = [u.prenom, u.nom].filter(Boolean).join(' ') || u.email;
+        return json(await validerCodeMarchand(req.payload, param(req, 'numero'), { id: Number(u.id), nom }));
+      } catch (e) {
+        if (e instanceof ErreurVente) return erreur(e.message, e.code);
+        req.payload.logger.error(e);
+        return erreur('Erreur inattendue : la validation n’est pas enregistrée, réessayez.', 500);
       }
     },
   },

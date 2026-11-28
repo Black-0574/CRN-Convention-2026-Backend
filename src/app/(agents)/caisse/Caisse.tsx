@@ -16,6 +16,8 @@ import { CopierMessage } from '../../../components/CopierMessage';
 
 type Commande = {
   numero: string;
+  mode: 'especes' | 'code_marchand';
+  codeMarchand: { operateur: string; codeCommercant: string; idTransaction: string | null; preuve: boolean; preuveRecueLe: string | null } | null;
   statut: string;
   expiree: boolean;
   client: string;
@@ -38,6 +40,7 @@ const quand = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric
 
 function etiquette(c: Commande): string {
   if (c.statut === 'payee') return `Encaissée${c.payeeA ? ` le ${quand.format(new Date(c.payeeA))}` : ''}`;
+  if (c.statut === 'en_attente' && c.codeMarchand) return c.expiree ? 'Délai dépassé' : c.codeMarchand.preuve ? 'Preuve reçue : à vérifier' : 'Preuve attendue';
   if (c.statut === 'en_attente') return c.expiree ? 'Délai dépassé' : 'À encaisser';
   return { expiree: 'Délai dépassé', echouee: 'Annulée', remboursee: 'Remboursée', a_verifier: 'À vérifier' }[c.statut] ?? c.statut;
 }
@@ -116,7 +119,8 @@ export function Caisse() {
     setEnCours(true);
     setErreur('');
     try {
-      const res = await fetch(`/api/boutique/caisse/commandes/${encodeURIComponent(choisie.numero)}/encaisser`, {
+      const action = choisie.mode === 'code_marchand' ? 'valider-code-marchand' : 'encaisser';
+      const res = await fetch(`/api/boutique/caisse/commandes/${encodeURIComponent(choisie.numero)}/${action}`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -155,7 +159,7 @@ export function Caisse() {
         <p>Convention CRN 2026 — COM Boutique</p>
       </header>
       <main className="scan caisse">
-        <h1>Caisse — paiements en espèces</h1>
+        <h1>Caisse — espèces et code marchand</h1>
 
         {etat === 'connexion' && (
           <form className="carte-scan" onSubmit={connecter}>
@@ -195,7 +199,7 @@ export function Caisse() {
                   </button>
                 </form>
                 <h2>{recherche.trim() ? 'Résultats' : 'Commandes à encaisser'}</h2>
-                {commandes.length === 0 && <p>{recherche.trim() ? 'Aucune commande en espèces ne correspond.' : 'Aucune commande en attente de paiement en espèces.'}</p>}
+                {commandes.length === 0 && <p>{recherche.trim() ? 'Aucune commande en espèces ou par code marchand ne correspond.' : 'Aucune commande en attente (espèces ou code marchand).'}</p>}
                 <ul className="caisse__liste">
                   {commandes.map((c) => (
                     <li key={c.numero}>
@@ -204,6 +208,7 @@ export function Caisse() {
                           <strong>{c.numero}</strong> · {c.client}
                           <br />
                           <span className="caisse__detail">
+                            {c.codeMarchand ? `${c.codeMarchand.operateur} (code marchand) · ` : 'Espèces · '}
                             {c.telephone} · {etiquette(c)}
                           </span>
                         </span>
@@ -235,6 +240,24 @@ export function Caisse() {
                   ))}
                 </ul>
                 <p className="montant">{formaterXAF(choisie.totalXAF)}</p>
+                {choisie.codeMarchand && (
+                  <div className="caisse__code-marchand">
+                    <p>
+                      <strong>{choisie.codeMarchand.operateur}</strong> — code commerçant {choisie.codeMarchand.codeCommercant} — référence attendue : {choisie.numero}
+                    </p>
+                    <p>
+                      Identifiant de transaction déclaré : <strong>{choisie.codeMarchand.idTransaction ?? 'non envoyé'}</strong>
+                    </p>
+                    {choisie.codeMarchand.preuve ? (
+                      <a className="bouton bouton--secondaire" href={`/api/boutique/caisse/commandes/${encodeURIComponent(choisie.numero)}/preuve`} target="_blank" rel="noopener noreferrer">
+                        Voir la capture envoyée par le client
+                      </a>
+                    ) : (
+                      <p className="message">Le client n’a pas encore envoyé sa preuve.</p>
+                    )}
+                    <p className="message">Vérifiez la réception de ce montant sur le compte marchand {choisie.codeMarchand.operateur} avant de valider : une capture peut être falsifiée.</p>
+                  </div>
+                )}
                 <p className="caisse__detail">
                   Billets : {choisie.canalBillets === 'email' ? 'par e-mail' : choisie.canalBillets === 'whatsapp' ? 'par WhatsApp' : 'par e-mail et WhatsApp'}
                   {choisie.echeance && aEncaisser(choisie) ? ` · à payer avant le ${quand.format(new Date(choisie.echeance))}` : ''}
@@ -246,16 +269,25 @@ export function Caisse() {
                 )}
                 {aEncaisser(choisie) && !confirmation && (
                   <button className="bouton bouton--large" type="button" onClick={() => setConfirmation(true)}>
-                    Encaisser {formaterXAF(choisie.totalXAF)}
+                    {choisie.codeMarchand ? `Valider le paiement de ${formaterXAF(choisie.totalXAF)}` : `Encaisser ${formaterXAF(choisie.totalXAF)}`}
                   </button>
                 )}
                 {aEncaisser(choisie) && confirmation && (
                   <div className="caisse__confirmation" role="alertdialog" aria-labelledby="confirmation-titre">
                     <p id="confirmation-titre">
-                      Avez-vous reçu <strong>{formaterXAF(choisie.totalXAF)}</strong> en espèces de {choisie.client}&nbsp;?
+                      {choisie.codeMarchand ? (
+                        <>
+                          Avez-vous vérifié la réception de <strong>{formaterXAF(choisie.totalXAF)}</strong> sur le compte marchand {choisie.codeMarchand.operateur}
+                          {choisie.codeMarchand.idTransaction ? ` (transaction ${choisie.codeMarchand.idTransaction})` : ''}&nbsp;?
+                        </>
+                      ) : (
+                        <>
+                          Avez-vous reçu <strong>{formaterXAF(choisie.totalXAF)}</strong> en espèces de {choisie.client}&nbsp;?
+                        </>
+                      )}
                     </p>
                     <button className="bouton bouton--large" type="button" onClick={encaisser} disabled={enCours}>
-                      {enCours ? 'Enregistrement…' : 'Oui, montant reçu : valider'}
+                      {enCours ? 'Enregistrement…' : choisie.codeMarchand ? 'Oui, paiement vérifié : valider' : 'Oui, montant reçu : valider'}
                     </button>
                     <button className="bouton bouton--secondaire" type="button" onClick={() => setConfirmation(false)} disabled={enCours}>
                       Annuler
@@ -273,7 +305,7 @@ export function Caisse() {
 
         {resultat && (
           <div className="carte-scan caisse__succes" role="status">
-            <h2>Encaissement enregistré</h2>
+            <h2>{resultat.commande.mode === 'code_marchand' ? 'Paiement validé' : 'Encaissement enregistré'}</h2>
             <p>
               <strong>{formaterXAF(resultat.commande.totalXAF)}</strong> reçus pour la commande <strong>{resultat.commande.numero}</strong> ({resultat.commande.client}).
             </p>
